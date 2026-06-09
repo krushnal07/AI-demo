@@ -265,7 +265,7 @@ const Login = () => {
             mt="0"   // ensure no top margin
             lineHeight="1.2"
           >
-            Ensuring Fairness and Safety with Computer Vision in Election Systems
+            {/* Ensuring Fairness and Safety with Computer Vision in Election Systems */}
           </Text>
         </Flex>
 
@@ -275,7 +275,7 @@ const Login = () => {
             {
               colorMode === "light" ? (
                 <Image
-                  src="/images/westbengal.png"
+                  src="/images/GptResponse.png"
                   alt="Login Map"
                   alignSelf={"flex-start"}
                   objectFit="contain"
@@ -283,7 +283,7 @@ const Login = () => {
                   maxW="400px"
                 />
               ) : (<Image
-                src="/images/westbengal_dark.png"
+                src="/images/GptResponse.png"
                 alt="Login Map"
                 alignSelf={"flex-start"}
                 objectFit="contain"
