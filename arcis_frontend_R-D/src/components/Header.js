@@ -132,16 +132,16 @@ const Header = ({
       >
         {/* 1. LEFT SECTION: Logo (This will move with the header) */}
         <Flex flex={1} justifyContent="flex-start">
-          <Image
+          {/* <Image
             src={activeLogo}
             alt="Election Commission"
             h="40px"
             objectFit="contain"
-          />
+          /> */}
         </Flex>
 
         {/* 2. CENTER SECTION */}
-        <Flex flex={2} justifyContent="center">
+        {/* <Flex flex={2} justifyContent="center">
           <Text
             fontWeight={600}
             textAlign="center"
@@ -152,7 +152,7 @@ const Header = ({
             Live Webcasting & Monitoring <br /> West Bengal
             Legislative Assembly Election 2026
           </Text>
-        </Flex>
+        </Flex> */}
 
         {/* 3. RIGHT SECTION: Timer, Mode, Profile */}
         <Flex flex={1} justifyContent="flex-end" alignItems="center" gap={4}>

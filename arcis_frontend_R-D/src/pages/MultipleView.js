@@ -488,16 +488,16 @@ const handleGridChange = (event) => {
             </Select>
 
 
-            <Select value={selectedAssemblyValue} onChange={handleAssemblyChange} placeholder={loadingAssemblies ? "Loading..." : "Select Assembly"} isDisabled={!selectedDistrictName} borderRadius="10px" bg={buttonGradientColor} w={"auto"} height={"34px"} fontSize={"12px"}>
+            {/* <Select value={selectedAssemblyValue} onChange={handleAssemblyChange} placeholder={loadingAssemblies ? "Loading..." : "Select Assembly"} isDisabled={!selectedDistrictName} borderRadius="10px" bg={buttonGradientColor} w={"auto"} height={"34px"} fontSize={"12px"}>
               {assemblies.map((a) => (<option key={a._id} value={a.accName}>{a.accName}</option>))}
-            </Select>
+            </Select> */}
 
              {/* NEW SEARCH TOGGLE FROM GITHUB */}
   <RadioGroup onChange={setPsOption} value={psOption}>
     <HStack spacing={3}>
-      <Radio value="ps" size="md" colorScheme="blue">
+      {/* <Radio value="ps" size="md" colorScheme="blue">
         <Text fontSize="12px" fontWeight={psOption === "ps" ? "bold" : "normal"}>Vehicle No</Text>
-      </Radio>
+      </Radio> */}
       <Radio value="camera" size="md" colorScheme="blue">
         <Text fontSize="12px" fontWeight={psOption === "camera" ? "bold" : "normal"}>Camera ID</Text>
       </Radio>
@@ -505,7 +505,7 @@ const handleGridChange = (event) => {
   </RadioGroup>
 
   <Input
-    placeholder={psOption === "ps" ? "Search Vehicle No" : "Search Camera ID"}
+    placeholder={psOption === "ps" ? " " : "Search Camera ID"}
     value={searchDeviceId}
     onChange={(e) => setSearchDeviceId(e.target.value)}
     width={"160px"}

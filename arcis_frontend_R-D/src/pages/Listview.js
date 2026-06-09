@@ -645,10 +645,10 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
       "Sr No.": index + 1,
       "Device Id": camera.DeviceId,
       "District": camera.district || "N/A",
-      "Assembly": camera.assembly || "N/A",
-      "Vehicle No.": camera.location || "N/A",
-      "Driver Name": camera.operatorName || "N/A",
-      "Driver Contact": camera.operatorMobile || "N/A",
+      "location": camera.assembly || "N/A",
+    //  "Vehicle No.": camera.location || "N/A",
+      // "Driver Name": camera.operatorName || "N/A",
+      // "Driver Contact": camera.operatorMobile || "N/A",
       "Status": camera.status ? "Online" : "Offline",
     }));
 
@@ -688,10 +688,10 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
       "Sr No.": index + 1,
       "Device Id": camera.DeviceId,
       "District": camera.district || "N/A",
-      "Assembly": camera.assembly || "N/A",
-      "Vehicle No.": camera.location || "N/A",
-      "Driver Name": camera.operatorName || "N/A",
-      "Driver Mobile": camera.operatorMobile || "N/A",
+      "Location": camera.assembly || "N/A",
+      // "Vehicle No.": camera.location || "N/A",
+      // "Driver Name": camera.operatorName || "N/A",
+      // "Driver Mobile": camera.operatorMobile || "N/A",
       "Status": camera.status ? "Online" : "Offline",
     }));
 
@@ -851,7 +851,7 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
 
           {/* 2. Assembly Select */}
 
-          <Select
+          {/* <Select
             placeholder="Select Assembly"
             bg={buttonGradientColor}
             borderRadius={"12px"}
@@ -871,7 +871,7 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
             {assembliesList.map((a) => (
               <option key={a} value={a}>{a}</option>
             ))}
-          </Select>
+          </Select> */}
 
 
           {/* 3. Status Select */}
@@ -901,14 +901,14 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
           {/* 5. Search Bar */}
           <RadioGroup onChange={setPsOption} value={psOption}>
             <HStack>
-              <Radio
+              {/* <Radio
                 value="ps"
                 size="md"
                 colorScheme="blue"
                 borderColor="gray.400"
               >
                 <Text fontSize="13px" fontWeight={psOption === "ps" ? "bold" : "normal"}>Vehicle No</Text>
-              </Radio>
+              </Radio> */}
               <Text color="gray.400" fontSize="12px">|</Text>
               <Radio
                 value="camera"
@@ -1185,11 +1185,11 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
                     <Tr style={tableHeaderRowStyle} bg={buttonGradientColor}>
                       <Th style={tableHeaderStyle}>Sr No.<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>District<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>Assembly<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>Vehicle No.<VerticalLine /></Th>
+                      <Th style={tableHeaderStyle}>Location<VerticalLine /></Th>
+                      {/* <Th style={tableHeaderStyle}>Vehicle No.<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>Vehicle Type<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>Driver Name<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>Driver Mobile No.<VerticalLine /></Th>
+                      <Th style={tableHeaderStyle}>Driver Mobile No.<VerticalLine /></Th> */}
                       <Th style={tableHeaderStyle}>Device Id<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>Status<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>Preview</Th>
@@ -1202,10 +1202,10 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
                           <Td style={tableDataStyle}>{(currentPage - 1) * itemsPerPage + index + 1}<VerticalLine /></Td>
                           <Td style={tableDataStyle}>{camera.district || "N/A"}<VerticalLine /></Td>
                           <Td style={tableDataStyle}>{camera.assembly || "N/A"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle} title={camera.location || "N/A"}>{camera.location || "N/A"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle}>{camera.location_Type || "N/A"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle}>{camera.operatorName || "N/A"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle}>{camera.operatorMobile || "N/A"}<VerticalLine /></Td>
+                          {/* <Td style={tableDataStyle} title={camera.location || "N/A"}>{camera.location || "N/A"}<VerticalLine /></Td>
+                          <Td style={tableDataStyle}>{camera.location_Type || "N/A"}<VerticalLine /></Td> */}
+                          {/* <Td style={tableDataStyle}>{camera.operatorName || "N/A"}<VerticalLine /></Td>
+                          <Td style={tableDataStyle}>{camera.operatorMobile || "N/A"}<VerticalLine /></Td> */}
                           <Td style={tableDataStyle}>{camera.DeviceId || "N/A"}<VerticalLine /></Td>
                           <Td style={tableDataStyle} color={camera.status ? "green.400" : "red.400"}>{camera.status ? "⬤" : "⬤"}<VerticalLine /></Td>
                           <Td style={tableDataStyle}>

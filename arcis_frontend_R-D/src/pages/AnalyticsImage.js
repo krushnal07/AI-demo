@@ -258,20 +258,21 @@ const AnalyticsImage = () => {
   // 5: "PPE kit Violation",
   // 32:"Fall Detection",
   // 35:"Tampered Detection",
-  37: "Mobile Detetction",                
-  36: "Handwash Violation",
-  31: "Object detection (Pen,Watch,Mobile)",
-  38: "Gloves Violation",
-  3: "Fire & Smoke Detection",
-  5: "PPE kit detection",
-  28: "EVM Violation",
+  // 37: "Mobile Detetction",                
+  // 36: "Handwash Violation",
+  // 31: "Object detection (Pen,Watch,Mobile)",
+  // 38: "Gloves Violation",
+  // 3: "Fire & Smoke Detection",
+  // 5: "PPE kit detection",
+  // 28: "EVM Violation",
   40: "Max Person",
-  4:"ANPR"
+  41:"Box Detection"
+  // 4:"ANPR"
 };
 
 const countEmailEventMap = {
-  33: "Sack Loading",
-  34:"Sack Unloading"
+  // 33: "Sack Loading",
+  // 34:"Sack Unloading"
 };
 
  const countEmails = ["count@vmukti.com", "maheshwara@gmail.com", "Lakshmi@gmail.com", "roopa@gmail.com"];

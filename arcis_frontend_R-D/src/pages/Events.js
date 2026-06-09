@@ -30,13 +30,14 @@ const AnalyticsImage = () => {
   const [cameraIds, setCameraIds] = useState([]);
   const [isFilterChange, setIsFilterChange] = useState(false);
   const [eventOptions, setEventOptions] = useState({
-    1: "Facial recognition", 2: "Human Detection", 3: "Fire & Smoke Detection", 4: "Automatic Number Plate Recognition",
-    5: "PPE kit Violation", 6: "Object Detection", 7: "Detecting phone usage while driving", 8: "Monitoring head movements",
-    9: "Eyes closing", 10: "Yawning while driving", 11: "No Seatbelt usage", 12: "Identifying conversations with passengers",
-    13: "Emotion detection", 14: "No_Uniform", 15: "Smoking Detection", 16: "Unauthorized Entry detection",
-    17: "Line Crossing", 18: "Vactant Parking", 19: "HeatMap for crowd", 20: "Head count",
-    21: "Person counting and Time analyisis in Tickt Kiosk", 22: "Crowd Object Detection", 23: "UnAuthorized Parking",
-    24: "Human Activity detection", 26: "Idle Time Detection",40:"Person Count Detection"
+    1: "Max Person", 2: "Box Detection",
+    //  3: "Fire & Smoke Detection", 4: "Automatic Number Plate Recognition",
+    // 5: "PPE kit Violation", 6: "Object Detection", 7: "Detecting phone usage while driving", 8: "Monitoring head movements",
+    // 9: "Eyes closing", 10: "Yawning while driving", 11: "No Seatbelt usage", 12: "Identifying conversations with passengers",
+    // 13: "Emotion detection", 14: "No_Uniform", 15: "Smoking Detection", 16: "Unauthorized Entry detection",
+    // 17: "Line Crossing", 18: "Vactant Parking", 19: "HeatMap for crowd", 20: "Head count",
+    // 21: "Person counting and Time analyisis in Tickt Kiosk", 22: "Crowd Object Detection", 23: "UnAuthorized Parking",
+    // 24: "Human Activity detection", 26: "Idle Time Detection",40:"Person Count Detection"
   });
 
   // Use useCallback to memoize fetchData

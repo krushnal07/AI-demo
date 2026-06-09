@@ -24,6 +24,7 @@ import {
 } from "react-icons/ri";
 import { IoDocumentTextOutline } from "react-icons/io5";
 import Reports from "../pages/Reports";
+import AnalyticsImage from "../pages/AnalyticsImage";
 
 const allMenuItems = [
   { label: "Dashboard", icon: <MdOutlineSpaceDashboard />, path: "/dash" },
@@ -34,41 +35,41 @@ const allMenuItems = [
     subItems: [
       { label: "List view", path: "/listview" },
       { label: "Multiscreen", path: "/multiple" },
-      { label: "Map view", path: "/Mapview" },
+     { label: "Events", path: "/events" },
     ],
   },
-  { label: "Heatmap", icon: <RiCheckboxMultipleBlankLine />, path: "/Heatmapp" },
-  {
-    label: "Reports",
-    icon: <IoDocumentTextOutline />,
-    subItems: [
-      { label: "Consolidated Report", path: "/CameraReport" },
-      { label: "Installation Report", path: "/InstallationReport" },
-      { label: "Connected Report", path: "/ConnectedonceReport" },
-      { label: "Gps Report", path: "/tripreport" },
-      { label: "Mobile App Report", path: "/mobileapp" },
-    ],
-  },
-  {
-    label: "Helpdesk",
-    icon: <IoDocumentTextOutline/>,
-    subItems: [
-      { label: "Call Activity", path: "/helpdesk" },
-      { label: "Incidence Master", path: "/incidenceMaster" },
-    ],
-  },
-  {
-    label: "Admin Panel",
-    icon: <MdSchool/>,
-    subItems: [
-      { label: "Vehicle Master", path: "/EditableReport" },
-      { label: "Hardware Service", path: "/inventoryUpdation" },
-    ],
-  },
+  { label: "AnalyticsImage", icon: <RiCheckboxMultipleBlankLine />, path: "/AnalyticsImage" }
+  // {
+  //   label: "Reports",
+  //   icon: <IoDocumentTextOutline />,
+  //   subItems: [
+  //     { label: "Consolidated Report", path: "/CameraReport" },
+  //     { label: "Installation Report", path: "/InstallationReport" },
+  //     { label: "Connected Report", path: "/ConnectedonceReport" },
+  //     { label: "Gps Report", path: "/tripreport" },
+  //     { label: "Mobile App Report", path: "/mobileapp" },
+  //   ],
+  // },
+  // {
+  //   label: "Helpdesk",
+  //   icon: <IoDocumentTextOutline/>,
+  //   subItems: [
+  //     { label: "Call Activity", path: "/helpdesk" },
+  //     { label: "Incidence Master", path: "/incidenceMaster" },
+  //   ],
+  // },
+  // {
+  //   label: "Admin Panel",
+  //   icon: <MdSchool/>,
+  //   subItems: [
+  //     { label: "Vehicle Master", path: "/EditableReport" },
+  //     { label: "Hardware Service", path: "/inventoryUpdation" },
+  //   ],
+  // },
 ];
 
 const rolePermissions = {
-  MasterAdmin: {Dashboard: true,"Camera Status": true, View: true, Heatmap: true,Reports:["Consolidated Report","Installation Report","Connected Report","Gps Report","Mobile App Report"],"Helpdesk":["Call Activity","Incidence Master"],"Admin Panel":["Vehicle Master","Hardware Service"]},
+  MasterAdmin: {Dashboard: true,"Camera Status": true, View: true, AnalyticsImage: true,Reports:["Consolidated Report","Installation Report","Connected Report","Gps Report","Mobile App Report"],"Helpdesk":["Call Activity","Incidence Master"],"Admin Panel":["Vehicle Master","Hardware Service"]},
   VmuktiAdmin: {Dashboard: true,"Camera Status": true, View: true, Heatmap: true,Reports:["Consolidated Report","Gps Report","Mobile App Report"],"Helpdesk":["Call Activity","Incidence Master"],"Admin Panel":["Vehicle Master","Hardware Service"]},
   CEO: { Dashboard: true,"Camera Status": true, View: true },
   ECI: { View: ["Multiscreen"] },

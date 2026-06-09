@@ -307,7 +307,7 @@ const Dashboard = () => {
                       rightIcon={expandedRows[district.name] ? <FaChevronUp /> : <FaChevronDown />}
                       w={{ base: "full", md: "auto" }} h="24px"
                     >
-                      Assemblies
+                      Locations
                     </Button>
                   </GridItem>
                 </Grid>

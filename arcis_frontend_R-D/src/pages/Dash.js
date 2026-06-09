@@ -188,7 +188,7 @@ const Dash = () => {
 
   return (
     <Box maxW="1600px" mx="auto" pt={{ base: "70px", md: "0" }} mb={{ base: "100px", md: "5" }} px={{ base: 2, md: 0 }}>
-      <MobileHeader title="FSV Dashboard" />
+      <MobileHeader title="Dashboard" />
 
       {/* Top Cards */}
       <Box mt={{ base: 4, md: 0 }} mb={4}>
@@ -207,7 +207,7 @@ const Dash = () => {
       {/* Main Content */}
       <Grid templateColumns={{ base: "1fr", lg: "70% 28%" }} gap={2}>
         <Box bg={chartBg} p={6} borderRadius="16px">
-          <Text fontSize="lg" fontWeight="bold" color={textColor} mb={6}>District wise FSV Camera Status</Text>
+          <Text fontSize="lg" fontWeight="bold" color={textColor} mb={6}>Camera Status</Text>
           <Box width="100%" height="400px">
             <DistrictBarChart chartData={allDistrictStats} />
           </Box>
@@ -225,7 +225,7 @@ const Dash = () => {
       </Grid>
 
       {/* Assembly Section */}
-      <Box borderWidth="1px" borderRadius="md" p={3} mb={2} bg={cardBg} shadow="sm">
+      {/* <Box borderWidth="1px" borderRadius="md" p={3} mb={2} bg={cardBg} shadow="sm">
         <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
           <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color={textColor}>All Assembly Status</Text>
           <Menu>
@@ -240,7 +240,7 @@ const Dash = () => {
             </MenuList>
           </Menu>
         </Flex>
-      </Box>
+      </Box> */}
 
       <Box bg={chartBg} p={2} borderRadius="16px">
         {selectedDistrict && (
