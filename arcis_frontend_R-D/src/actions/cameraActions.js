@@ -21,6 +21,27 @@ instance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+export const getPlayback = async (cameraId, opts = {}) => {
+  try {
+    const params = { camera_id: cameraId };
+    if (opts.minutes) params.minutes = opts.minutes;
+    if (opts.from) params.from = opts.from;
+    if (opts.to) params.to = opts.to;
+
+    const response = await axios.get(
+      `${process.env.REACT_APP_BASE_URL}/api/playback`,
+      { params }
+    );
+    return response.data; // { success, cameraId, from, to, count, segments: [...] }
+  } catch (error) {
+    console.error("Error fetching playback:", error);
+    return {
+      success: false,
+      segments: [],
+      message: error.response?.data?.message || error.message,
+    };
+  }
+};
 
 let currentCameras = [];
 
