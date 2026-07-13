@@ -64,8 +64,8 @@ const allMenuItems = [
     subItems: [
       { label: "VMS Master", path: "/EditableReport" },
   //     { label: "Hardware Service", path: "/inventoryUpdation" },
-  //   ],
-  // },
+     ],
+   },
 ];
 
 const rolePermissions = {
