@@ -1,94 +1,88 @@
 name: Deploy to Server
 
 on:
-push:
-branches:
-- main
+  push:
+    branches:
+      - main
 
 jobs:
-deploy:
-runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
 
-```
-steps:
-  - name: Checkout Code
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-  - name: Setup SSH
-    run: |
-      mkdir -p ~/.ssh
-      echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-      chmod 600 ~/.ssh/id_rsa
-      ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-  - name: Deploy Application
-    run: |
-      ssh -o StrictHostKeyChecking=no \
-        ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -se' << 'EOF'
+      - name: Deploy Application
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+          ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
 
-      set -e
+          set -e
 
-      APP_DIR=/home/vmukti/AI-demo
-      FRONTEND_DIR=$APP_DIR/arcis_frontend_R-D
-      BACKEND_DIR=$APP_DIR/arcis_backend_R-D
-      TEMP_DIR=$APP_DIR/temp_frontend
+          APP_DIR=/home/vmukti/AI-demo
+          FRONTEND_DIR=$APP_DIR/arcis_frontend_R-D
+          BACKEND_DIR=$APP_DIR/arcis_backend_R-D
+          TEMP_DIR=$APP_DIR/temp_frontend
 
-      echo "===== Updating Repository ====="
+          cd $APP_DIR
 
-      cd $APP_DIR
+          git fetch origin main
+          git reset --hard origin/main
+          git clean -fd
 
-      git fetch origin main
-      git reset --hard origin/main
-      git clean -fd
+          echo "===== Backend Deployment ====="
 
-      echo "===== Backend Deployment ====="
+          cd $BACKEND_DIR
 
-      cd $BACKEND_DIR
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
-      if [ -f package-lock.json ]; then
-        npm ci
-      else
-        npm install
-      fi
+          sudo systemctl restart arcis-ai-demo-backend.service
 
-      sudo systemctl restart arcis-ai-demo-backend.service
+          echo "===== Frontend Build ====="
 
-      echo "===== Frontend Build ====="
+          cd $APP_DIR
 
-      cd $APP_DIR
+          rm -rf $TEMP_DIR
+          mkdir -p $TEMP_DIR
 
-      rm -rf $TEMP_DIR
-      mkdir -p $TEMP_DIR
+          rsync -a \
+            --exclude=node_modules \
+            --exclude=build \
+            $FRONTEND_DIR/ \
+            $TEMP_DIR/
 
-      rsync -a \
-        --exclude=node_modules \
-        --exclude=build \
-        $FRONTEND_DIR/ \
-        $TEMP_DIR/
+          cd $TEMP_DIR
 
-      cd $TEMP_DIR
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
-      if [ -f package-lock.json ]; then
-        npm ci
-      else
-        npm install
-      fi
+          export NODE_OPTIONS="--max-old-space-size=4096"
 
-      export NODE_OPTIONS="--max-old-space-size=4096"
+          npm run build
 
-      npm run build
+          rm -rf $FRONTEND_DIR/build
+          mv build $FRONTEND_DIR/
 
-      echo "===== Frontend Swap ====="
+          cd $APP_DIR
+          rm -rf $TEMP_DIR
 
-      rm -rf $FRONTEND_DIR/build
-      mv build $FRONTEND_DIR/
+          sudo systemctl restart arcis-ai-demo-frontend.service
 
-      cd $APP_DIR
-      rm -rf $TEMP_DIR
+          echo "===== Deployment Successful ====="
 
-      sudo systemctl restart arcis-ai-demo-frontend.service
-
-      echo "===== Deployment Successful ====="
-
-      EOF
-```
+          EOF
