@@ -1140,7 +1140,7 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
                       <SimpleGrid columns={2} spacing={3} mb={4}>
                         <MobileMetricCell label="Assembly" value={camera.assembly} colorDot="blue.500" />
                         <MobileMetricCell label="Vehicle No" value={camera.location} colorDot="green.400" />
-                        <MobileMetricCell label="Device ID" value={camera.DeviceId} colorDot="purple.500" />
+                        <MobileMetricCell label="Camera ID" value={camera.DeviceId} colorDot="purple.500" />
                         <MobileMetricCell label="Status" value={camera.status ? "Online" : "Offline"} colorDot={camera.status ? "green.400" : "red.400"} />
                       </SimpleGrid>
 
