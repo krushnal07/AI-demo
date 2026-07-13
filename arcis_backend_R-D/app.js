@@ -21,6 +21,7 @@ const downtimeRoutes = require('./routes/downtimeRoutes');
 const AnalyticsRoutes = require("./routes/AnalyticsRoutes"); 
 const aisettingRoutes = require("./routes/aisettingRoutes");
 const gpsRoutes = require('./routes/gpsRoutes');
+const playbackRoutes = require('./routes/playbackRoutes');
 
 const app = express();
 app.set('trust proxy', true);
@@ -62,6 +63,7 @@ app.use('/api/downtime', downtimeRoutes);
 app.use("/api/Analytics", AnalyticsRoutes);
 app.use("/aisetting",aisettingRoutes);
 app.use('/api/gps', gpsRoutes);
+app.use('/api/playback', playbackRoutes);
 
 // Database Connection
 mongoose
