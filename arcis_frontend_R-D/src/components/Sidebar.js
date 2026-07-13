@@ -38,7 +38,7 @@ const allMenuItems = [
      { label: "Events", path: "/events" },
     ],
   },
-  { label: "AnalyticsImage", icon: <RiCheckboxMultipleBlankLine />, path: "/AnalyticsImage" }
+  { label: "AnalyticsImage", icon: <RiCheckboxMultipleBlankLine />, path: "/AnalyticsImage" },
   // {
   //   label: "Reports",
   //   icon: <IoDocumentTextOutline />,
@@ -59,9 +59,9 @@ const allMenuItems = [
   //   ],
   // },
   // {
-  //   label: "Admin Panel",
-  //   icon: <MdSchool/>,
-  //   subItems: [
+     label: "Admin Panel",
+     icon: <MdSchool/>,
+    subItems: [
       { label: "VMS Master", path: "/EditableReport" },
   //     { label: "Hardware Service", path: "/inventoryUpdation" },
   //   ],
