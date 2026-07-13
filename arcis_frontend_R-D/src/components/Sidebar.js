@@ -33,7 +33,7 @@ const allMenuItems = [
     label: "View",
     icon: <TbDeviceCctv />,
     subItems: [
-      //{ label: "List view", path: "/listview" },
+      { label: "Cameras", path: "/Cameras" },
       { label: "Multiscreen", path: "/multiple" },
      { label: "Events", path: "/events" },
     ],
@@ -58,14 +58,15 @@ const allMenuItems = [
   //     { label: "Incidence Master", path: "/incidenceMaster" },
   //   ],
   // },
-  // {
-     label: "Admin Panel",
-     icon: <MdSchool/>,
+  {
+    label: "Admin Panel",
+    icon: <MdSchool/>,
     subItems: [
       { label: "VMS Master", path: "/EditableReport" },
-  //     { label: "Hardware Service", path: "/inventoryUpdation" },
-     ],
-   },
+      // { label: "Vehicle Logs", path: "/VehicleLogs" },
+      // { label: "Hardware Service", path: "/inventoryUpdation" },
+    ],
+  },
 ];
 
 const rolePermissions = {
