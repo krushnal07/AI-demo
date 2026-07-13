@@ -1,1 +1,83 @@
+name: Deploy to Server
 
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to Server
+      run: |
+        echo "Deploying to server..."
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+
+        set -e
+
+        cd /home/vmukti/AI-demo
+
+        # ------------------------
+        # GIT PULL
+        # ------------------------
+        if [ ! -d .git ]; then
+          git init
+        fi
+
+        if ! git remote get-url origin &> /dev/null; then
+          git remote add origin https://krushnal07:${{ secrets.GH_TOKEN }}@github.com/krushnal07/AI-demo.git
+        fi
+
+        git pull origin main
+
+        # =========================
+        # BACKEND DEPLOY
+        # =========================
+        cd arcis_backend_R-D
+        npm install
+        sudo systemctl restart arcis-ai-demo-backend.service
+        echo "Backend restarted successfully."
+
+        # =========================
+        # FRONTEND ZERO-DOWNTIME
+        # =========================
+        cd ..
+
+        echo "Starting Frontend Zero-Downtime Deploy..."
+
+        rm -rf temp_frontend
+        mkdir temp_frontend
+
+        # Copy only required files (exclude node_modules and build)
+        rsync -av --exclude=node_modules --exclude=build arcis_frontend_R-D/ temp_frontend/
+
+        cd temp_frontend
+        npm install
+        npm run build
+
+        cd ..
+
+        # Atomic swap of build folder
+        rm -rf arcis_frontend_R-D/build
+        mv temp_frontend/build arcis_frontend_R-D/
+
+        rm -rf temp_frontend
+
+        sudo systemctl restart arcis-ai-demo-frontend.service
+
+        echo "Frontend restarted successfully."
+        echo "Deployment completed successfully!"
+
+        EOF
