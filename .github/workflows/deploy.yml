@@ -40,7 +40,9 @@ jobs:
           git remote add origin https://krushnal07:${{ secrets.GH_TOKEN }}@github.com/krushnal07/AI-demo.git
         fi
 
-        git pull origin main
+        git fetch origin main
+        git reset --hard origin/main
+        git clean -fd
 
         # =========================
         # BACKEND DEPLOY
