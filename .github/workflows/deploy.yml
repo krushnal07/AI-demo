@@ -68,7 +68,7 @@ jobs:
         cd temp_frontend
         npm install
         export NODE_OPTIONS="--max-old-space-size=3072"
-        node --stack-size=8000 $(which npm) run build
+        node --stack-size=8000 ./node_modules/.bin/react-scripts build
 
         cd ..
 
