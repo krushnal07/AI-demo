@@ -28,12 +28,12 @@ import AnalyticsImage from "../pages/AnalyticsImage";
 
 const allMenuItems = [
   { label: "Dashboard", icon: <MdOutlineSpaceDashboard />, path: "/dash" },
-  { label: "Camera Status", icon: <MdLocationOn/>, path: "/camerastatus" },
+ // { label: "Camera Status", icon: <MdLocationOn/>, path: "/camerastatus" },
   {
     label: "View",
     icon: <TbDeviceCctv />,
     subItems: [
-      { label: "List view", path: "/listview" },
+      //{ label: "List view", path: "/listview" },
       { label: "Multiscreen", path: "/multiple" },
      { label: "Events", path: "/events" },
     ],
@@ -62,14 +62,14 @@ const allMenuItems = [
   //   label: "Admin Panel",
   //   icon: <MdSchool/>,
   //   subItems: [
-  //     { label: "Vehicle Master", path: "/EditableReport" },
+      { label: "VMS Master", path: "/EditableReport" },
   //     { label: "Hardware Service", path: "/inventoryUpdation" },
   //   ],
   // },
 ];
 
 const rolePermissions = {
-  MasterAdmin: {Dashboard: true,"Camera Status": true, View: true, AnalyticsImage: true,Reports:["Consolidated Report","Installation Report","Connected Report","Gps Report","Mobile App Report"],"Helpdesk":["Call Activity","Incidence Master"],"Admin Panel":["Vehicle Master","Hardware Service"]},
+  MasterAdmin: {Dashboard: true,"Camera Status": true, View: true, AnalyticsImage: true,Reports:["Consolidated Report","Installation Report","Connected Report","Gps Report","Mobile App Report"],"Helpdesk":["Call Activity","Incidence Master"],"Admin Panel":["VMS Master","Hardware Service"]},
   VmuktiAdmin: {Dashboard: true,"Camera Status": true, View: true, Heatmap: true,Reports:["Consolidated Report","Gps Report","Mobile App Report"],"Helpdesk":["Call Activity","Incidence Master"],"Admin Panel":["Vehicle Master","Hardware Service"]},
   CEO: { Dashboard: true,"Camera Status": true, View: true },
   ECI: { View: ["Multiscreen"] },
