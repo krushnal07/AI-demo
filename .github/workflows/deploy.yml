@@ -1,86 +1,94 @@
 name: Deploy to Server
 
 on:
-  push:
-    branches:
-      - main
+push:
+branches:
+- main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+deploy:
+runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+```
+steps:
+  - name: Checkout Code
+    uses: actions/checkout@v4
 
-    - name: Setup SSH
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+  - name: Setup SSH
+    run: |
+      mkdir -p ~/.ssh
+      echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+      chmod 600 ~/.ssh/id_rsa
+      ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-    - name: Deploy to Server
-      run: |
-        echo "Deploying to server..."
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+  - name: Deploy Application
+    run: |
+      ssh -o StrictHostKeyChecking=no \
+        ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} 'bash -se' << 'EOF'
 
-        set -e
+      set -e
 
-        cd /home/vmukti/AI-demo
+      APP_DIR=/home/vmukti/AI-demo
+      FRONTEND_DIR=$APP_DIR/arcis_frontend_R-D
+      BACKEND_DIR=$APP_DIR/arcis_backend_R-D
+      TEMP_DIR=$APP_DIR/temp_frontend
 
-        # ------------------------
-        # GIT PULL
-        # ------------------------
-        if [ ! -d .git ]; then
-          git init
-        fi
+      echo "===== Updating Repository ====="
 
-        if ! git remote get-url origin &> /dev/null; then
-          git remote add origin https://krushnal07:${{ secrets.GH_TOKEN }}@github.com/krushnal07/AI-demo.git
-        fi
+      cd $APP_DIR
 
-        git fetch origin main
-        git reset --hard origin/main
-        git clean -fd
+      git fetch origin main
+      git reset --hard origin/main
+      git clean -fd
 
-        # =========================
-        # BACKEND DEPLOY
-        # =========================
-        cd arcis_backend_R-D
+      echo "===== Backend Deployment ====="
+
+      cd $BACKEND_DIR
+
+      if [ -f package-lock.json ]; then
+        npm ci
+      else
         npm install
-        sudo systemctl restart arcis-ai-demo-backend.service
-        echo "Backend restarted successfully."
+      fi
 
-        # =========================
-        # FRONTEND ZERO-DOWNTIME
-        # =========================
-        cd ..
+      sudo systemctl restart arcis-ai-demo-backend.service
 
-        echo "Starting Frontend Zero-Downtime Deploy..."
+      echo "===== Frontend Build ====="
 
-        rm -rf temp_frontend
-        mkdir temp_frontend
+      cd $APP_DIR
 
-        # Copy only required files (exclude node_modules and build)
-        rsync -av --exclude=node_modules --exclude=build arcis_frontend_R-D/ temp_frontend/
+      rm -rf $TEMP_DIR
+      mkdir -p $TEMP_DIR
 
-        cd temp_frontend
+      rsync -a \
+        --exclude=node_modules \
+        --exclude=build \
+        $FRONTEND_DIR/ \
+        $TEMP_DIR/
+
+      cd $TEMP_DIR
+
+      if [ -f package-lock.json ]; then
+        npm ci
+      else
         npm install
-        export NODE_OPTIONS="--max-old-space-size=3072"
-        node --stack-size=8000 ./node_modules/.bin/react-scripts build
+      fi
 
-        cd ..
+      export NODE_OPTIONS="--max-old-space-size=4096"
 
-        # Atomic swap of build folder
-        rm -rf arcis_frontend_R-D/build
-        mv temp_frontend/build arcis_frontend_R-D/
+      npm run build
 
-        rm -rf temp_frontend
+      echo "===== Frontend Swap ====="
 
-        sudo systemctl restart arcis-ai-demo-frontend.service
+      rm -rf $FRONTEND_DIR/build
+      mv build $FRONTEND_DIR/
 
-        echo "Frontend restarted successfully."
-        echo "Deployment completed successfully!"
+      cd $APP_DIR
+      rm -rf $TEMP_DIR
 
-        EOF
+      sudo systemctl restart arcis-ai-demo-frontend.service
+
+      echo "===== Deployment Successful ====="
+
+      EOF
+```
