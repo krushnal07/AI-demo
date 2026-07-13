@@ -67,7 +67,7 @@ jobs:
 
         cd temp_frontend
         npm install
-        export NODE_OPTIONS="--max-old-space-size=3072"
+        export NODE_OPTIONS="--max-old-space-size=3072 --stack-size=8000"
         npm run build
 
         cd ..
