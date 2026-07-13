@@ -43,8 +43,8 @@ import { MdControlCamera } from "react-icons/md";
 import { BsArrowsFullscreen } from "react-icons/bs";
 import { TbCapture } from "react-icons/tb";
 import { LuBrainCog } from "react-icons/lu";
-import CloudTimeline from "cloud-timeline-component";
 import EdgeTimeline from "edge-timeline-component";
+import AzureTimeline from "./AzureTimeline";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
 import { SlCalender } from "react-icons/sl";
@@ -777,14 +777,12 @@ const PlayerControls = ({
               </HStack>
             </>
           ) : (
-            <CloudTimeline
-              media={"zmedia.arcisai.io"}
+            <AzureTimeline
               date={selectedDate}
-              plan="DVR"
               deviceid={device.deviceId}
               onUrlChange={updateUrl}
               onTotalDataChange={handleTotalDataChange}
-            ></CloudTimeline>
+            ></AzureTimeline>
           )}
         </Box>
       </Box>
