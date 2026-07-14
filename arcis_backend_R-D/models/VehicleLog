@@ -1,0 +1,40 @@
+const mongoose = require("mongoose");
+
+// IST offset (+5:30). We shift the timestamp by this amount so that the value
+// stored in MongoDB reads as Indian Standard Time instead of UTC.
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // 5 hours 30 minutes
+const getISTDate = () => new Date(Date.now() + IST_OFFSET_MS);
+
+const VehicleLogSchema = new mongoose.Schema({
+    vehicleNo: { type: String, required: true, unique: true }, // One document per Vehicle
+    history: [
+        {
+            deviceId: String,      // Camera involved in this action
+            oldDeviceId: String,   // Previous camera id (populated on SWAP)
+            newDeviceId: String,   // New camera id (populated on SWAP)
+            action: { type: String, enum: ['ADD', 'EDIT', 'DELETE', 'SWAP'] },
+            source: { type: String, enum: ['Portal', 'Application'] },
+            performedBy: String,
+            details: Object,
+            // Store IST. A setter guarantees IST even when callers pass an
+            // explicit UTC Date, and the default covers inserts with no value.
+            timestamp: {
+                type: Date,
+                default: getISTDate,
+                set: (val) => {
+                    if (!val) return getISTDate();
+                    // A raw UTC Date passed by a caller is shifted to IST.
+                    return new Date(new Date(val).getTime() + IST_OFFSET_MS);
+                }
+            }
+        }
+    ]
+});
+
+// Use a dedicated collection so a legacy `deviceId`-unique index on the old
+// `vehiclelogs` collection (recreated by any old-schema process) can never
+// clash with this vehicleNo-keyed model.
+const VehicleLog = mongoose.model("VehicleLog", VehicleLogSchema,"vehiclelogs_v2");
+VehicleLog.getISTDate = getISTDate;
+
+module.exports = VehicleLog;
