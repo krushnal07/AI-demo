@@ -59,5 +59,6 @@ priority:{
 
 // Add index for optimized querying
 stream.index({ deviceId: 1 });
+stream.index({ deviceId: 1, status: 1 });
 
 module.exports = mongoose.model("stream", stream);
