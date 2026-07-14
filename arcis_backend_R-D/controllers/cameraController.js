@@ -5,6 +5,7 @@ const User = require("../models/userModel");
 const District = require("../models/district");
 const Helpdeskdata = require("../models/helpdesk");
 const Operator = require("../models/operator");
+const VehicleLog = require("../models/VehicleLog");
 const Inventory = require("../models/inventoryUpdation");
 const Incidence = require("../models/IncidenceMaster");
 const GpsData = require('../models/GpsData');
@@ -24,7 +25,6 @@ const httpsAgent = new https.Agent({
 function escapeRegex(text) {
     return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 };
-
 
 // Function to fetch and store proxy statuses in global memory and Redis
 const fetchProxies = async () => {
@@ -73,37 +73,40 @@ fetchProxies();
 
 // Optimized Helper
 async function mapCamerasToRegion(cameras, districts, streams, operators) {
-    const districtMap = new Map();
-    for (const d of districts) districtMap.set(d.districtAssemblyCode, d);
+    // Build maps for quick lookup
+    const districtMap = new Map(districts.map(d => [d.districtAssemblyCode, d]));
+    const streamMap = new Map(streams.map(s => [s.deviceId, s]));
 
-    const streamMap = new Map();
-    for (const s of streams) streamMap.set(s.deviceId, s);
+    // Create Operator Map
+    const operatorMap = new Map(operators.map(o => [o.operatorId, o]));
 
-    const operatorMap = new Map();
-    for (const o of operators) operatorMap.set(o.operatorId, o);
-
-    const result = [];
-    for (let i = 0; i < cameras.length; i++) {
-        const camera = cameras[i];
+    return cameras.map(camera => {
+        const districtInfo = districtMap.get(camera.districtAssemblyCode) || {};
         const streamData = streamMap.get(camera.deviceId) || {};
-        const opData = operatorMap.get(camera.operatorId) || {};
-        const distData = districtMap.get(camera.districtAssemblyCode) || {};
 
-        // Manually build the object to avoid spreading (...) 100k times
-        result.push({
-            deviceId: camera.deviceId,
-            name: camera.name,
-            ps_id: camera.ps_id,
-            dist_name: distData.dist_name,
-            accName: distData.accName,
-            mediaUrl: streamData.mediaUrl,
+        // Lookup Operator based on common operatorId
+        const operatorData = operatorMap.get(camera.operatorId) || {};
+
+        return {
+            ...camera,
+            ...districtInfo,
+
+            // Stream Data
+            mediaUrl: streamData.mediaUrl || null,
+            p2purl: streamData.p2purl || null,
+            token: streamData.token || null,
+            plan: streamData.plan || null,
             status: streamData.status,
             is_live: streamData.is_live,
-            operatorName: opData.name,
+            last_checked: streamData.last_checked,
+
+            // Operator Data
+            // We rename these fields to avoid conflict with camera 'name'
+            operatorName: operatorData.name || null,
+            operatorMobile: operatorData.mobile || null,
             priority: streamData.priority ?? 99999
-        });
-    }
-    return result;
+        };
+    });
 }
 
 // Optimized Controller
@@ -420,6 +423,99 @@ exports.getCurrentUserCameras1 = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+exports.appSubmitForm = async (req, res) => {
+    try {
+        const { 
+            deviceId, 
+            district,   // e.g., "BANKURA" or "bankura"
+            assembly,   // e.g., "247-Saltora" 
+            vehicleNo, 
+            operatorName, 
+            operatorMobile 
+        } = req.body;
+        if (!district || !assembly || !deviceId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Missing required fields. Please ensure 'district', 'assembly', and 'deviceId' are provided." 
+            });
+        }
+
+        // 1. Search using your specific fields: dist_name and accName
+        // We use Case-Insensitive regex to ensure "bankura" matches "BANKURA"
+        const districtInfo = await District.findOne({ 
+            dist_name: { $regex: new RegExp(`^${district.trim()}$`, "i") }, 
+            accName: { $regex: new RegExp(`^${assembly.trim()}$`, "i") } 
+        }).lean();
+
+        if (!districtInfo) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Mapping Error: No match for District: ${district} and Assembly: ${assembly}. Ensure assembly includes the code (e.g., "247-Saltora")` 
+            });
+        }
+
+        // 2. Map Operator (Create or Update)
+        const operatorDoc = await Operator.findOneAndUpdate(
+            { mobile: operatorMobile },
+            { 
+                $set: { name: operatorName, mobile: operatorMobile },
+                $setOnInsert: { 
+                    operatorId: `OP-${Date.now()}`,
+                    Srno: (await Operator.countDocuments()) + 1 
+                }
+            },
+            { upsert: true, new: true }
+        );
+
+        // 3. Update Camera Collection using YOUR mapping field: districtAssemblyCode
+        const updatedCamera = await Camera.findOneAndUpdate(
+            { deviceId: deviceId },
+            { 
+                $set: {
+                    districtAssemblyCode: districtInfo.districtAssemblyCode, // Maps "1.247"
+                    locations: [vehicleNo],
+                    name: vehicleNo,
+                    operatorId: operatorDoc.operatorId,
+                    lastSeen: new Date(),
+                    location_Type: "Application Form"
+                }
+            },
+            { upsert: true, new: true }
+        );
+
+        // 4. Create Log (keyed by Vehicle No, push into history)
+        await VehicleLog.findOneAndUpdate(
+            { vehicleNo: vehicleNo || "N/A" },
+            {
+                $push: {
+                    history: {
+                        deviceId: deviceId,
+                        action: "EDIT",
+                        source: "Application",
+                        performedBy: operatorName,
+                        timestamp: new Date(),
+                        details: {
+                            mappedCode: districtInfo.districtAssemblyCode,
+                            district: districtInfo.dist_name,
+                            assembly: districtInfo.accName
+                        }
+                    }
+                }
+            },
+            { upsert: true }
+        );
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Successfully mapped to Portal", 
+            districtAssemblyCode: districtInfo.districtAssemblyCode 
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 exports.getHelpdeskdata = async (req, res) => {
     try {
         const { email } = req.body;
@@ -947,6 +1043,15 @@ exports.updateIncidence = async (req, res) => {
     res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 };
+const createVehicleLog = async (data) => {
+    try {
+        const log = new VehicleLog(data);
+        await log.save();
+    } catch (err) {
+        console.error("Logging Error:", err);
+    }
+};
+
 
 exports.getAllRegions = async (req, res) => {
     try {
@@ -997,133 +1102,284 @@ exports.getAllRegions = async (req, res) => {
 
 // In your camera controller file (e.g., cameraController.js)
 exports.deleteCamera = async (req, res) => {
-    console.log("\n--- RECEIVED CAMERA DELETE REQUEST ---");
     try {
         const { deviceId } = req.params;
+        const { userEmail, source } = req.query; // Passed from frontend ?userEmail=...
 
-        console.log(`[1] Device ID received for deletion: '${deviceId}'`);
+        const cameraInfo = await Camera.findOne({ deviceId });
+        if (!cameraInfo) return res.status(404).json({ message: "Camera not found" });
 
-        if (!deviceId) {
-            console.error("[!] Delete failed: Device ID is missing from URL params.");
-            return res.status(400).json({ 
-                success: false, 
-                message: "Device ID is required to perform deletion." 
-            });
+        // Resolve district & assembly names + driver (operator) details so the
+        // delete log carries the same fields as ADD/EDIT logs.
+        const [districtInfo, operatorInfo] = await Promise.all([
+            District.findOne(
+                { districtAssemblyCode: cameraInfo.districtAssemblyCode },
+                { dist_name: 1, accName: 1, districtAssemblyCode: 1, _id: 0 }
+            ).lean(),
+            cameraInfo.operatorId
+                ? Operator.findOne(
+                    { operatorId: cameraInfo.operatorId },
+                    { name: 1, mobile: 1, _id: 0 }
+                ).lean()
+                : null
+        ]);
+
+        // Push DELETE action to the vehicle's history (keyed by vehicle no)
+        const delVehicleNo = cameraInfo.locations?.[0] || "N/A";
+        await VehicleLog.findOneAndUpdate(
+            { vehicleNo: delVehicleNo },
+            {
+                $push: {
+                    history: {
+                        deviceId: deviceId,
+                        action: "DELETE",
+                        source: source || "Portal",
+                        performedBy: userEmail || "System",
+                        timestamp: new Date(),
+                        details: {
+                            message: "Removed from system",
+                            district: districtInfo?.dist_name || "N/A",
+                            assembly: districtInfo?.accName || "N/A",
+                            districtCode: cameraInfo.districtAssemblyCode || "N/A",
+                            driverName: operatorInfo?.name || "N/A",
+                            driverMobile: operatorInfo?.mobile || "N/A",
+                            locationType: cameraInfo.location_Type || "N/A"
+                        }
+                    }
+                }
+            },
+            { upsert: true }
+        );
+
+        await Camera.deleteOne({ deviceId });
+        res.status(200).json({ success: true, message: "Deleted and logged." });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+exports.getVehicleHistory = async (req, res) => {
+    try {
+        // Accept vehicleNo from params or query
+        const vehicleNo = req.params.vehicleNo || req.query.vehicleNo;
+        if (!vehicleNo) {
+            return res.status(400).json({ success: false, message: "vehicleNo is required" });
         }
 
-        // --- Step 1: Find and Delete ---
-        console.log(`[2] Executing findOneAndDelete for deviceId: '${deviceId}'`);
-        
-        // Using findOneAndDelete to remove the document matching the deviceId
-        const deletedCamera = await Camera.findOneAndDelete({ deviceId: deviceId });
+        // Build a chronological timeline for a single vehicle
+        const result = await VehicleLog.aggregate([
+            { $match: { vehicleNo: vehicleNo } },
+            { $unwind: "$history" },
+            { $sort: { "history.timestamp": 1 } }, // oldest -> newest
+            {
+                $group: {
+                    _id: "$vehicleNo",
+                    totalActions: { $sum: 1 },
+                    timeline: {
+                        $push: {
+                            action: "$history.action",
+                            deviceId: "$history.deviceId",
+                            oldDeviceId: "$history.oldDeviceId",
+                            newDeviceId: "$history.newDeviceId",
+                            performedBy: "$history.performedBy",
+                            timestamp: "$history.timestamp",
+                            details: "$history.details",
+                            source: "$history.source"
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    vehicleNo: "$_id",
+                    totalActions: 1,
+                    timeline: 1
+                }
+            }
+        ]);
 
-        // --- Step 2: Check if document existed ---
-        if (!deletedCamera) {
-            console.error(`[!] Delete failed: Camera with Device ID '${deviceId}' not found in database.`);
-            return res.status(404).json({
-                success: false,
-                message: `Camera with Device ID '${deviceId}' not found.`,
-            });
+        if (result.length === 0) {
+            return res.status(404).json({ success: false, message: "No history found" });
         }
 
-        console.log("[3] Document deleted successfully:", deletedCamera);
-
-        // --- Step 3: Send Success Response ---
-        res.status(200).json({
-            success: true,
-            message: "Camera deleted successfully.",
-            data: deletedCamera, // Sending back the deleted data is often helpful for UI updates
-        });
+        res.status(200).json(result[0]);
 
     } catch (error) {
-        console.error("--- UNEXPECTED SERVER ERROR DURING DELETE ---", error);
-        res.status(500).json({
-            success: false,
-            message: "An unexpected error occurred while deleting the camera.",
-            error: error.message,
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
 exports.updateCameraDetails = async (req, res) => {
     try {
-        const { deviceId } = req.params;
-        const { district, assembly, location, location_Type, operatorName, operatorMobile, operatorId } = req.body;
+        const { deviceId: originalDeviceId } = req.params; // The ID from the URL
+        const { 
+            deviceId: newDeviceId, // The ID from the input field
+            district, 
+            assembly, 
+            location, 
+            location_Type, 
+            operatorName, 
+            operatorMobile, 
+            userEmail, 
+            source 
+        } = req.body;
 
-        // 1. Find the existing camera to see if it already has an operator linked
-        const existingCamera = await Camera.findOne({ deviceId });
-        let linkedOperatorId = existingCamera ? existingCamera.operatorId : (operatorId || null);
+        console.log(`Editing started for: ${originalDeviceId}. New target ID: ${newDeviceId || originalDeviceId}`);
 
-        // 2. Handle Operator Logic
-        if (operatorName || (operatorMobile && operatorMobile !== "N/A")) {
-            
-            // --- NEW LOGIC: CALCULATE Srno TO SATISFY SCHEMA VALIDATION ---
-            // We only need to find the count if we are about to create a NEW operator
-            const totalOperators = await Operator.countDocuments();
-            const nextSrno = totalOperators + 1;
+        // 1. Validation: Ensure district and assembly exist
+        if (!district || !assembly) {
+            return res.status(400).json({ success: false, message: "District and Assembly are required fields." });
+        }
 
-            if (linkedOperatorId) {
-                // CASE A: Update existing linked operator
-                await Operator.findOneAndUpdate(
-                    { operatorId: linkedOperatorId },
-                    { 
-                        $set: { 
-                            name: operatorName || "N/A", 
-                            mobile: operatorMobile || "N/A" 
-                        } 
-                    }
-                );
-            } else if (operatorMobile && operatorMobile !== "N/A") {
-                // CASE B: Link by Mobile, or create new if mobile doesn't exist
-                const operatorDoc = await Operator.findOneAndUpdate(
-                    { mobile: operatorMobile },
-                    { 
-                        $set: { name: operatorName || "N/A" },
-                        $setOnInsert: { 
-                            operatorId: `OP-${Date.now()}`,
-                            Srno: nextSrno // <--- ADDED Srno HERE for validation
-                        }
-                    },
-                    { upsert: true, new: true }
-                );
-                linkedOperatorId = operatorDoc.operatorId;
-            } else {
-                // CASE C: Create brand new operator (No Mobile provided)
-                const newOpId = `OP-${Date.now()}`;
-                const newOp = await Operator.create({
-                    operatorId: newOpId,
-                    name: operatorName || "N/A",
-                    mobile: operatorMobile || "N/A",
-                    Srno: nextSrno // <--- ADDED Srno HERE for validation
+        // 2. Duplicate Check: If changing ID, make sure the new one isn't taken by SOMEONE ELSE
+        if (newDeviceId && newDeviceId !== originalDeviceId) {
+            const alreadyTaken = await Camera.findOne({ deviceId: newDeviceId }).lean();
+            if (alreadyTaken) {
+                return res.status(409).json({ 
+                    success: false, 
+                    message: `Cannot use ID ${newDeviceId}. It is already assigned to Vehicle: ${alreadyTaken.locations?.[0] || alreadyTaken.name}` 
                 });
-                linkedOperatorId = newOp.operatorId;
             }
         }
 
-        // 3. Find District Code
-        const districtInfo = await District.findOne({ dist_name: district, accName: assembly }).lean();
-        if (!districtInfo) return res.status(404).json({ success: false, message: "District not found" });
-        
-        const { districtAssemblyCode } = districtInfo;
+        // 3. District Mapping (Using Case-Insensitive Regex for safety)
+        const districtInfo = await District.findOne({ 
+            dist_name: { $regex: new RegExp(`^${district.trim()}$`, "i") }, 
+            accName: { $regex: new RegExp(`^${assembly.trim()}$`, "i") } 
+        }).lean();
 
-        // 4. Update Camera
+        if (!districtInfo) {
+            return res.status(404).json({ success: false, message: `Mapping error: District ${district} / Assembly ${assembly} not found in database.` });
+        }
+
+        // 4. Operator Logic (Srno & Linking)
+        const existingCamera = await Camera.findOne({ deviceId: originalDeviceId });
+        let linkedOperatorId = existingCamera ? existingCamera.operatorId : null;
+
+        // Determine action: ADD (new), SWAP (camera id changed), or EDIT (details only)
+        const isIdChanged = !!(newDeviceId && newDeviceId !== originalDeviceId);
+        const action = !existingCamera ? "ADD" : (isIdChanged ? "SWAP" : "EDIT");
+        const finalDeviceId = newDeviceId || originalDeviceId;
+
+        if (operatorName || (operatorMobile && operatorMobile !== "N/A")) {
+            const totalOperators = await Operator.estimatedDocumentCount();
+            const nextSrno = totalOperators + 1;
+
+            if (linkedOperatorId) {
+                // Update current driver
+                await Operator.findOneAndUpdate(
+                    { operatorId: linkedOperatorId },
+                    { $set: { name: operatorName || "N/A", mobile: operatorMobile || "N/A" } }
+                );
+            } else {
+                // Link existing by mobile or create new
+                const operatorDoc = await Operator.findOneAndUpdate(
+                    { mobile: operatorMobile },
+                    {
+                        $set: { name: operatorName || "N/A" },
+                        $setOnInsert: { operatorId: `OP-${Date.now()}`, Srno: nextSrno }
+                    },
+                    { upsert: true, new: true }
+                );
+                if (operatorDoc) linkedOperatorId = operatorDoc.operatorId;
+            }
+        }
+
+        // 5. Update the Camera Collection
         const updateData = {
             locations: [location || 'N/A'],
             location_Type: location_Type || "indoor",
-            districtAssemblyCode,
-            deviceId,
-            operatorId: linkedOperatorId 
+            districtAssemblyCode: districtInfo.districtAssemblyCode,
+            deviceId: newDeviceId || originalDeviceId, // Update to the new ID
+            operatorId: linkedOperatorId,
+            name: location
         };
 
         const savedCamera = await Camera.findOneAndUpdate(
-            { deviceId },
+            { deviceId: originalDeviceId }, // Find by the OLD ID
             { $set: updateData },
             { new: true, upsert: true }
         );
 
+        // 6. LOG keyed by Vehicle No (one document per vehicle)
+        // On a camera-id change we record the SWAP with old & new camera ids.
+        const logVehicleNo = location || "N/A";
+        await VehicleLog.findOneAndUpdate(
+            { vehicleNo: logVehicleNo },
+            {
+                $push: {
+                    history: {
+                        deviceId: finalDeviceId,
+                        oldDeviceId: isIdChanged ? originalDeviceId : undefined,
+                        newDeviceId: isIdChanged ? newDeviceId : undefined,
+                        action: action,
+                        source: source || "Portal",
+                        performedBy: userEmail || "System",
+                        timestamp: new Date(),
+                        details: {
+                            district,
+                            assembly,
+                            driverName: operatorName,
+                            driverMobile: operatorMobile,
+                            locationType: location_Type,
+                            districtCode: districtInfo.districtAssemblyCode
+                        }
+                    }
+                }
+            },
+            { upsert: true }
+        );
+
+        console.log("Update successful");
         res.status(200).json({ success: true, message: "Saved successfully", data: savedCamera });
+
     } catch (error) {
-        console.error("Save Error:", error);
+        console.error("Critical Edit Error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+//-- API to Fetch logs for a specific vehicle ---
+exports.getVehicleLogs = async (req, res) => {
+    try {
+        const { vehicleNo } = req.params;
+        const logs = await VehicleLog.find({ vehicleNo }).sort({ timestamp: -1 });
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+//-- API to Fetch ALL vehicle logs (flattened history across every device) ---
+exports.getAllVehicleLogs = async (req, res) => {
+    try {
+        // Each VehicleLog document holds one vehicle with a `history` array.
+        // $unwind turns every history entry into its own row for the table.
+        const logs = await VehicleLog.aggregate([
+            { $unwind: "$history" },
+            {
+                $project: {
+                    _id: 0,
+                    vehicleNo: "$vehicleNo",
+                    deviceId: "$history.deviceId",
+                    oldDeviceId: "$history.oldDeviceId",
+                    newDeviceId: "$history.newDeviceId",
+                    action: "$history.action",
+                    source: "$history.source",
+                    performedBy: "$history.performedBy",
+                    timestamp: "$history.timestamp",
+                    district: "$history.details.district",
+                    assembly: "$history.details.assembly",
+                    driverName: "$history.details.driverName",
+                    driverMobile: "$history.details.driverMobile",
+                    locationType: "$history.details.locationType"
+                }
+            },
+            { $sort: { timestamp: -1 } } // newest first
+        ]);
+
+        res.status(200).json({ success: true, count: logs.length, data: logs });
+    } catch (error) {
+        console.error("Get All Vehicle Logs Error:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
@@ -1787,41 +2043,28 @@ exports.dashboardData = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        // fetch status
-        const response = await axios.get(apiUrl, {
-            httpsAgent,
-            headers: {
-                'Authorization': basicAuth,
-            },
-        });
-        const proxies = response.data.proxies;
+        const cacheKey = `dashboardData:${userId}`;
+        const cachedDashboard = await getCache(cacheKey);
+        if (cachedDashboard) {
+            return res.status(200).json({ success: true, data: cachedDashboard });
+        }
+        const cameraIds = await Camera.distinct('deviceId', { userId });
+        const [totalCamera, totalSharedCameras, totalAiCamera, totalOnlineCameras] = await Promise.all([
+            Camera.countDocuments({ userId }),
+            Camera.countDocuments({ userId, 'sharedWith.0': { $exists: true } }),
+            plan.countDocuments({ userId, 'ai_name.0': { $exists: true } }),
+            cameraIds.length ? Stream.countDocuments({ deviceId: { $in: cameraIds }, status: true }) : Promise.resolve(0),
+        ]);
 
-        // get online camera
-        const cameraInfo = await Camera.find({ userId }).select('name deviceId sharedWith').lean();
-        const planInfo = await plan.find({ userId }).select('plan ai_name').lean();
-        // Match each camera with its corresponding proxy status
-        const updatedCameras = cameraInfo.map(camera => {
-            const proxy = proxies.find(proxy => proxy.name === camera.deviceId);
-            return {
-                ...camera,
-                status: proxy ? proxy.status : 'Unknown'
-            };
-        });
-
-        // get online camera
-        const onlineCameras = updatedCameras.filter(
-            (camera) => camera.status === "online"
-        );
-        // total cameras
-        const totalCamera = cameraInfo.length;
-        const totalOnlineCameras = onlineCameras.length;
-        const totalOfflineCameras = cameraInfo.length - totalOnlineCameras;
-
-        // total shared cameras
-        const totalSharedCameras = cameraInfo.filter(camera => camera.sharedWith?.length > 0).length;
-
-        // total ai camera count
-        const totalAiCamera = planInfo.filter(plan => plan.ai_name?.length > 0).length;
+        const totalOfflineCameras = totalCamera - totalOnlineCameras;
+        const responseData = {
+            totalCamera,
+            totalOnlineCameras,
+            totalOfflineCameras,
+            totalSharedCameras,
+            totalAiCamera
+        };
+        await setCache(cacheKey, responseData, 15);
 
         return res.status(200).json({
             success: true,
@@ -2077,15 +2320,16 @@ exports.getdistrictwiseAccess = async (req, res) => {
         });
     }
 };
+
 exports.getCamerasByDistrict = async (req, res) => {
     try {
         // --- NOTE FOR FRONTEND: The 'districtId' in the URL should now be the ---
         // --- 'districtAssemblyCode' (e.g., "4" for a district or "4.1" for an assembly) ---
         const regionCode = req.params.districtId;
-        
+
         // This function now REQUIRES an authenticated user.
         // Assuming auth middleware populates req.user
-        const user = req.user; 
+        const user = req.user;
 
         if (!user) {
             return res.status(401).json({ success: false, message: "Authentication required." });
@@ -2167,7 +2411,7 @@ exports.getDistrictNameByAssemblyName = async (req, res) => {
         const query = {
             dist_name: dist_name,
             // Ensure we are only fetching assembly-level documents, not the main district doc itself
-            accName: { $exists: true, $ne: null } 
+            accName: { $exists: true, $ne: null }
         };
 
         // Step 3: Apply access control based on the new model
@@ -2445,6 +2689,230 @@ exports.getDistrictNameByAssemblyName = async (req, res) => {
 
 
 
+const EMPTY_CAMERA_STATS = { totalCameras: 0, onlineCameras: 0, offlineCameras: 0, isLiveCount: 0 };
+
+/* ============================================================================
+ * GLOBAL PRECOMPUTED STATS
+ * ----------------------------------------------------------------------------
+ * The slow part is joining 100k+ cameras to streams. Doing that on every graph
+ * request is what costs ~5s. Instead we run it ONCE in the background and keep
+ * an in-memory snapshot grouped by districtAssemblyCode (and by location_Type).
+ * Every graph endpoint then just sums numbers from this map -> milliseconds,
+ * with ZERO database work on the request path.
+ *
+ * The snapshot is rebuilt every GLOBAL_STATS_INTERVAL ms, so numbers are at
+ * most that stale. Tune the interval below to trade freshness vs DB load.
+ * ========================================================================== */
+const GLOBAL_STATS_INTERVAL = 60000; // rebuild snapshot every 60s
+let globalStatsByCode = new Map();   // code -> { all:{...}, byLocation: Map(locType -> {...}) }
+let globalStatsReady = false;
+let globalStatsRefreshing = false;
+
+const blankCodeStats = () => ({ totalCamera: 0, onlineCamera: 0, offlineCamera: 0, isLiveCount: 0 });
+
+// Rebuild the in-memory snapshot. Streams only tiny projected fields (deviceId +
+// 2 booleans / 1 code) instead of full documents, and joins in JS — far cheaper
+// than a server-side $lookup over the whole collection.
+async function refreshGlobalStats() {
+    if (globalStatsRefreshing) return;
+    globalStatsRefreshing = true;
+    try {
+        const [cameras, streams] = await Promise.all([
+            Camera.find({}, { _id: 0, deviceId: 1, districtAssemblyCode: 1, location_Type: 1 }).lean(),
+            Stream.find({}, { _id: 0, deviceId: 1, status: 1, is_live: 1 }).lean()
+        ]);
+
+        const streamMap = new Map();
+        for (const s of streams) streamMap.set(s.deviceId, s);
+
+        const byCode = new Map();
+        for (const cam of cameras) {
+            const code = cam.districtAssemblyCode;
+            if (!code) continue;
+
+            let entry = byCode.get(code);
+            if (!entry) { entry = { all: blankCodeStats(), byLocation: new Map() }; byCode.set(code, entry); }
+
+            const loc = (cam.location_Type || "").toLowerCase();
+            let locEntry = entry.byLocation.get(loc);
+            if (!locEntry) { locEntry = blankCodeStats(); entry.byLocation.set(loc, locEntry); }
+
+            const s = streamMap.get(cam.deviceId);
+            const online = !!(s && s.status === true);
+            const live = !!(s && s.is_live === true);
+
+            entry.all.totalCamera++; if (online) entry.all.onlineCamera++; if (live) entry.all.isLiveCount++;
+            locEntry.totalCamera++; if (online) locEntry.onlineCamera++; if (live) locEntry.isLiveCount++;
+        }
+
+        for (const entry of byCode.values()) {
+            entry.all.offlineCamera = entry.all.totalCamera - entry.all.onlineCamera;
+            for (const le of entry.byLocation.values()) le.offlineCamera = le.totalCamera - le.onlineCamera;
+        }
+
+        globalStatsByCode = byCode;
+        globalStatsReady = true;
+    } catch (err) {
+        console.error("refreshGlobalStats failed:", err.message);
+    } finally {
+        globalStatsRefreshing = false;
+    }
+}
+
+// Warm the snapshot at startup, then keep it fresh.
+refreshGlobalStats();
+setInterval(refreshGlobalStats, GLOBAL_STATS_INTERVAL);
+
+// Pick the right slice (all locations vs a specific location_Type) for one code.
+function sliceForCode(code, normalizedLocation) {
+    const entry = globalStatsByCode.get(code);
+    if (!entry) return null;
+    return normalizedLocation ? entry.byLocation.get(normalizedLocation) : entry.all;
+}
+
+// Totals across a set of codes — instant, from the in-memory snapshot.
+function statsFromGlobal(codes, locationType) {
+    const t = { totalCameras: 0, onlineCameras: 0, offlineCameras: 0, isLiveCount: 0 };
+    const lt = locationType && locationType !== "All" ? locationType.toLowerCase() : null;
+    for (const code of codes) {
+        const src = sliceForCode(code, lt);
+        if (!src) continue;
+        t.totalCameras += src.totalCamera;
+        t.onlineCameras += src.onlineCamera;
+        t.offlineCameras += src.offlineCamera;
+        t.isLiveCount += src.isLiveCount;
+    }
+    return t;
+}
+
+// Per-code stats — instant, from the in-memory snapshot.
+function statsByCodeFromGlobal(codes, locationType) {
+    const map = new Map();
+    const lt = locationType && locationType !== "All" ? locationType.toLowerCase() : null;
+    for (const code of codes) {
+        const src = sliceForCode(code, lt);
+        map.set(code, src
+            ? { totalCamera: src.totalCamera, onlineCamera: src.onlineCamera, offlineCamera: src.offlineCamera, isLiveCount: src.isLiveCount }
+            : blankCodeStats());
+    }
+    return map;
+}
+
+// ---- Cold-start fallback: live DB aggregation, only used until the snapshot is ready ----
+async function liveAggregateCameraStats(codes, locationType) {
+    const matchStage = buildCameraQuery({ districtAssemblyCode: { $in: codes } }, locationType);
+    const [result] = await Camera.aggregate([
+        { $match: matchStage },
+        { $project: { _id: 0, deviceId: 1 } },
+        { $lookup: { from: "stream", localField: "deviceId", foreignField: "deviceId", as: "stream" } },
+        { $addFields: { stream: { $arrayElemAt: ["$stream", 0] } } },
+        {
+            $group: {
+                _id: null,
+                totalCameras: { $sum: 1 },
+                onlineCameras: { $sum: { $cond: [{ $eq: ["$stream.status", true] }, 1, 0] } },
+                isLiveCount: { $sum: { $cond: [{ $eq: ["$stream.is_live", true] }, 1, 0] } }
+            }
+        }
+    ]).allowDiskUse(true);
+
+    const totalCameras = result?.totalCameras || 0;
+    const onlineCameras = result?.onlineCameras || 0;
+    const isLiveCount = result?.isLiveCount || 0;
+    return { totalCameras, onlineCameras, offlineCameras: totalCameras - onlineCameras, isLiveCount };
+}
+
+async function liveAggregateCameraStatsByCode(codes, locationType) {
+    const statsByCode = new Map();
+    const matchStage = buildCameraQuery({ districtAssemblyCode: { $in: codes } }, locationType);
+    const results = await Camera.aggregate([
+        { $match: matchStage },
+        { $project: { _id: 0, deviceId: 1, districtAssemblyCode: 1 } },
+        { $lookup: { from: "stream", localField: "deviceId", foreignField: "deviceId", as: "stream" } },
+        { $addFields: { stream: { $arrayElemAt: ["$stream", 0] } } },
+        {
+            $group: {
+                _id: "$districtAssemblyCode",
+                totalCamera: { $sum: 1 },
+                onlineCamera: { $sum: { $cond: [{ $eq: ["$stream.status", true] }, 1, 0] } },
+                isLiveCount: { $sum: { $cond: [{ $eq: ["$stream.is_live", true] }, 1, 0] } }
+            }
+        }
+    ]).allowDiskUse(true);
+
+    results.forEach(r => statsByCode.set(r._id, {
+        totalCamera: r.totalCamera,
+        onlineCamera: r.onlineCamera,
+        offlineCamera: r.totalCamera - r.onlineCamera,
+        isLiveCount: r.isLiveCount
+    }));
+    return statsByCode;
+}
+
+// Public helpers used by every endpoint: read the snapshot when ready, otherwise fall back.
+async function aggregateCameraStats(codes, locationType) {
+    if (!codes || codes.length === 0) return { ...EMPTY_CAMERA_STATS };
+    if (globalStatsReady) return statsFromGlobal(codes, locationType);
+    return liveAggregateCameraStats(codes, locationType);
+}
+
+async function aggregateCameraStatsByCode(codes, locationType) {
+    if (!codes || codes.length === 0) return new Map();
+    if (globalStatsReady) return statsByCodeFromGlobal(codes, locationType);
+    return liveAggregateCameraStatsByCode(codes, locationType);
+}
+
+// Heavy join lives here so both the request path and the background refresher can reuse it.
+async function computeUserCameraStats(email) {
+    const user = await User.findOne({ email }, { UserAccessibleRegions: 1, _id: 0 }).lean();
+    if (!user) return null; // caller decides how to respond to "user not found"
+
+    const userDids = user.UserAccessibleRegions || [];
+    if (userDids.length === 0) return { ...EMPTY_CAMERA_STATS };
+
+    const matchedDistricts = await District.find(
+        { districtAssemblyCode: { $in: userDids } },
+        { districtAssemblyCode: 1, _id: 0 }
+    ).lean();
+
+    const districtIdStrings = matchedDistricts.map(d => d.districtAssemblyCode);
+    return aggregateCameraStats(districtIdStrings);
+}
+
+// Emails that have opened the dashboard -> kept warm so the page is always instant.
+const userStatsWarmEmails = new Set();
+// In-memory fallback so the dashboard stays instant even if Redis is down.
+const userStatsMemoryCache = new Map(); // email -> stats object
+const userStatsCacheKey = (email) => `userCameraStats:${email}`;
+const USER_STATS_TTL = 120; // seconds; background refresh runs more often than this
+
+// Read cached stats: prefer Redis, fall back to the in-memory copy.
+async function readUserStatsCache(email) {
+    const fromRedis = await getCache(userStatsCacheKey(email));
+    if (fromRedis) return fromRedis;
+    return userStatsMemoryCache.get(email) || null;
+}
+
+// Write to both Redis and the in-memory fallback.
+async function writeUserStatsCache(email, stats) {
+    userStatsMemoryCache.set(email, stats);
+    await setCache(userStatsCacheKey(email), stats, USER_STATS_TTL);
+}
+
+// Background refresher: recompute cached stats for active users every 30s.
+// Because the cache is refreshed out-of-band, dashboard requests almost never
+// wait on the heavy aggregation — they read the warm cache instantly.
+setInterval(async () => {
+    for (const email of userStatsWarmEmails) {
+        try {
+            const stats = await computeUserCameraStats(email);
+            if (stats) await writeUserStatsCache(email, stats);
+        } catch (err) {
+            console.error(`Background stats refresh failed for ${email}:`, err.message);
+        }
+    }
+}, 30000);
+
 exports.getUserCameraStats = async (req, res) => {
     try {
         const email = req.query.email;
@@ -2474,6 +2942,8 @@ exports.getUserCameraStats = async (req, res) => {
         res.status(500).json({ success: false, message: "Failed to retrieve data", error: error.message });
     }
 };
+
+
 const buildCameraQuery = (baseQuery, type) => {
     if (type && type !== "All") {
         // Creates a Case-Insensitive Regex (e.g., matches "Indoor", "indoor", "INDOOR")
@@ -2485,18 +2955,24 @@ const buildCameraQuery = (baseQuery, type) => {
 };
 
 // 1. Get User Stats (Top Cards)
-exports.getUserCameraStats1= async (req, res) => {
+exports.getUserCameraStats1 = async (req, res) => {
     try {
-        const { email, locationType } = req.query; 
-        
+        const { email, locationType } = req.query;
         if (!email) return res.status(400).json({ success: false, message: "Email is required." });
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).lean();
         if (!user) return res.status(404).json({ success: false, message: "User not found." });
 
         const userDids = user.UserAccessibleRegions || [];
+        if (userDids.length === 0) {
+            return res.status(200).json({
+                success: true,
+                cameraStats: { totalCameras: 0, onlineCameras: 0, offlineCameras: 0, isLiveCount: 0 },
+                districts: []
+            });
+        }
 
-        const matchedDistricts = await District.find({ districtAssemblyCode: { $in: userDids } });
+        const matchedDistricts = await District.find({ districtAssemblyCode: { $in: userDids } }).lean();
         const districtIdStrings = matchedDistricts.map(d => d.districtAssemblyCode.toString());
 
         const uniqueDistrictNames = [...new Set(matchedDistricts.map(d => d.dist_name))];
@@ -2505,36 +2981,25 @@ exports.getUserCameraStats1= async (req, res) => {
             return { dist_name: name, districtAssemblyCode: d ? d.districtAssemblyCode : null };
         });
 
-        // --- FIXED FILTER LOGIC ---
-        let cameraQuery = { districtAssemblyCode: { $in: districtIdStrings } };
-        cameraQuery = buildCameraQuery(cameraQuery, locationType);
-        // --------------------------
-        
-        const cameras = await Camera.find(cameraQuery);
-        const deviceIds = cameras.map(cam => cam.deviceId).filter(Boolean);
-        const streams = await Stream.find({ deviceId: { $in: deviceIds } });
-
-        const totalCameras = cameras.length;
-        const onlineCameras = streams.filter(s => s.status === true).length;
-        const offlineCameras = totalCameras - onlineCameras;
-        const isLiveCount = streams.filter(s => s.is_live === true).length;
+        // Counting done inside MongoDB via the shared indexed aggregation.
+        const cameraStats = await aggregateCameraStats(districtIdStrings, locationType);
 
         res.status(200).json({
             success: true,
-            cameraStats: { totalCameras, onlineCameras, offlineCameras, isLiveCount },
+            cameraStats,
             districts: districtList
         });
     } catch (error) {
-        console.error("Error fetching user data:", error);
-        res.status(500).json({ success: false, message: "Error", error: error.message });
+        console.error("Error in getUserCameraStats1:", error);
+        res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
     }
 };
 
 // 2. Get District Stats (Table Rows)
 exports.getDistrictCameraStats = async (req, res) => {
     try {
-        const { districtCode, email, locationType } = req.query; 
-        
+        const { districtCode, email, locationType } = req.query;
+
         if (!districtCode || !email) return res.status(400).json({ success: false, message: "Required fields missing" });
 
         const user = await User.findOne({ email }).lean();
@@ -2545,35 +3010,25 @@ exports.getDistrictCameraStats = async (req, res) => {
 
         const userRegions = user.UserAccessibleRegions || [];
 
+        // All users are region-restricted assembly-wise: only the assemblies in
+        // this district that are present in the user's UserAccessibleRegions.
         const accessibleAssemblies = await District.find({
             dist_name: district.dist_name,
             districtAssemblyCode: { $in: userRegions }
         }).lean();
-
         const accessibleAssemblyCodes = accessibleAssemblies.map(a => a.districtAssemblyCode);
 
-        // --- FIXED FILTER LOGIC ---
-        let cameraQuery = { districtAssemblyCode: { $in: accessibleAssemblyCodes } };
-        cameraQuery = buildCameraQuery(cameraQuery, locationType);
-        // --------------------------
-
-        const cameras = await Camera.find(cameraQuery);
-        const deviceIds = cameras.map(camera => camera.deviceId);
-        const streams = await Stream.find({ deviceId: { $in: deviceIds } });
-
-        const totalCamera = cameras.length;
-        const onlineCamera = streams.filter(s => s.status === true).length;
-        const offlineCamera = totalCamera - onlineCamera;
-        const isLiveCount = streams.filter(s => s.is_live === true).length;
+        // Counting is done inside MongoDB via the shared indexed aggregation.
+        const stats = await aggregateCameraStats(accessibleAssemblyCodes, locationType);
 
         res.json({
             success: true,
             data: {
                 districtName: district.dist_name,
-                onlineCamera,
-                offlineCamera,
-                isLiveCount,
-                totalCamera
+                onlineCamera: stats.onlineCameras,
+                offlineCamera: stats.offlineCameras,
+                isLiveCount: stats.isLiveCount,
+                totalCamera: stats.totalCameras
             },
         });
 
@@ -2592,7 +3047,7 @@ exports.getAssemblyCameraStats = async (req, res) => {
 
         const user = await User.findOne({ email }).lean();
         if (!user) return res.status(404).json({ success: false, message: "User not found" });
-        
+
         const userRegions = user.UserAccessibleRegions || [];
 
         const allAssembliesInDistrict = await District.find({
@@ -2606,33 +3061,22 @@ exports.getAssemblyCameraStats = async (req, res) => {
             userRegions.includes(assembly.districtAssemblyCode)
         );
 
-        const assemblyStats = [];
+        // One grouped aggregation for ALL assemblies instead of a query per assembly.
+        const codes = accessibleAssemblies.map(a => a.districtAssemblyCode);
+        const statsByCode = await aggregateCameraStatsByCode(codes, locationType);
 
-        for (const assembly of accessibleAssemblies) {
-            
-            // --- FIXED FILTER LOGIC ---
-            let cameraQuery = { districtAssemblyCode: assembly.districtAssemblyCode };
-            cameraQuery = buildCameraQuery(cameraQuery, locationType);
-            // --------------------------
-
-            const cameras = await Camera.find(cameraQuery);
-            const deviceIds = cameras.map(c => c.deviceId);
-            const streams = await Stream.find({ deviceId: { $in: deviceIds } });
-
-            const totalCamera = cameras.length;
-            const onlineCamera = streams.filter(s => s.status === true).length;
-            const offlineCamera = totalCamera - onlineCamera;
-            const isLiveCount = streams.filter(s => s.is_live === true).length;
-
-            assemblyStats.push({
+        const assemblyStats = accessibleAssemblies.map(assembly => {
+            const s = statsByCode.get(assembly.districtAssemblyCode) ||
+                { totalCamera: 0, onlineCamera: 0, offlineCamera: 0, isLiveCount: 0 };
+            return {
                 assemblyName: assembly.accName,
                 assemblyCode: assembly.districtAssemblyCode,
-                totalCamera,
-                onlineCamera,
-                offlineCamera,
-                isLiveCount,
-            });
-        }
+                totalCamera: s.totalCamera,
+                onlineCamera: s.onlineCamera,
+                offlineCamera: s.offlineCamera,
+                isLiveCount: s.isLiveCount,
+            };
+        });
 
         res.json({
             success: true,
@@ -2736,40 +3180,30 @@ exports.getAllAssemblyStatsForUser = async (req, res) => {
             }
         });
 
-        // 4. Map through unique assemblies to get stats
-        const statsPromises = Array.from(uniqueAssemblyMap.values()).map(async (assembly) => {
+        // 4. One grouped aggregation for ALL assemblies instead of a query per assembly.
+        const allCodes = Array.from(uniqueAssemblyMap.keys());
+        const statsByCode = await aggregateCameraStatsByCode(allCodes);
+
+        const allAssemblyStats = Array.from(uniqueAssemblyMap.values()).map((assembly) => {
             const { districtAssemblyCode, dist_name, accName } = assembly;
-
-            // Find cameras belonging ONLY to this specific assembly code
-            const cameras = await Camera.find({ districtAssemblyCode });
-            const deviceIds = cameras.map(camera => camera.deviceId);
-
-            // Find streams for these specific cameras
-            const streams = await Stream.find({ deviceId: { $in: deviceIds } });
-
-            const totalCamera = cameras.length;
-            const onlineCamera = streams.filter(s => s.status === true).length;
-            const offlineCamera = totalCamera - onlineCamera;
-            const isLiveCount = streams.filter(s => s.is_live === true).length;
-
+            const s = statsByCode.get(districtAssemblyCode) ||
+                { totalCamera: 0, onlineCamera: 0, offlineCamera: 0, isLiveCount: 0 };
             return {
                 // If accName is missing/null, it shows "Assembly [Code]" instead of just the code
-                accName: accName && accName !== "" ? accName : `Assembly ${districtAssemblyCode}`, 
+                accName: accName && accName !== "" ? accName : `Assembly ${districtAssemblyCode}`,
                 assemblyCode: districtAssemblyCode,
                 parentDistrict: dist_name, // Used for frontend filtering
-                totalCamera,
-                onlineCamera,
-                offlineCamera,
-                isLiveCount,
+                totalCamera: s.totalCamera,
+                onlineCamera: s.onlineCamera,
+                offlineCamera: s.offlineCamera,
+                isLiveCount: s.isLiveCount,
             };
         });
 
-        const allAssemblyStats = await Promise.all(statsPromises);
-        
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             count: allAssemblyStats.length,
-            data: allAssemblyStats 
+            data: allAssemblyStats
         });
 
     } catch (error) {
@@ -2833,7 +3267,7 @@ exports.getAllAssemblyStatsForUser = async (req, res) => {
 //         }, '_id name deviceId isp2p productType lastImage timestamp did accode').lean();
 
 //         console.log(allAccessibleCameras);
-        
+
 //         // --- Step 3: Determine Status using Stream Data ---
 //         const deviceIds = allAccessibleCameras.map(cam => cam.deviceId).filter(Boolean);
 //         let onlineCameras = 0;
@@ -2880,7 +3314,7 @@ exports.getAllAssemblyStatsForUser = async (req, res) => {
 //         //         }
 //         //         console.log("distwisecam: ",districtWiseCameras);
 //         //         districtWiseCameras[district.dist_name].push(camera);
-                
+
 
 //         //         if (district.accode) {
 //         //             if (!assemblyWiseCameras[district.accode]) {
@@ -3531,10 +3965,10 @@ exports.getAllCameras = async (req, res) => {
             user.role === "admin"
                 ? {}
                 : {
-                      $or: baseDistrictCodes.map(code => ({
-                          districtAssemblyCode: { $regex: `^${code}` }
-                      }))
-                  };
+                    $or: baseDistrictCodes.map(code => ({
+                        districtAssemblyCode: { $regex: `^${code}` }
+                    }))
+                };
 
         const accessibleDistrictsForUI = await District.find(
             districtsForUIQuery,
@@ -3724,4 +4158,3 @@ exports.getAllCameras = async (req, res) => {
         });
     }
 };
-
