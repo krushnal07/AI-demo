@@ -292,77 +292,130 @@ exports.getCurrentUserCameras = async (req, res) => {
 exports.getCurrentUserCameras1 = async (req, res) => {
     try {
         const { email } = req.body;
-        
-        // 1. Get User
-        const user = await User.findOne({ email }, { UserAccessibleRegions: 1, _id: 0 }).lean();
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(Math.max(1, parseInt(req.query.limit) || 50), 100);
+        const skip = (page - 1) * limit;
 
-        if (!user || !user.UserAccessibleRegions?.length) {
-            return res.status(404).json({ success: false, message: "User or accessible regions not found" });
+        // --- FLAG: checkDuplicate (CRITICAL FOR TRANSFER/SWAP OPTION) ---
+        const checkDuplicate = req.query.checkDuplicate === "true";
+        if (checkDuplicate) {
+            const vehicle = req.query.vehicle || null;
+            const camera = req.query.camera || null;
+
+            if (camera) {
+                // 1. Check if hardware exists in inventory
+                const inStream = await Stream.findOne({ deviceId: camera }).lean();
+                
+                // 2. Check if already assigned to a vehicle
+                const existing = await Camera.findOne({ deviceId: camera }).lean();
+                
+                let cameraData = null;
+                if (existing) {
+                    // Fetch everything needed for the Transfer/Swap popup
+                    const [dist, op] = await Promise.all([
+                        District.findOne({ districtAssemblyCode: existing.districtAssemblyCode }).lean(),
+                        Operator.findOne({ operatorId: existing.operatorId }).lean()
+                    ]);
+
+                    cameraData = {
+                        deviceId: existing.deviceId,
+                        dist_name: dist?.dist_name || "N/A",
+                        accName: dist?.accName || "N/A",
+                        location: existing.locations?.[0] || "N/A",
+                        location_Type: existing.location_Type || "indoor",
+                        operatorName: op?.name || "N/A",
+                        operatorMobile: op?.mobile || "N/A"
+                    };
+                }
+                // Return exists=true ONLY if found in Camera table
+                return res.json({ exists: !!existing, inStream: !!inStream, camera: cameraData });
+            }
+
+            if (vehicle) {
+                const existing = await Camera.findOne({ locations: vehicle }).lean();
+                return res.json({ exists: !!existing });
+            }
         }
 
-        const regionCodes = user.UserAccessibleRegions;
+        // --- FLAG: allIdsOnly (For Modal Suggestions) ---
+        const allIdsOnly = req.query.allIdsOnly === "true";
+        if (allIdsOnly) {
+            const search = req.query.search || "";
+            const streamQuery = { deviceId: { $regex: escapeRegex(search), $options: "i" } };
+            const matchingStreams = await Stream.find(streamQuery, { deviceId: 1, _id: 0 }).limit(20).lean();
+            return res.json({ allDeviceIds: matchingStreams.map(s => s.deviceId) });
+        }
 
-        // 2. Fetch Cameras First (Optimized to filter by Region)
-        // We do this to get the operatorIds and deviceIds needed for the next step.
-        const cameras = await Camera.find(
-            { districtAssemblyCode: { $in: regionCodes } }, 
-            { 
-                deviceId: 1, 
-                name: 1, 
-                status: 1, 
-                is_live: 1, 
-                ps_id: 1, 
-                locations: 1, 
-                location_Type: 1, 
-                districtAssemblyCode: 1, 
-                operatorId: 1, // Need this to link operator
-                _id: 0 
+        // --- Standard Logic: Fetch Camera List ---
+        if (!email) return res.status(400).json({ success: false, message: 'email is required' });
+        const user = await User.findOne({ email }).lean();
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        const regionCodes = user.UserAccessibleRegions || [];
+        const cameraQuery = { districtAssemblyCode: { $in: regionCodes } };
+        
+        // Apply filters (District, Assembly, Search)
+        const district = req.query.district;
+        const assembly = req.query.assembly;
+        if (district || assembly) {
+            const matched = await District.find({
+                districtAssemblyCode: { $in: regionCodes },
+                ...(district && { dist_name: district }),
+                ...(assembly && { accName: assembly })
+            }).lean();
+            cameraQuery.districtAssemblyCode = { $in: matched.map(d => d.districtAssemblyCode) };
+        }
+
+        // Search filter: by Camera ID (deviceId) or by Vehicle No (locations)
+        const search = req.query.search || null;
+        const searchType = req.query.searchType || "vehicle";
+        if (search) {
+            const safe = escapeRegex(String(search)).slice(0, 200);
+            if (safe.length > 0) {
+                if (searchType === "camera") {
+                    cameraQuery.deviceId = { $regex: safe, $options: "i" };
+                } else {
+                    cameraQuery.locations = { $regex: safe, $options: "i" };
+                }
             }
-        ).lean();
+        }
 
-        // Extract IDs for bulk fetching
-        const deviceIds = cameras.map(c => c.deviceId);
-        const operatorIds = [...new Set(cameras.map(c => c.operatorId).filter(id => id))];
-
-        // 3. Parallel Fetch: Districts, User Streams, Operators, and GLOBAL Stream IDs
-        const [districts, userStreams, operators, allStreamableDeviceIds] = await Promise.all([
-            // Districts
-            District.find(
-                { districtAssemblyCode: { $in: regionCodes } }, 
-                { dist_name: 1, accName: 1, districtAssemblyCode: 1, _id: 0 }
-            ).lean(),
-
-            // Streams (User Specific)
-            Stream.find(
-                { deviceId: { $in: deviceIds } }, 
-                { deviceId: 1, mediaUrl: 1, p2purl: 1, token: 1, plan: 1, status: 1, is_live: 1, last_checked: 1, _id: 0 }
-            ).lean(),
-
-            // Operators (User Specific)
-            Operator.find(
-                { operatorId: { $in: operatorIds } },
-                { operatorId: 1, name: 1, mobile: 1, _id: 0 }
-            ).lean(),
-
-            // ALL Distinct Device IDs (Global list from Stream table, as requested)
-            Stream.distinct("deviceId")
+        const [total, cameras] = await Promise.all([
+            Camera.countDocuments(cameraQuery),
+            Camera.find(cameraQuery).skip(skip).limit(limit).lean()
         ]);
 
-        // 4. Map the data
-        const userVisibleCameras = await mapCamerasToRegion(cameras, districts, userStreams, operators);
+        // Map details (Stream status & Operator names)
+        const deviceIds = cameras.map(c => c.deviceId);
+        const opIds = cameras.map(c => c.operatorId).filter(Boolean);
+        
+        const [streams, operators, districts] = await Promise.all([
+            Stream.find({ deviceId: { $in: deviceIds } }).lean(),
+            Operator.find({ operatorId: { $in: opIds } }).lean(),
+            District.find({ districtAssemblyCode: { $in: regionCodes } }).lean()
+        ]);
 
-        // 5. Send Response with both objects
-        res.json({
-            userCameras: userVisibleCameras,
-            allDeviceIds: allStreamableDeviceIds 
+        const userCameras = cameras.map(cam => {
+            const s = streams.find(st => st.deviceId === cam.deviceId);
+            const o = operators.find(op => op.operatorId === cam.operatorId);
+            const d = districts.find(di => di.districtAssemblyCode === cam.districtAssemblyCode);
+            return {
+                ...cam,
+                dist_name: d?.dist_name || "N/A",
+                accName: d?.accName || "N/A",
+                status: s?.status || "offline",
+                is_live: s?.is_live || false,
+                operatorName: o?.name || "N/A",
+                operatorMobile: o?.mobile || "N/A"
+            };
         });
 
+        res.json({ userCameras, total });
+
     } catch (error) {
-        console.error(error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
-
 exports.getHelpdeskdata = async (req, res) => {
     try {
         const { email } = req.body;
