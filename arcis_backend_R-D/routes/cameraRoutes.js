@@ -6,7 +6,7 @@ const { getUserCameraStats1,deleteCamera,getCameras, addDevice, getStreamDetails
        getAllCameras, getCamerasByDistrict, getCurrentUserCameras ,getCurrentUserCameras1,updateCameraDetails,
        getMultipleCamera,getS,getDistrictCameraStats,getAssemblyCameraStats,getAllDistrictStatsForUser, addHelpdesk, 
        getHelpdeskdata, updateActivity,getAllRegions,addInventory,getInventory,updateInventory,getAllAssemblyStatsForUser,
-addIncidence,getIncidence,updateIncidence} = require('../controllers/cameraController');
+addIncidence,getIncidence,updateIncidence,getVehicleLogs,appSubmitForm,getVehicleHistory,getAllVehicleLogs} = require('../controllers/cameraController');
 const { isAuthenticatedUser } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -37,6 +37,9 @@ router.get('/getCamerasByDistrict/:districtId',getCamerasByDistrict)
 // router.get('/multiscreen-view',getMultiplePageCamera);
 router.put('/update/:deviceId', updateCameraDetails);
 router.get('/getAllRegions',getAllRegions);
+router.get('/getVehicleLogs',getVehicleLogs);
+router.get('/getAllVehicleLogs',getAllVehicleLogs);
+router.get('/getVehicleHistory',getVehicleHistory);
 router.get("/districtcamerastats", getDistrictCameraStats);
 router.get("/getAssemblyCameraStats", getAssemblyCameraStats);
 
@@ -63,6 +66,9 @@ router.put('/updateinventory',updateInventory);
 router.post('/addincidence',addIncidence);
 router.post('/getincidence',getIncidence);
 router.put('/updateincidence',updateIncidence);
+
+
+router.post('/appSubmitForm',appSubmitForm);
 
 
 
