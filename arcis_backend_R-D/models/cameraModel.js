@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 
 const camera = mongoose.Schema(
@@ -94,5 +93,8 @@ const camera = mongoose.Schema(
 camera.index({ districtAssemblyCode: 1 });
 camera.index({ deviceId: 1 });
 camera.index({ location_Type: 1 });
+camera.index({ userId: 1 });
+camera.index({ userId: 1, deviceId: 1 });
+camera.index({ userId: 1, 'sharedWith.0': 1 });
 
 module.exports = mongoose.model("camera", camera);
