@@ -21,6 +21,10 @@ let globalProxies = []; // Global variable for proxy data
 const httpsAgent = new https.Agent({
     rejectUnauthorized: false, // Set to true if you want to verify certificates, or false for self-signed certificates
 });
+function escapeRegex(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+};
+
 
 // Function to fetch and store proxy statuses in global memory and Redis
 const fetchProxies = async () => {
