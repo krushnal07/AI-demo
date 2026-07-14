@@ -31,7 +31,7 @@ const DistrictBarChart = ({ chartData }) => {
 
   if (!chartData || chartData.length === 0) {
     return (
-      <Box p={5} borderWidth="1px" bg={chartBg} borderRadius="lg" textAlign="center" height="400px" display="flex" alignItems="center" justifyContent="center">
+      <Box p={5} borderRadius="lg" textAlign="center" height="100%" minH="200px" display="flex" alignItems="center" justifyContent="center">
         <Text>Select "All Districts" to view the comparison chart or data is loading...</Text>
       </Box>
     );
@@ -72,6 +72,7 @@ const DistrictBarChart = ({ chartData }) => {
   };
 
   const options = {
+    indexAxis: 'y', // Horizontal bars (districts on Y, camera counts on X)
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -89,41 +90,49 @@ const DistrictBarChart = ({ chartData }) => {
       },
     },
     scales: {
+      // Value axis (now horizontal) — show vertical gridlines
       x: {
-        ticks: {
-          color: textColor,
-        },
-        grid: {
-          display: false,
-        },
-      },
-      y: {
         beginAtZero: true,
         ticks: {
           color: textColor,
           stepSize: 1,
         },
         grid: {
+          display: true,
           color: gridColor,
-          drawBorder: false,
-          borderDash: [5, 5],
+          lineWidth: 1,
+        },
+        border: {
+          display: false,
         },
         title: {
           display: true,
-          text: 'Number of Cameras', // Updated from Vehicles to match Dashboard context
+          text: 'Number of Cameras',
           color: textColor,
           font: {
             size: 14,
           },
         },
       },
+      // Category axis (district names) — no gridlines
+      y: {
+        ticks: {
+          color: textColor,
+        },
+        grid: {
+          display: false,
+        },
+        border: {
+          display: false,
+        },
+      },
     },
-    barPercentage: 0.3,
-    categoryPercentage: 0.5,
+    barPercentage: 0.6,
+    categoryPercentage: 0.7,
   };
 
   return (
-    <Box height="400px" p={4} borderWidth="1px" borderRadius="lg" bg={chartBg}>
+    <Box height="100%" width="100%">
       <Bar options={options} data={data} />
     </Box>
   );
