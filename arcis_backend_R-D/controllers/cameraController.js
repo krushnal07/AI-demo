@@ -2009,18 +2009,17 @@ exports.getdistrictwiseAccess = async (req, res) => {
             return res.status(404).json({ success: false, message: "User not found." });
         }
 
-        let regionQuery = {};
-        if (user.role !== 'admin') {
-            const userRegions = user.UserAccessibleRegions || [];
-            if (userRegions.length === 0) {
-                return res.status(200).json({
-                    success: true,
-                    user: { /* user details */ },
-                    matchedDistricts: []
-                });
-            }
-            regionQuery = { districtAssemblyCode: { $in: userRegions } };
+        // All users are region-restricted assembly-wise (no admin bypass): the
+        // dropdown only shows districts present in their UserAccessibleRegions.
+        const userRegions = user.UserAccessibleRegions || [];
+        if (userRegions.length === 0) {
+            return res.status(200).json({
+                success: true,
+                user: { /* user details */ },
+                matchedDistricts: []
+            });
         }
+        const regionQuery = { districtAssemblyCode: { $in: userRegions } };
 
         // --- START OF THE FIX ---
 
@@ -2036,7 +2035,7 @@ exports.getdistrictwiseAccess = async (req, res) => {
                     _id: "$dist_name", // Group by the field you want to be unique
                     // Keep the first document found for each unique 'dist_name'
                     // '$$ROOT' refers to the entire document
-                    doc: { $first: "$$ROOT" } 
+                    doc: { $first: "$$ROOT" }
                 }
             },
             // Stage 3: Promote the nested 'doc' back to the top level
@@ -2048,7 +2047,7 @@ exports.getdistrictwiseAccess = async (req, res) => {
                 $sort: { dist_name: 1 } // 1 for ascending, -1 for descending
             }
         ]);
-        
+
         // --- END OF THE FIX ---
 
         res.status(200).json({
@@ -2074,7 +2073,6 @@ exports.getdistrictwiseAccess = async (req, res) => {
         });
     }
 };
-
 exports.getCamerasByDistrict = async (req, res) => {
     try {
         // --- NOTE FOR FRONTEND: The 'districtId' in the URL should now be the ---
