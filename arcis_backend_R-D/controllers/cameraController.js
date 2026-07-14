@@ -2645,54 +2645,61 @@ exports.getAssemblyCameraStats = async (req, res) => {
 exports.getAllDistrictStatsForUser = async (req, res) => {
     try {
         const { email } = req.query;
-        const user = await User.findOne({ email }).lean();
-        const userRegions = user.UserAccessibleRegions || [];
+        if (!email) {
+            return res.status(400).json({ success: false, message: "User email is required" });
+        }
 
-        const districtStats = await Camera.aggregate([
-            { $match: { districtAssemblyCode: { $in: userRegions } } },
-            {
-                $lookup: {
-                    from: "stream",
-                    localField: "deviceId",
-                    foreignField: "deviceId",
-                    as: "s"
-                }
-            },
-            { $unwind: "$s" },
-            {
-                $lookup: {
-                    from: "district", // Join to get the district name
-                    localField: "districtAssemblyCode",
-                    foreignField: "districtAssemblyCode",
-                    as: "d"
-                }
-            },
-            { $unwind: "$d" },
-            {
-                $group: {
-                    _id: "$d.dist_name",
-                    districtName: { $first: "$d.dist_name" },
-                    districtCode: { $first: "$districtAssemblyCode" },
-                    onlineCamera: { $sum: { $cond: ["$s.status", 1, 0] } },
-                    offlineCamera: { $sum: { $cond: ["$s.status", 0, 1] } },
-                    isLiveCount: { $sum: { $cond: ["$s.is_live", 1, 0] } },
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    districtName: 1,
-                    districtCode: 1,
-                    onlineCamera: 1,
-                    offlineCamera: 1,
-                    isLiveCount: 1,
-                    totalCamera: { $add: ["$onlineCamera", "$offlineCamera"] }
-                }
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        const userDids = user.UserAccessibleRegions || [];
+
+        const matchedDistricts = await District.find(
+            { districtAssemblyCode: { $in: userDids } },
+            'dist_name districtAssemblyCode'
+        );
+
+        const districtGroups = new Map();
+        matchedDistricts.forEach(d => {
+            if (!districtGroups.has(d.dist_name)) {
+                districtGroups.set(d.dist_name, []);
             }
-        ]);
+            districtGroups.get(d.dist_name).push(d.districtAssemblyCode);
+        });
 
-        res.json({ success: true, data: districtStats });
-    } catch (e) { res.status(500).json({ success: false }); }
+        // One grouped aggregation across all codes, then roll up per district name.
+        const allCodes = matchedDistricts.map(d => d.districtAssemblyCode);
+        const statsByCode = await aggregateCameraStatsByCode(allCodes);
+
+        const allDistrictStats = Array.from(districtGroups.entries()).map(([districtName, codes]) => {
+            const totals = { totalCamera: 0, onlineCamera: 0, offlineCamera: 0, isLiveCount: 0 };
+            codes.forEach(code => {
+                const s = statsByCode.get(code);
+                if (s) {
+                    totals.totalCamera += s.totalCamera;
+                    totals.onlineCamera += s.onlineCamera;
+                    totals.offlineCamera += s.offlineCamera;
+                    totals.isLiveCount += s.isLiveCount;
+                }
+            });
+            return {
+                districtName,
+                districtCode: codes.join(', '),
+                onlineCamera: totals.onlineCamera,
+                offlineCamera: totals.offlineCamera,
+                isLiveCount: totals.isLiveCount,
+                totalCamera: totals.totalCamera,
+            };
+        });
+
+        res.json({ success: true, data: allDistrictStats });
+
+    } catch (error) {
+        console.error("Error fetching all district camera stats:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
 };
 exports.getAllAssemblyStatsForUser = async (req, res) => {
     try {
