@@ -5,7 +5,7 @@ const User = require("../models/userModel");
 const District = require("../models/district");
 const Helpdeskdata = require("../models/helpdesk");
 const Operator = require("../models/operator");
-
+const VehicleLog = require("../models/VehicleLog");
 const Inventory = require("../models/inventoryUpdation");
 const Incidence = require("../models/IncidenceMaster");
 const GpsData = require('../models/GpsData');
