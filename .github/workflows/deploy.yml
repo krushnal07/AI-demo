@@ -68,6 +68,11 @@ jobs:
           fi
         fi
 
+        # Clean up any leftover temp_frontend from a previous run BEFORE git clean,
+        # so git clean doesn't treat its contents as untracked files to delete
+        chmod -R u+w temp_frontend 2>/dev/null || true
+        rm -rf temp_frontend 2>/dev/null || true
+
         git reset --hard origin/main
         git clean -fd
 
@@ -102,6 +107,7 @@ jobs:
         if [ "\$FRONTEND_CHANGED" = "true" ]; then
           echo "Frontend changes detected, deploying frontend..."
 
+          chmod -R u+w temp_frontend 2>/dev/null || true
           rm -rf temp_frontend
           mkdir temp_frontend
 
@@ -139,6 +145,7 @@ jobs:
             mv temp_frontend/node_modules arcis_frontend_R-D/node_modules
           fi
 
+          chmod -R u+w temp_frontend 2>/dev/null || true
           rm -rf temp_frontend
 
           sudo systemctl restart arcis-ai-demo-frontend.service
