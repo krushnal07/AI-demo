@@ -32,6 +32,7 @@ import {
   getDistrictCameraStats,
   getAllDistrictStatsForUser,
   getAssemblyCameraStats,
+  getYourCameras,
 } from "../actions/cameraActions";
 import MobileHeader from "../components/MobileHeader";
 
@@ -80,15 +81,24 @@ const Dash = () => {
   const [assemblyChartData, setAssemblyChartData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [rotationIndex, setRotationIndex] = useState(0);
+  const [offlineList, setOfflineList] = useState([]); // offline cameras (location + id)
 
   // --- Theme Colors ---
   const cardBorderColor = useColorModeValue("gray.200", "whiteAlpha.400");
-  const chartBg = useColorModeValue("#F7FAFC", "gray.700");
+  const chartBg = useColorModeValue("#FFFFFF", "gray.800");
+  const chartBorder = useColorModeValue("rgba(226,232,240,0.9)", "whiteAlpha.200");
   const textColor = useColorModeValue("gray.500", "gray.400");
+  const headingColor = useColorModeValue("gray.800", "white");
   const chartCenterTextColor = useColorModeValue("#1A202C", "#F7FAFC");
   const cardBg = useColorModeValue("white", "gray.800");
   const subTextColor = useColorModeValue("gray.600", "gray.300");
+  const pillBg = useColorModeValue("white", "gray.800");
+  const pillBorder = useColorModeValue("rgba(226,232,240,0.9)", "whiteAlpha.200");
+  const rowHoverBg = useColorModeValue("gray.50", "whiteAlpha.100");
   const isFetching = useRef(false);
+
+  // Percentage of total cameras (guards divide-by-zero)
+  const pct = (n) => (totalCameras > 0 ? Math.round((n / totalCameras) * 100) : 0);
 
   // --- Data Fetching ---
   const fetchData = async () => {
@@ -116,6 +126,31 @@ const Dash = () => {
       if (districts.length === 0) {
         const menuRes = await getdistrictwiseAccess(email);
         if (menuRes?.success && menuRes.matchedDistricts) setDistricts(menuRes.matchedDistricts);
+      }
+
+      // Offline cameras list (location + device id) for the side panel
+      const camList = await getYourCameras(email);
+      if (Array.isArray(camList)) {
+        const offline = camList
+          .filter((c) => {
+            // Mirror the server's definition: online === stream.status === true.
+            // Everything else (status false / undefined / no stream) is offline.
+            const online = c.status === true || c.status === "online";
+            return !online;
+          })
+          .map((c) => {
+            const loc = c.locations?.[0];
+            const location =
+              (typeof loc === "string" ? loc : loc?.loc_name) || c.name || "N/A";
+            return {
+              deviceId: c.deviceId || "N/A",
+              location,
+              district: c.dist_name || "",
+              assembly: c.accName || "",
+            };
+          })
+          .sort((a, b) => a.location.localeCompare(b.location));
+        setOfflineList(offline);
       }
     } catch (error) {
       console.error("Network error - retaining last known counts");
@@ -152,14 +187,9 @@ const Dash = () => {
 
     try {
       setIsLoading(true);
-      const cardRes = await getDistrictCameraStats(email, district.districtAssemblyCode);
-      if (cardRes?.success && cardRes.data) {
-        setTotalCameras(cardRes.data.totalCamera ?? totalCameras);
-        setOnlineCameras(cardRes.data.onlineCamera ?? onlineCameras);
-        setOfflineCameras(cardRes.data.offlineCamera ?? offlineCameras);
-        setIsLiveCountValue(cardRes.data.isLiveCount ?? isLiveCountValue);
-      }
-
+      // NOTE: Do NOT update the top cards here. The four top cards always show the
+      // overall (all-region) totals. Selecting a district only updates the
+      // assembly gauge charts below.
       const asmRes = await getAssemblyCameraStats(email, district.dist_name);
       if (asmRes?.success && asmRes.assemblies) {
         setAssemblyChartData(asmRes.assemblies.filter(a => a.onlineCamera + a.offlineCamera > 0));
@@ -191,36 +221,100 @@ const Dash = () => {
       <MobileHeader title="Dashboard" />
 
       {/* Top Cards */}
-      <Box mt={{ base: 4, md: 0 }} mb={4}>
-        <Flex justify="space-between" align="center" mb={2}>
-          <Text fontWeight={400} fontSize="26px" color={textColor}>Dashboard</Text>
+      <Box mt={{ base: 4, md: 0 }} mb={5}>
+        <Flex justify="space-between" align={{ base: "flex-start", md: "center" }} mb={4} direction={{ base: "column", md: "row" }} gap={2}>
+          <Box>
+            <Text fontWeight={700} fontSize="28px" color={headingColor} lineHeight="1.2"> VMS Dashboard</Text>
+            <Text fontSize="14px" color={textColor}>Real-time  camera monitoring </Text>
+          </Box>
+          <Flex align="center" gap={2} bg={pillBg} px={3} py={1.5} borderRadius="full" border="1px solid" borderColor={pillBorder}>
+            <Box as="span" boxSize="8px" borderRadius="full" bg="#22C55E" boxShadow="0 0 0 3px rgba(34,197,94,0.2)" />
+            <Text fontSize="12px" fontWeight="600" color={textColor}>Live · auto-refresh 20s</Text>
+          </Flex>
         </Flex>
 
-        <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={3}>
-          <CustomCard title="Total Cameras" value={totalCameras} color="#1C4ED8" IconComponent={BsCameraVideoFill} layout="vertical" />
-          <CustomCard title="Online Cameras" value={onlineCameras} color="#65A30D" IconComponent={BsPlayCircleFill} layout="vertical" />
-          <CustomCard title="Inactive Cameras" value={totalCameras - isLiveCountValue} color="#EF4444" IconComponent={BsWifiOff} layout="vertical" />
-          <CustomCard title="Installed Cameras" value={isLiveCountValue} color="#8B5CF6" IconComponent={BsHddNetwork} layout="vertical" />
+        <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={4}>
+          <CustomCard title="Total Cameras" value={totalCameras} color="#1C4ED8" IconComponent={BsCameraVideoFill} layout="vertical" subtitle="All regions" />
+          <CustomCard title="Online Cameras" value={onlineCameras} color="#16A34A" IconComponent={BsPlayCircleFill} layout="vertical" subtitle={`${pct(onlineCameras)}% of total`} />
+          <CustomCard title="Offline Cameras" value={offlineCameras} color="#EF4444" IconComponent={BsWifiOff} layout="vertical" subtitle={`${pct(offlineCameras)}% of total`} />
+          <CustomCard title="Connected Cameras" value={isLiveCountValue} color="#8B5CF6" IconComponent={BsHddNetwork} layout="vertical" subtitle={`${pct(isLiveCountValue)}% of total`} />
         </Grid>
       </Box>
 
       {/* Main Content */}
-      <Grid templateColumns={{ base: "1fr", lg: "70% 28%" }} gap={2}>
-        <Box bg={chartBg} p={6} borderRadius="16px">
-          <Text fontSize="lg" fontWeight="bold" color={textColor} mb={6}>Camera Status</Text>
-          <Box width="100%" height="400px">
+      <Grid templateColumns={{ base: "1fr", lg: "60% 1fr" }} gap={4} alignItems="stretch">
+        <Box
+          bg={chartBg}
+          p={{ base: 4, md: 6 }}
+          borderRadius="16px"
+          border="1px solid"
+          borderColor={chartBorder}
+          boxShadow={useColorModeValue("0 1px 3px rgba(0,0,0,0.06)", "dark-lg")}
+        >
+          <Flex justify="space-between" align="center" mb={5} wrap="wrap" gap={2}>
+            <Box>
+              <Text fontSize="lg" fontWeight="700" color={headingColor}> Camera Status</Text>
+              <Text fontSize="13px" color={textColor}>Online, inactive and installed cameras </Text>
+            </Box>
+          </Flex>
+          <Box width="100%" height={{ base: "260px", md: "300px" }}>
             <DistrictBarChart chartData={allDistrictStats} />
           </Box>
         </Box>
 
-        <Box bg={chartBg} p={6} borderRadius="16px" height="fit-content">
-          <Heading size="md" mb={4} color={textColor}>{displayDistName}</Heading>
-          <VStack spacing={2} align="stretch">
-            <CustomCard title="Total" value={displayTotal} color="#1C4ED8" IconComponent={BsCameraVideoFill} layout="horizontal" />
-            <CustomCard title="Online" value={displayOnline} color="#65A30D" IconComponent={BsPlayCircleFill} layout="horizontal" />
-            <CustomCard title="Inactive" value={displayInactive} color="#EF4444" IconComponent={BsWifiOff} layout="horizontal" />
-            <CustomCard title="Installed" value={displayConnected} color="#8B5CF6" IconComponent={BsHddNetwork} layout="horizontal" />
-          </VStack>
+        {/* Offline cameras list */}
+        <Box
+          bg={chartBg}
+          borderRadius="16px"
+          border="1px solid"
+          borderColor={chartBorder}
+          boxShadow={useColorModeValue("0 1px 3px rgba(0,0,0,0.06)", "dark-lg")}
+          display="flex"
+          flexDirection="column"
+          overflow="hidden"
+        >
+          <Flex align="center" justify="space-between" p={4} borderBottom="1px solid" borderColor={chartBorder}>
+            <Flex align="center" gap={2}>
+              <Box color="#EF4444" as={BsWifiOff} boxSize="18px" />
+              <Text fontSize="md" fontWeight="700" color={headingColor}>Offline Cameras</Text>
+            </Flex>
+            <Box bg="#EF444422" color="#EF4444" px={2.5} py={0.5} borderRadius="full" fontSize="12px" fontWeight="700">
+              {offlineList.length}
+            </Box>
+          </Flex>
+
+          <Box overflowY="auto" maxH={{ base: "260px", md: "300px" }} px={2} py={2} flex="1"
+            css={{ "&::-webkit-scrollbar": { width: "6px" }, "&::-webkit-scrollbar-thumb": { background: "rgba(150,150,150,0.4)", borderRadius: "3px" } }}>
+            {offlineList.length === 0 ? (
+              <Flex direction="column" align="center" justify="center" h="100%" py={8} gap={2} color={textColor}>
+                <Box as={BsPlayCircleFill} boxSize="26px" color="#16A34A" />
+                <Text fontSize="sm">All cameras are online</Text>
+              </Flex>
+            ) : (
+              offlineList.map((cam, i) => (
+                <Flex
+                  key={`${cam.deviceId}-${i}`}
+                  align="center"
+                  justify="space-between"
+                  gap={2}
+                  px={3}
+                  py={2.5}
+                  borderRadius="10px"
+                  _hover={{ bg: rowHoverBg }}
+                >
+                  <Box minW={0}>
+                    <Text fontSize="13px" fontWeight="600" color={headingColor} isTruncated title={cam.location}>
+                      {cam.location}
+                    </Text>
+                    <Text fontSize="11px" color={textColor} isTruncated title={cam.deviceId}>
+                      {cam.deviceId}
+                    </Text>
+                  </Box>
+                  <Box boxSize="8px" borderRadius="full" bg="#EF4444" flexShrink={0} />
+                </Flex>
+              ))
+            )}
+          </Box>
         </Box>
       </Grid>
 
@@ -242,7 +336,7 @@ const Dash = () => {
         </Flex>
       </Box> */}
 
-      <Box bg={chartBg} p={2} borderRadius="16px">
+      {/* <Box bg={chartBg} p={2} borderRadius="16px">
         {selectedDistrict && (
           <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 5 }} spacing={2}>
             {assemblyChartData.map((asm, index) => {
@@ -274,7 +368,7 @@ const Dash = () => {
             })}
           </SimpleGrid>
         )}
-      </Box>
+      </Box> */}
     </Box>
   );
 };
