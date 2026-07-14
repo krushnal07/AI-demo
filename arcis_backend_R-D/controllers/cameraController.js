@@ -2446,68 +2446,32 @@ exports.getDistrictNameByAssemblyName = async (req, res) => {
 exports.getUserCameraStats = async (req, res) => {
     try {
         const email = req.query.email;
-        if (!email) return res.status(400).json({ success: false, message: "Email required" });
-
-        // 1. Quick User Lookup
-        const user = await User.findOne({ email }, { UserAccessibleRegions: 1 }).lean();
-        if (!user) return res.status(404).json({ success: false, message: "User not found" });
-
-        const userRegions = user.UserAccessibleRegions || [];
-        if (userRegions.length === 0) {
-            return res.status(200).json({ success: true, cameraStats: { totalCameras: 0, onlineCameras: 0, offlineCameras: 0, isLiveCount: 0 } });
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Email is required." });
         }
 
-        // 2. THE POWER MOVE: One aggregation to rule them all
-        // This does the work in MongoDB C++ engine instead of Node.js RAM
-        const stats = await Camera.aggregate([
-            { 
-                $match: { districtAssemblyCode: { $in: userRegions } } 
-            },
-            {
-                $lookup: {
-                    from: "stream", // Make sure this matches your MongoDB collection name for streams
-                    localField: "deviceId",
-                    foreignField: "deviceId",
-                    as: "statusData"
-                }
-            },
-            { $unwind: "$statusData" },
-            {
-                $group: {
-                    _id: null,
-                    totalCameras: { $sum: 1 },
-                    onlineCameras: {
-                        $sum: { $cond: [{ $eq: ["$statusData.status", true] }, 1, 0] }
-                    },
-                    isLiveCount: {
-                        $sum: { $cond: [{ $eq: ["$statusData.is_live", true] }, 1, 0] }
-                    }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    totalCameras: 1,
-                    onlineCameras: 1,
-                    isLiveCount: 1,
-                    offlineCameras: { $subtract: ["$totalCameras", "$onlineCameras"] }
-                }
-            }
-        ]).hint({ districtAssemblyCode: 1 }); // Force use of your index
+        // Keep this user warm for the background refresher.
+        userStatsWarmEmails.add(email);
 
-        const result = stats[0] || { totalCameras: 0, onlineCameras: 0, offlineCameras: 0, isLiveCount: 0 };
+        // 1) Serve instantly from cache when available (Redis or in-memory).
+        const cached = await readUserStatsCache(email);
+        if (cached) {
+            return res.status(200).json({ success: true, cameraStats: cached });
+        }
 
-        res.status(200).json({
-            success: true,
-            cameraStats: result
-        });
+        // 2) Cold path (first ever load for this user): compute once, then cache.
+        const stats = await computeUserCameraStats(email);
+        if (stats === null) {
+            return res.status(404).json({ success: false, message: "User not found." });
+        }
 
+        await writeUserStatsCache(email, stats);
+        res.status(200).json({ success: true, cameraStats: stats });
     } catch (error) {
-        console.error("Fast Stats Error:", error);
-        res.status(500).json({ success: false, message: "Server error" });
+        console.error("Error fetching user and camera data:", error);
+        res.status(500).json({ success: false, message: "Failed to retrieve data", error: error.message });
     }
 };
-
 const buildCameraQuery = (baseQuery, type) => {
     if (type && type !== "All") {
         // Creates a Case-Insensitive Regex (e.g., matches "Indoor", "indoor", "INDOOR")
