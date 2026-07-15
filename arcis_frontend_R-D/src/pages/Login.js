@@ -13,20 +13,19 @@ import {
   Input,
   InputGroup,
   InputRightElement,
+  InputLeftElement,
   Text,
-  textDecoration,
   useColorMode,
   useColorModeValue,
   useToast,
 } from "@chakra-ui/react";
 import { login, sendOtp, verifyOtp } from "../actions/userActions";
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 import { verifytok } from "../actions/userActions";
-import { BsQuestionCircle } from "react-icons/bs";
-import theme from "../theme";
-import { color } from "framer-motion";
+import { BsCameraVideoFill } from "react-icons/bs";
+import { FaRegEnvelope, FaLock } from "react-icons/fa6";
 // import { registerPushNotifications } from '../actions/notification';
 // import io from 'socket.io-client';
 
@@ -196,6 +195,18 @@ const Login = () => {
     "white"
   );
 
+  // --- Professional theme tokens ---
+  const cardBg = useColorModeValue("rgba(255,255,255,0.88)", "rgba(18,18,18,0.82)");
+  const cardBorder = useColorModeValue("rgba(255,255,255,0.6)", "whiteAlpha.200");
+  const headingColor = useColorModeValue("gray.800", "white");
+  const subColor = useColorModeValue("gray.500", "gray.400");
+  const inputBorder = useColorModeValue("gray.300", "whiteAlpha.300");
+  const iconColor = useColorModeValue("gray.400", "gray.500");
+  const inputFieldBg = useColorModeValue("white", "whiteAlpha.100");
+  const accentBtn = "linear-gradient(94deg, #1C4ED8 0%, #3F77A5 100%)";
+  // Mode-aware VMukti logo (light logo for light bg, white logo for dark bg)
+  const loginLogo = useColorModeValue("/images/vmukti_light.png", "/images/vmukti.png");
+
 
   return (
     <Flex
@@ -228,169 +239,161 @@ const Login = () => {
         zIndex={0}
       />)}
 
+      {/* VMukti logo — top-left corner (both light & dark mode) */}
+      <Image
+        src={loginLogo}
+        alt="VMukti"
+        position="absolute"
+        top={{ base: 4, md: 6 }}
+        left={{ base: 4, md: 8 }}
+        h={{ base: "26px", md: "36px" }}
+        objectFit="contain"
+        zIndex={2}
+      />
+
       <Flex
-        maxW={"1200px"}
-        maxH={"700px"}
-        direction="column"
-        w="fit-content"
-        h="100%"
-        p={10}
-        borderRadius="2xl"
-        bgGradient="linear(to-t, rgba(3,7,17,0.1), rgba(22,59,116,0.1))"
-        backdropFilter="blur(30px)"
-        align="center"
-        gap={50}
+        zIndex={1}
+        w={{ base: "94%", md: "auto" }}
+        maxW="960px"
+        borderRadius="24px"
+        overflow="hidden"
+        boxShadow="0 24px 60px rgba(0,0,0,0.35)"
+        border="1px solid"
+        borderColor={cardBorder}
+        bg={cardBg}
+        backdropFilter="blur(24px)"
+        direction={{ base: "column", md: "row" }}
       >
+        {/* LEFT — Brand panel */}
         <Flex
           direction="column"
-          align="center"
-          justify="center"
-          textAlign="center"
-          w="100%"
-          gap={0}  
+          justify="space-between"
+          w={{ md: "44%" }}
+          p={10}
+          display={{ base: "none", md: "flex" }}
+         // bgGradient="linear(160deg, #1C4ED8 0%, #3F77A5 100%)"
+          color="#1C4ED8"
         >
-          <Text
-            fontSize={{ base: "22px", md: "36px" }}
-            fontWeight="500"
-            letterSpacing="0.5px"
-            mb="0"   
-            lineHeight="1.2"
-          >
-            Welcome to VMukti VMS
-          </Text>
+          <Image src={loginLogo} alt="VMukti" h="40px" objectFit="contain" alignSelf="flex-start" />
 
-          <Text
-            fontSize={{ base: "14px", md: "20px" }}
-            fontWeight="400"
-            mt="0"   // ensure no top margin
-            lineHeight="1.2"
-          >
-            {/* Ensuring Fairness and Safety with Computer Vision in Election Systems */}
-          </Text>
+          <Flex flex="1" align="center" justify="center" py={6}>
+            <Image src="/images/GptResponse.png" alt="VMS" objectFit="contain" maxW="320px" />
+          </Flex>
+
+          <Box>
+            <Heading fontSize="24px" fontWeight="700" lineHeight="1.25" mb={2}>
+              Live Video Management System
+            </Heading>
+            <Text fontSize="13px" opacity={0.85}>
+              Real-time monitoring, playback and analytics for field surveillance vehicles.
+            </Text>
+          </Box>
         </Flex>
 
-        <Flex h="full" justifyContent={"space-between"} w="full" direction={{ base: "column", md: "row" }}>
-          {/* Map Image */}
-          <Box flex="1" justifyContent="center" alignItems="center" display={{ base: "none", md: "flex" }}>
-            {
-              colorMode === "light" ? (
-                <Image
-                  src="/images/GptResponse.png"
-                  alt="Login Map"
-                  alignSelf={"flex-start"}
-                  objectFit="contain"
-                  mt="2%"
-                  maxW="400px"
-                />
-              ) : (<Image
-                src="/images/GptResponse.png"
-                alt="Login Map"
-                alignSelf={"flex-start"}
-                objectFit="contain"
-                mt="2%"
-                maxW="400px"
-              />)
-            }
+        {/* RIGHT — Login form */}
+        <Flex direction="column" justify="center" w={{ base: "100%", md: "56%" }} p={{ base: 8, md: 12 }} gap={6}>
+          {/* Mobile brand */}
+          <Image src={loginLogo} alt="VMukti" h="32px" objectFit="contain" alignSelf="flex-start" display={{ base: "block", md: "none" }} />
 
+          <Box>
+            <Heading fontSize={{ base: "26px", md: "30px" }} fontWeight="700" color={headingColor}>
+              Welcome back
+            </Heading>
+            <Text fontSize="14px" color={subColor} mt={1}>
+              Sign in to your VMS account to continue
+            </Text>
           </Box>
 
-          {/* Login Form */}
-          <Flex flex="1" justifyContent={"center"} gap={5} alignSelf={{ base: "center", md: "flex-start" }} direction={"column"} alignItems={"center"} h="full" maxW={"50%"}
-          >
-            <Text
-              as="h2"
-              fontWeight="400"
-              fontStyle="normal"
-              fontSize={{ base: "24px", md: "32px" }}
-              lineHeight={{ base: "24px", md: "32px" }}
-              letterSpacing="0"
-              textAlign="center"
-              textTransform="uppercase"
-              mb={4}
-            >
-              LOGIN
-            </Text>
-
-            {/* bottom portion */}
-            <Box maxW={"360px"} minW={"280px"} h="full" display="flex" flexDirection="column" justifyContent="space-between">
-              <Box>
-                {/* User ID */}
-                <Input
-                  placeholder="Enter your Email ID"
-                  mb={4}
-                  value={email}
-                  onChange={handleInputChange}
-                  borderRadius="12px"
-                  bg="transparent"
-                  border="1px solid #868686"
-                  _hover={{ borderColor: "#FFFFFF" }}
-                  _focus={{ borderColor: "#FFFFFF", borderImage: "none" }}
-                  _blur={{ borderColor: "#868686", borderImage: "none" }}
-                />
-
-                <Input
-                  placeholder="Enter your Password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  borderRadius="12px"
-                  bg="transparent"
-                  border="1px solid #868686"
-                  mb={4}
-                  _hover={{ borderColor: "#FFFFFF" }}
-                  _focus={{ borderColor: "#FFFFFF" }}
-                  _blur={{ borderColor: "#868686" }}
-                />
-
-
-
-                {/* Sign In Button */}
-                <Box p="1px" bgGradient="linear(to-br, #D6D6D6, #040811)" borderRadius="12px">
-                  <Button
-                    w="100%"
+          <form onSubmit={handleLogin}>
+            <Flex direction="column" gap={4}>
+              {/* Email */}
+              <FormControl>
+                <FormLabel fontSize="13px" fontWeight="600" color={subColor} mb={1.5}>
+                  Email ID
+                </FormLabel>
+                <InputGroup>
+                  <InputLeftElement pointerEvents="none" color={iconColor}>
+                    <FaRegEnvelope size={15} />
+                  </InputLeftElement>
+                  <Input
+                    placeholder="Enter your Email ID"
+                    value={email}
+                    onChange={handleInputChange}
                     borderRadius="12px"
-                    background={btnBg}
-                    fontWeight="bold"
-                    color={btnTextColor}
-                    _ hover={{
-                      background: btnHoverBg,
-                    }}
-                    onClick={handleLogin}
-                  >
-                    Continue
-                  </Button>
+                    bg={inputFieldBg}
+                    borderColor={inputBorder}
+                    _hover={{ borderColor: "#3F77A5" }}
+                    _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
+                  />
+                </InputGroup>
+              </FormControl>
 
-                </Box>
+              {/* Password */}
+              <FormControl>
+                <FormLabel fontSize="13px" fontWeight="600" color={subColor} mb={1.5}>
+                  Password
+                </FormLabel>
+                <InputGroup>
+                  <InputLeftElement pointerEvents="none" color={iconColor}>
+                    <FaLock size={14} />
+                  </InputLeftElement>
+                  <Input
+                    placeholder="Enter your Password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    borderRadius="12px"
+                    bg={inputFieldBg}
+                    borderColor={inputBorder}
+                    _hover={{ borderColor: "#3F77A5" }}
+                    _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
+                  />
+                  <InputRightElement>
+                    <IconButton
+                      aria-label="Toggle password visibility"
+                      icon={showPassword ? <ViewOffIcon /> : <ViewIcon />}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowPassword((p) => !p)}
+                    />
+                  </InputRightElement>
+                </InputGroup>
+              </FormControl>
 
-              </Box>
-
-              {/* Unauthorized Access Box at the bottom */}
-              <Box alignSelf={"flex-start"} mt={4}>
-                <Text
-                  fontFamily="Inter"
-                  fontWeight="400"
-                  fontSize="16px"
-                  lineHeight="100%"
-                  letterSpacing="0"
-                  textAlign="center"
-                >
-                  Unauthorized Access Prohibited.
+              {errorMessage && (
+                <Text fontSize="13px" color="red.400" fontWeight="500">
+                  {errorMessage}
                 </Text>
+              )}
 
-                <Text
-                  fontFamily="Inter"
-                  fontWeight="400"
-                  fontSize="10px"
-                  lineHeight="100%"
-                  letterSpacing="0"
-                  textAlign="center"
-                >
-                  This website is for authorized government users only. Unauthorized access is strictly prohibited.
-                </Text>
-              </Box>
-            </Box>
+              <Button
+                type="submit"
+                w="100%"
+                mt={1}
+                borderRadius="12px"
+                bg={accentBtn}
+                color="white"
+                fontWeight="600"
+                size="lg"
+                isLoading={isLoading}
+                loadingText="Signing in…"
+                _hover={{ opacity: 0.92 }}
+                _active={{ opacity: 0.85 }}
+              >
+                Continue
+              </Button>
+            </Flex>
+          </form>
 
-          </Flex>
+          {/* Authorized access note */}
+          <Box borderTop="1px solid" borderColor={inputBorder} pt={4} textAlign="center">
+            <Text fontWeight="600" fontSize="14px" color={headingColor}>
+              Unauthorized Access Prohibited
+            </Text>
+            <Text fontSize="11px" color={subColor} mt={1}>
+              This website is for authorized government users only. Unauthorized access is strictly prohibited.
+            </Text>
+          </Box>
         </Flex>
       </Flex>
     </Flex >
