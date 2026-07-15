@@ -276,8 +276,8 @@ const Cameras = () => {
 
   // Chakra UI hooks
   const radioButtonColor = useColorModeValue("black", "white");
-  const grid_view_icon = useColorModeValue("/images/grid_view_icon_light.png", "/images/grid_view_icon.png");
-  const list_view_icon = useColorModeValue("/images/list_view_icon_light.png", "/images/list_view_icon.png");
+  //const grid_view_icon = useColorModeValue("/images/grid_view_icon_light.png", "/images/grid_view_icon.png");
+  //const list_view_icon = useColorModeValue("/images/list_view_icon_light.png", "/images/list_view_icon.png");
   const buttonGradientColor = useColorModeValue(
     "linear-gradient(93.5deg, #9CBAD2 , #CDDEEB 94.58%)", // light mode
     "linear-gradient(93.5deg, #2A2A2A 0.56%, #030711 50.58%)" // dark mode
@@ -1439,6 +1439,19 @@ const Cameras = () => {
   // Client-side processing of cameras received from backend (e.g., additional sorting IF NEEDED)
   useEffect(() => {
     let processedCameras = [...unfilteredCameras];
+
+    // Location filter (client-side): narrow by selected District, then Assembly
+    if (selectedDistrictName) {
+      processedCameras = processedCameras.filter(
+        (c) => c.dist_name === selectedDistrictName
+      );
+    }
+    if (selectedAssemblyValue) {
+      processedCameras = processedCameras.filter(
+        (c) => c.accName === selectedAssemblyValue
+      );
+    }
+
     // If backend handles status filtering via 'sortStatus', this client-side sort might only be for ordering the current page.
     // If 'sortStatus' is purely a backend filter, this client-side sort could be removed.
     if (sortStatus && camerasTab === "My Cameras") {
@@ -1454,7 +1467,7 @@ const Cameras = () => {
       });
     }
     setCameras(processedCameras);
-  }, [unfilteredCameras, sortStatus, camerasTab]);
+  }, [unfilteredCameras, sortStatus, camerasTab, selectedDistrictName, selectedAssemblyValue]);
 
 
   // --- useEffect to Fetch Cameras when filters/pagination change ---
@@ -1472,57 +1485,10 @@ const Cameras = () => {
       <Flex direction="column" gap={4} h={"fit-content"}>
         {/* Header Row */}
         <Flex justifyContent="space-between" align="center">
-          <Text fontWeight={400} fontSize="26px" color={text}>Grid View</Text>
+          <Text fontWeight={400} fontSize="26px" color={text}>Cameras</Text>
 
           {/* View Toggle */}
-          <Flex gap={3}>
-            <Box
-              borderRadius="12px"
-              p="1px"
-              bg={view === "grid" ? "linear-gradient(149.18deg, #D6D6D6 0%, #040811 101.62%)" : "transparent"}
-            >
-              <Box
-                as="button"
-                bg={view === "grid" ? buttonGradientColor : "transparent"}
-                p="8px"
-                borderRadius="12px"
-                onClick={() => setView("grid")}
-              >
-                <Image src={grid_view_icon} />
-              </Box>
-            </Box>
-
-            <Box
-              borderRadius="12px"
-              p="1px"
-              bg={
-                window.location.pathname === "/listview"
-                  ? "linear-gradient(149.18deg, #D6D6D6 0%, #040811 101.62%)"
-                  : "transparent"
-              }
-            >
-              <Box
-                as={RouterLink}
-                to="/listview"
-                bg={
-                  window.location.pathname === "/listview"
-                    ? buttonGradientColor
-                    : "transparent"
-                }
-                p="8px"
-                borderRadius="12px"
-                onClick={() => console.log("Switched to list view")}
-                aria-label="List View"
-                display="flex" // Added to center icon if it's a child
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Image src={list_view_icon} boxSize="20px" color="white" />{" "}
-                {/* Changed Image to Icon */}
-              </Box>
-            </Box>
-
-          </Flex>
+          
         </Flex>
 
         {/* Filter Row */}
@@ -1539,7 +1505,7 @@ const Cameras = () => {
             <Select
               value={selectedDistrictName} // The value is the district name
               onChange={handleDistrictChange}
-              placeholder={loadingDistricts ? "Loading..." : "Select District"}
+              placeholder={loadingDistricts ? "Loading..." : "Select location"}
               isDisabled={loadingDistricts || !userEmail || !!districtError} // Use !!districtError to convert to boolean
               icon={loadingDistricts ? <Spinner size="xs" /> : undefined}
               borderRadius="10px"
@@ -1557,7 +1523,7 @@ const Cameras = () => {
             </Select>
             {districtError && <Text color="red.500" fontSize="xs" mt={1}>{districtError}</Text>}
           </Box>
-          <Box minW="150px">
+          {/* <Box minW="150px">
             <Select
               value={selectedAssemblyValue}
               onChange={handleAssemblyChange}
@@ -1588,7 +1554,7 @@ const Cameras = () => {
               ))}
             </Select>
             {assemblyError && !loadingAssemblies && <Text color="red.500" fontSize="xs" mt={1}>{assemblyError}</Text>}
-          </Box>
+          </Box> */}
 
 
 
@@ -2534,14 +2500,15 @@ const Cameras = () => {
                 cursor="pointer"
                 position="relative"
                 w="100%"
-                h={["200px", "242px"]}
+                h={["100px", "252px"]}
                 borderRadius="12px"
                 overflow="hidden"
                 onClick={() =>
                   handleCameraClick(camera.deviceId, camera.status)}
               >
                 <Image
-                  src="/images/video_placeholder.png" // You might want to use camera.lastImage here
+                  src={camera.lastImage || "https://zeta.arcisai.io/images/icon2.png"}
+                  fallbackSrc="https://zeta.arcisai.io/images/icon2.png"
                   alt="Camera Snapshot"
                   position="absolute"
                   top="0"
