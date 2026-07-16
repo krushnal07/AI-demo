@@ -1,5 +1,6 @@
 const AnalyticsImage = require("../models/analyticsimage");
 const Camera = require("../models/cameraModel");
+const District = require("../models/district");
 const { sendMailattachment } = require("../utils/sendEmail");
 const semaphore = require("../utils/semaphore");
 const User = require("../models/userModel");
@@ -30,7 +31,7 @@ const messageMapping = {
   23: "UnAuthorized Parking",
   24: "Human Activity detection",
   25: "Person counting and Time analysis in Ticket scanning area",
-  26:"line crossing",
+  // 26:"line crossing",
   27:"entry/exit",
   28:"Pre-stamped",
   29:"Medical PPE kit violation",
@@ -42,6 +43,13 @@ const messageMapping = {
   35:"Tampering Detection",
   36: "Handwash Violation",
   38: "Gloves Violation",
+  39:"Mobile Detection",
+  40: "Max Person",
+  41: "Box Detection",
+  104:"vacant booth",
+  103:"evm proximity violation",
+  101:"crowd detection (outdoor)",
+  102:"crowd detection (indoor)"
 };
 
 function renderSendTime(currentsendtime){
@@ -333,4 +341,206 @@ const getZoneWiseCounts = async (req, res) => {
   }
 };
 
-module.exports = { saveAnalyticsImage, getAnalyticsImages, getZoneWiseCounts };
+// ---------------------------------------------------------------------------
+// AI Dashboard — single aggregated payload for the command-center page.
+// GET /api/Analytics/ai-dashboard?email=<email>&date=dd/mm/yyyy
+// Joins alerts (AnalyticsImage) -> Camera -> District to produce every card,
+// chart, table and the live feed in one call.
+// ---------------------------------------------------------------------------
+const getAiDashboard = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+    // Date: accept dd/mm/yyyy, default to today (UTC)
+    let date = req.query.date;
+    if (!date || !/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
+      const now = new Date();
+      const p = (n) => String(n).padStart(2, "0");
+      date = `${p(now.getUTCDate())}/${p(now.getUTCMonth() + 1)}/${now.getUTCFullYear()}`;
+    }
+
+    const emptyPayload = {
+      success: true,
+      date,
+      totals: { totalAlerts: 0, uniqueCameras: 0, analyticsTypes: 0, districts: 0 },
+      byDistrict: [],
+      byAnalytics: [],
+      analyticsLabels: [],
+      timeline: [],
+      topCameras: [],
+      matrix: [],
+      liveFeed: [],
+      insights: [],
+    };
+
+    const user = await User.findOne({ email }, { UserAccessibleRegions: 1 }).lean();
+    if (!user || !user.UserAccessibleRegions?.length) {
+      return res.status(200).json(emptyPayload);
+    }
+    const regionCodes = user.UserAccessibleRegions;
+
+    // Cameras (for device list + location) and Districts (for names)
+    const [cameras, districts] = await Promise.all([
+      Camera.find(
+        { districtAssemblyCode: { $in: regionCodes } },
+        { deviceId: 1, districtAssemblyCode: 1, locations: 1, name: 1, _id: 0 }
+      ).lean(),
+      District.find(
+        { districtAssemblyCode: { $in: regionCodes } },
+        { districtAssemblyCode: 1, dist_name: 1, _id: 0 }
+      ).lean(),
+    ]);
+
+    if (!cameras.length) return res.status(200).json(emptyPayload);
+
+    const distByCode = new Map(districts.map((d) => [d.districtAssemblyCode, d.dist_name]));
+    const camMap = new Map(
+      cameras.map((c) => {
+        const loc = c.locations?.[0];
+        return [
+          c.deviceId,
+          {
+            district: distByCode.get(c.districtAssemblyCode) || "Unknown",
+            location: (typeof loc === "string" ? loc : loc?.loc_name) || c.name || c.deviceId,
+          },
+        ];
+      })
+    );
+    const deviceIds = cameras.map((c) => c.deviceId);
+
+    // Alerts for the day
+    const [day, month, year] = date.split("/");
+    const startDate = new Date(`${year}-${month}-${day}T00:00:00.000Z`);
+    const endDate = new Date(`${year}-${month}-${day}T23:59:59.999Z`);
+
+    const alerts = await AnalyticsImage.find(
+      { cameradid: { $in: deviceIds }, sendtime: { $gte: startDate, $lte: endDate } },
+      { cameradid: 1, an_id: 1, sendtime: 1, msg: 1, _id: 0 }
+    ).lean();
+
+    // Resolve a human-readable event name: prefer the stored msg, then the
+    // an_id mapping, and only fall back to the id if nothing else is available.
+    const labelFor = (a) => {
+      if (a.msg && a.msg !== "No Event Occurred") return a.msg;
+      return messageMapping[a.an_id] || `Event ${a.an_id}`;
+    };
+
+    // Aggregate in memory
+    const IST = 5.5 * 3600 * 1000;
+    const byDistrict = {};
+    const byAnalytics = {};
+    const matrix = {};
+    const camAgg = {};
+    const timelineMap = {};
+    const uniqueCams = new Set();
+
+    for (const a of alerts) {
+      const cam = camMap.get(a.cameradid) || { district: "Unknown", location: a.cameradid };
+      const label = labelFor(a);
+      uniqueCams.add(a.cameradid);
+
+      byDistrict[cam.district] = (byDistrict[cam.district] || 0) + 1;
+      byAnalytics[label] = (byAnalytics[label] || 0) + 1;
+
+      (matrix[cam.district] = matrix[cam.district] || {})[label] =
+        (matrix[cam.district]?.[label] || 0) + 1;
+
+      const c = (camAgg[a.cameradid] = camAgg[a.cameradid] || {
+        deviceId: a.cameradid,
+        district: cam.district,
+        location: cam.location,
+        total: 0,
+        byAnalytics: {},
+      });
+      c.total++;
+      c.byAnalytics[label] = (c.byAnalytics[label] || 0) + 1;
+
+      const istHour = new Date(new Date(a.sendtime).getTime() + IST).getUTCHours();
+      timelineMap[istHour] = (timelineMap[istHour] || 0) + 1;
+    }
+
+    const total = alerts.length;
+    const analyticsLabels = Object.keys(byAnalytics).sort((a, b) => byAnalytics[b] - byAnalytics[a]);
+
+    const byDistrictArr = Object.entries(byDistrict)
+      .map(([district, count]) => ({ district, count, pct: total ? +((count / total) * 100).toFixed(1) : 0 }))
+      .sort((a, b) => b.count - a.count);
+
+    const byAnalyticsArr = analyticsLabels.map((label) => ({ label, count: byAnalytics[label] }));
+
+    const topCameras = Object.values(camAgg).sort((a, b) => b.total - a.total).slice(0, 10);
+
+    const timeline = [];
+    for (let h = 0; h < 24; h++) {
+      timeline.push({ hour: h, label: `${String(h).padStart(2, "0")}:00`, count: timelineMap[h] || 0 });
+    }
+
+    const matrixRows = Object.keys(matrix)
+      .map((district) => {
+        const row = { district, total: 0, byAnalytics: {} };
+        analyticsLabels.forEach((l) => {
+          const v = matrix[district][l] || 0;
+          row.byAnalytics[l] = v;
+          row.total += v;
+        });
+        return row;
+      })
+      .sort((a, b) => b.total - a.total);
+
+    const liveFeed = [...alerts]
+      .sort((a, b) => new Date(b.sendtime) - new Date(a.sendtime))
+      .slice(0, 30)
+      .map((a) => {
+        const cam = camMap.get(a.cameradid) || { district: "Unknown" };
+        return {
+          label: labelFor(a),
+          deviceId: a.cameradid,
+          district: cam.district,
+          time: new Date(new Date(a.sendtime).getTime() + IST).toISOString().substring(11, 19),
+        };
+      });
+
+    // Insights
+    const peak = timeline.reduce((m, t) => (t.count > m.count ? t : m), { count: -1, label: "" });
+    const insights = [];
+    if (byDistrictArr[0])
+      insights.push(`${byDistrictArr[0].district} leads all districts with ${byDistrictArr[0].count.toLocaleString()} alerts — ${byDistrictArr[0].pct}% of total traffic.`);
+    if (peak.count > 0)
+      insights.push(`Peak activity at ${peak.label} hrs IST with ${peak.count.toLocaleString()} alerts — align control-room staffing to this window.`);
+    if (topCameras[0])
+      insights.push(`Camera ${topCameras[0].deviceId} (${topCameras[0].district}) is the single busiest unit: ${topCameras[0].total.toLocaleString()} alerts.`);
+    if (byAnalyticsArr[0] && total)
+      insights.push(`"${byAnalyticsArr[0].label}" dominates the AI analytics mix with ${byAnalyticsArr[0].count.toLocaleString()} detections (${((byAnalyticsArr[0].count / total) * 100).toFixed(1)}%).`);
+    if (uniqueCams.size)
+      insights.push(`Average load is ${(total / uniqueCams.size).toFixed(1)} alerts per active camera in this window.`);
+    if (byDistrictArr.length > 1) {
+      const q = byDistrictArr[byDistrictArr.length - 1];
+      insights.push(`${q.district} is the quietest district (${q.count.toLocaleString()} alerts).`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      date,
+      totals: {
+        totalAlerts: total,
+        uniqueCameras: uniqueCams.size,
+        analyticsTypes: analyticsLabels.length,
+        districts: byDistrictArr.length,
+      },
+      byDistrict: byDistrictArr,
+      byAnalytics: byAnalyticsArr,
+      analyticsLabels,
+      timeline,
+      topCameras,
+      matrix: matrixRows,
+      liveFeed,
+      insights,
+    });
+  } catch (error) {
+    console.error("AI Dashboard error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { saveAnalyticsImage, getAnalyticsImages, getZoneWiseCounts, getAiDashboard };
