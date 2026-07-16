@@ -20,9 +20,13 @@ import {
   useColorModeValue,
   Divider,
   Icon,
-  IconButton
+  IconButton,
+  Avatar,
+  VStack,
+  Tooltip,
 } from "@chakra-ui/react";
 import { CgLogOff } from "react-icons/cg";
+import { BsCameraVideoFill } from "react-icons/bs";
 import {
   logout,
   logoutFromAllDevices,
@@ -58,7 +62,19 @@ const Header = ({
   );
 
   // Define background color so it isn't transparent
-  const headerBg = useColorModeValue("white", "#231F1F");
+  const headerBg = useColorModeValue(
+    "linear-gradient(90deg, #FFFFFF 0%, #F4F8FB 100%)",
+    "linear-gradient(90deg, #1C1A1A 0%, #231F1F 100%)"
+  );
+  const headerBorder = useColorModeValue("gray.100", "whiteAlpha.200");
+  const subText = useColorModeValue("gray.500", "gray.400");
+  const pillBg = useColorModeValue("gray.50", "whiteAlpha.100");
+  const pillBorder = useColorModeValue("gray.200", "whiteAlpha.200");
+  const brandTitle = useColorModeValue("gray.800", "white");
+
+  // Logged-in user details
+  const userName = localStorage.getItem("name") || "User";
+  const userRole = localStorage.getItem("role") || "Operator";
 
   const navigate = useNavigate();
 
@@ -113,71 +129,135 @@ const Header = ({
         alignItems="center"
         px={6}
         justifyContent="space-between"
+        bg={headerBg}
+        backdropFilter="blur(8px)"
         borderBottom="1px solid"
-        borderColor={useColorModeValue("gray.100", "gray.700")}
+        borderColor={headerBorder}
+        boxShadow="0 1px 3px rgba(0,0,0,0.04)"
 
         // FIXED POSITIONING
         position="absolute"
         top="0"
         right="0"
 
-        // --- EXACT CHANGE HERE ---
         // Match the Sidebar widths: 60px (collapsed) and 214px (expanded)
         left={{ base: 0, md: isSidebarExpanded ? "214px" : "60px" }}
-
-        // --- EXACT CHANGE HERE ---
-        // Use the SAME transition as your sidebar
         transition="left 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
         zIndex="1000"
       >
-        {/* 1. LEFT SECTION: Logo (This will move with the header) */}
-        <Flex flex={1} justifyContent="flex-start">
-          {/* <Image
-            src={activeLogo}
-            alt="Election Commission"
-            h="40px"
-            objectFit="contain"
-          /> */}
+        {/* 1. LEFT SECTION: Brand */}
+        <Flex alignItems="center" gap={3} minW={0}>
+          <Flex
+            alignItems="center"
+            justifyContent="center"
+            boxSize="42px"
+            borderRadius="12px"
+            bgGradient="linear(135deg, #3F77A5, #1C4ED8)"
+            color="white"
+            boxShadow="0 4px 12px rgba(28,78,216,0.25)"
+            flexShrink={0}
+          >
+            <Icon as={BsCameraVideoFill} boxSize="20px" />
+          </Flex>
+          <Box lineHeight="1.2" display={{ base: "none", sm: "block" }}>
+            <Text fontSize="17px" fontWeight="700" color={brandTitle} whiteSpace="nowrap">
+              Real-time monitoring, playback and analytics 
+            </Text>
+           
+          </Box>
         </Flex>
 
-        {/* 2. CENTER SECTION */}
-        {/* <Flex flex={2} justifyContent="center">
-          <Text
-            fontWeight={600}
-            textAlign="center"
-            fontSize={{ base: "12px", md: "16px" }}
-            lineHeight="1.2"
-            color={textColor}
+        {/* 2. RIGHT SECTION: Time, Notifications, Theme, Profile */}
+        <Flex justifyContent="flex-end" alignItems="center" gap={{ base: 2, md: 3 }}>
+          {/* Live date + time pill */}
+          <Flex
+            alignItems="center"
+            gap={2}
+            bg={pillBg}
+            border="1px solid"
+            borderColor={pillBorder}
+            px={3}
+            py={1.5}
+            borderRadius="full"
+            display={{ base: "none", lg: "flex" }}
           >
-            Live Webcasting & Monitoring <br /> West Bengal
-            Legislative Assembly Election 2026
-          </Text>
-        </Flex> */}
-
-        {/* 3. RIGHT SECTION: Timer, Mode, Profile */}
-        <Flex flex={1} justifyContent="flex-end" alignItems="center" gap={4}>
-          <Flex alignItems="center" gap={2} display={{ base: "none", lg: "flex" }}>
-            <TimeIcon boxSize="18px" />
-            <Text fontSize="sm" fontWeight="semibold" whiteSpace="nowrap">
-              {new Date().toLocaleTimeString()}
+            <TimeIcon boxSize="14px" color={subText} />
+            <Text fontSize="13px" fontWeight="600" whiteSpace="nowrap">
+              {currentTime.toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} ·{" "}
+              {currentTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </Text>
           </Flex>
 
-          <IconButton
-            aria-label="Toggle dark mode"
-            icon={colorMode === "light" ? <FaMoon /> : <FaSun />}
-            onClick={toggleColorMode}
-            size="sm"
-            borderRadius="12px"
-          />
+          {/* Notifications */}
+          <Tooltip label="Notifications" hasArrow>
+            <Box position="relative">
+              <IconButton
+                aria-label="Notifications"
+                icon={<FaRegBell size="17px" />}
+                variant="ghost"
+                size="sm"
+                borderRadius="12px"
+              />
+              <Box
+                position="absolute"
+                top="6px"
+                right="7px"
+                boxSize="7px"
+                bg="red.500"
+                borderRadius="full"
+                border="1.5px solid"
+                borderColor={useColorModeValue("white", "#231F1F")}
+              />
+            </Box>
+          </Tooltip>
 
+          {/* Theme toggle */}
+          <Tooltip label={colorMode === "light" ? "Dark mode" : "Light mode"} hasArrow>
+            <IconButton
+              aria-label="Toggle dark mode"
+              icon={colorMode === "light" ? <FaMoon /> : <FaSun />}
+              onClick={toggleColorMode}
+              size="sm"
+              variant="ghost"
+              borderRadius="12px"
+            />
+          </Tooltip>
+
+          <Divider orientation="vertical" h="28px" display={{ base: "none", md: "block" }} />
+
+          {/* Profile menu */}
           <Menu isLazy>
-            <MenuButton as={Button} p={0} variant="ghost">
-              <FaRegUser size="20px" />
+            <MenuButton
+              as={Button}
+              variant="ghost"
+              px={2}
+              py={1}
+              h="auto"
+              borderRadius="12px"
+              _hover={{ bg: pillBg }}
+              _active={{ bg: pillBg }}
+            >
+              <Flex alignItems="center" gap={2}>
+                <Avatar size="sm" name={userName} bg="#3F77A5" color="white" />
+                <VStack spacing={0} align="flex-start" display={{ base: "none", md: "flex" }} lineHeight="1.1">
+                  <Text fontSize="13px" fontWeight="600" maxW="120px" isTruncated>
+                    {userName}
+                  </Text>
+                  <Text fontSize="11px" color={subText} textTransform="capitalize">
+                    {userRole}
+                  </Text>
+                </VStack>
+              </Flex>
             </MenuButton>
             <MenuList>
-              <MenuItem isDisabled fontWeight="bold">{localStorage.getItem("name")}</MenuItem>
+              <Box px={3} py={2}>
+                <Text fontSize="sm" fontWeight="700">{userName}</Text>
+                <Text fontSize="xs" color={subText} textTransform="capitalize">{userRole}</Text>
+              </Box>
               <Divider />
+              <MenuItem icon={<FaRegUser size="15px" />} onClick={() => openProfileModal("My Profile")} fontSize="sm">
+                My Profile
+              </MenuItem>
               <MenuItem
                 icon={<CgLogOff size="18px" />}
                 onClick={() => openModal("logout")}
