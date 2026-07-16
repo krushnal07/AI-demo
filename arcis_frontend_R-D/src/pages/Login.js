@@ -390,9 +390,9 @@ const Login = () => {
             <Text fontWeight="600" fontSize="14px" color={headingColor}>
               Unauthorized Access Prohibited
             </Text>
-            <Text fontSize="11px" color={subColor} mt={1}>
-              This website is for authorized government users only. Unauthorized access is strictly prohibited.
-            </Text>
+            // <Text fontSize="11px" color={subColor} mt={1}>
+            //   This website is for authorized government users only. Unauthorized access is strictly prohibited.
+            // </Text>
           </Box>
         </Flex>
       </Flex>
