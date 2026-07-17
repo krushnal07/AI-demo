@@ -270,33 +270,7 @@ const PlayerControls = ({
                     onClick={() => toggle("cloud")}
                   >
                     Cloud
-                    {/* <Text
-                      fontSize="small"
-                      display={{ base: "none", md: "flex" }}
-                    >
-                      -({totalData})
-                    </Text> */}
                   </Tab>
-                  {status === "online" && (
-                    <Tab
-                      _selected={{
-                        bg: selectedTab, // Active background color
-                        color: tabActiveColor, // Active text color
-                        borderRadius: "10px",
-                        fontWeight: "bold",
-                      }}
-                      px={{ base: 1, md: 6 }} // Padding adjustment for mobile and desktop
-                      // py={2}
-                      borderRadius="full"
-                      w={{ base: "50%", md: "auto" }} // Full width on mobile
-                      textAlign="center"
-                      color={tabInactiveColor}
-                      fontSize={{ base: "sm", md: "sm" }}
-                      onClick={() => toggle("SD Card")}
-                    >
-                      SD Card
-                    </Tab>
-                  )}
                 </TabList>
               </Tabs>
               <HStack spacing={"0"}>
@@ -746,44 +720,12 @@ const PlayerControls = ({
         </Flex>
         {/* Timeline Section - Moved out of the Flex container to take full width */}
         <Box mt={2}>
-          {isOn ? (
-            <>
-              <EdgeTimeline
-                date={selectedDate}
-                plan={device.plan}
-                deviceid={device.deviceId}
-                onUrlChange={updateUrl}
-                p2porigin={device.p2purl}
-              ></EdgeTimeline>
-
-              <HStack
-                align="start"
-                spacing={4}
-                wrap="wrap" // Ensures proper wrapping if needed
-                mt={2}
-              >
-                {events.map((event, index) => (
-                  <HStack key={index} spacing={2} align="center">
-                    <Box
-                      w={3}
-                      h={3}
-                      borderRadius="full"
-                      bg={event.color}
-                      display="inline-block"
-                    />
-                    <Text fontSize="xs">{event[labelType]}</Text>
-                  </HStack>
-                ))}
-              </HStack>
-            </>
-          ) : (
-            <AzureTimeline
-              date={selectedDate}
-              deviceid={device.deviceId}
-              onUrlChange={updateUrl}
-              onTotalDataChange={handleTotalDataChange}
-            ></AzureTimeline>
-          )}
+          <AzureTimeline
+            date={selectedDate}
+            deviceid={device.deviceId}
+            onUrlChange={updateUrl}
+            onTotalDataChange={handleTotalDataChange}
+          ></AzureTimeline>
         </Box>
       </Box>
     </>
