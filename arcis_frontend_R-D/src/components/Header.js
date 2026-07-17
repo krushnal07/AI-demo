@@ -188,28 +188,7 @@ const Header = ({
             </Text>
           </Flex>
 
-          {/* Notifications */}
-          <Tooltip label="Notifications" hasArrow>
-            <Box position="relative">
-              <IconButton
-                aria-label="Notifications"
-                icon={<FaRegBell size="17px" />}
-                variant="ghost"
-                size="sm"
-                borderRadius="12px"
-              />
-              <Box
-                position="absolute"
-                top="6px"
-                right="7px"
-                boxSize="7px"
-                bg="red.500"
-                borderRadius="full"
-                border="1.5px solid"
-                borderColor={useColorModeValue("white", "#231F1F")}
-              />
-            </Box>
-          </Tooltip>
+          
 
           {/* Theme toggle */}
           <Tooltip label={colorMode === "light" ? "Dark mode" : "Light mode"} hasArrow>
