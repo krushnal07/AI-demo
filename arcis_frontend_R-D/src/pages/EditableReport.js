@@ -600,7 +600,7 @@ const Boxes = () => {
             borderRadius="10px"
             size="md"
           >
-            Add New location
+            Add New camera
           </Button>
         </Flex>
 
@@ -666,7 +666,7 @@ const Boxes = () => {
         {loading ? (
           <Flex justifyContent="center" alignItems="center" height="200px" flexDirection="column" gap={3}>
             <Spinner size="xl" color={accent} thickness="3px" />
-            <Text color={subText}>Loading FSV records…</Text>
+            <Text color={subText}>Loading camera records…</Text>
           </Flex>
         ) : (
           <>
@@ -811,7 +811,7 @@ const Boxes = () => {
           <ModalOverlay bg="blackAlpha.600" />
           <ModalContent borderRadius="16px" bg={cardBg}>
             <ModalHeader fontSize="18px" fontWeight="700" color={pageHeading} borderBottom="1px solid" borderColor={cardBorder}>
-              {modalMode === "edit" ? "Edit FSV Details" : "Add New FSV"}
+              {modalMode === "edit" ? "Edit camera Details" : "Add New camera"}
             </ModalHeader>
             <ModalCloseButton />
             <ModalBody pb={6}>
