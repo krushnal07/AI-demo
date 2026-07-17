@@ -227,11 +227,11 @@ const AiDashboard = () => {
         <Flex align="center" gap={3}>
           <Input type="date" size="sm" value={date} onChange={(e) => setDate(e.target.value)}
             bg={panel2} border="1px solid" borderColor={border} color={text} borderRadius="8px" w="150px"
-            sx={colorMode === "dark" ? { "::-webkit-calendar-picker-indicator": { filter: "invert(1)" } } : {}} />
-          <Box textAlign="right">
-            <Text fontSize="16px" fontWeight="800" lineHeight="1">{clock.toLocaleTimeString("en-IN")}</Text>
-            <Text fontSize="10px" color={sub}>{clock.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</Text>
-          </Box>
+            sx={{
+              colorScheme: colorMode,
+              "&::-webkit-calendar-picker-indicator": { cursor: "pointer", opacity: 1 },
+            }} />
+          
         </Flex>
       </Flex>
 
