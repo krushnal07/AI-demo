@@ -161,7 +161,7 @@ const Header = ({
           </Flex>
           <Box lineHeight="1.2" display={{ base: "none", sm: "block" }}>
             <Text fontSize="17px" fontWeight="700" color={brandTitle} whiteSpace="nowrap">
-              Real-time monitoring, playback and analytics 
+              Live Video Management System 
             </Text>
            
           </Box>
