@@ -498,7 +498,11 @@ const Boxes = () => {
 
   const handleModalDistrictChange = (e) => {
     const newDistrict = e.target.value;
-    setEditingCamera((prev) => ({ ...prev, district: newDistrict, assembly: "" }));
+    // Assembly is hidden from the form, but the backend still needs it — auto-pick
+    // the first assembly of the selected Location behind the scenes.
+    const region = allRegionData.find((r) => r.district === newDistrict);
+    const firstAssembly = region?.assemblies?.[0] || "";
+    setEditingCamera((prev) => ({ ...prev, district: newDistrict, assembly: firstAssembly }));
   };
 
   const handleDistrictChange = (e) => {
@@ -605,9 +609,9 @@ const Boxes = () => {
           <Flex align={{ base: "stretch", lg: "flex-end" }} justify="space-between" gap={4} wrap="wrap" direction={{ base: "column", lg: "row" }}>
             <Flex gap={3} wrap="wrap" flex={1}>
               <Box minW="180px">
-                <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">District</Text>
+                <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">Location</Text>
                 <Select
-                  placeholder="All Districts"
+                  placeholder="All Locations"
                   value={selectedDistrictName}
                   onChange={handleDistrictChange}
                   bg={inputBg}
@@ -617,24 +621,6 @@ const Boxes = () => {
                 >
                   {districtsList.map((d) => (
                     <option key={d} value={d}>{d}</option>
-                  ))}
-                </Select>
-              </Box>
-
-              <Box minW="180px">
-                <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">Assembly</Text>
-                <Select
-                  placeholder="All Assemblies"
-                  value={selectedAssemblyValue}
-                  onChange={handleAssemblyChange}
-                  isDisabled={!selectedDistrictName || assembliesList.length === 0}
-                  bg={inputBg}
-                  borderColor={cardBorder}
-                  borderRadius="10px"
-                  sx={{ "> option": { bg: optionBg, color: pageHeading } }}
-                >
-                  {assembliesList.map((a) => (
-                    <option key={a} value={a}>{a}</option>
                   ))}
                 </Select>
               </Box>
@@ -690,9 +676,8 @@ const Boxes = () => {
                   <Thead bg={tableHeadBg} position="sticky" top={0} zIndex={1}>
                     <Tr>
                       <Th sx={thStyle}>Sr No.</Th>
-                      <Th sx={thStyle}>District</Th>
-                      <Th sx={thStyle}>Assembly</Th>
-                      <Th sx={thStyle}>Locations</Th>
+                      <Th sx={thStyle}>Location</Th>
+                      <Th sx={thStyle}>Camera Location Name</Th>
                       <Th sx={thStyle}>Device Id</Th>
                       <Th sx={thStyle}>Actions</Th>
                     </Tr>
@@ -703,7 +688,6 @@ const Boxes = () => {
                         <Tr key={`${camera.DeviceId}-${index}`} bg={index % 2 !== 0 ? zebra : "transparent"} _hover={{ bg: rowHover }}>
                           <Td sx={tdStyle}>{(currentPage - 1) * itemsPerPage + index + 1}</Td>
                           <Td sx={tdStyle}>{camera.district || "N/A"}</Td>
-                          <Td sx={tdStyle}>{camera.assembly || "N/A"}</Td>
                           <Td sx={tdStyle} title={camera.location || "N/A"}>{camera.location || "N/A"}</Td>
                           <Td sx={tdStyle} fontWeight="600" color={accent}>{camera.DeviceId || "N/A"}</Td>
                           <Td sx={tdStyle}>
@@ -737,7 +721,7 @@ const Boxes = () => {
                       ))
                     ) : (
                       <Tr>
-                        <Td colSpan={6} textAlign="center" py={12} color={subText} borderColor={cardBorder}>
+                        <Td colSpan={5} textAlign="center" py={12} color={subText} borderColor={cardBorder}>
                           No records found for the selected filters.
                         </Td>
                       </Tr>
@@ -834,13 +818,13 @@ const Boxes = () => {
               <Grid templateColumns="repeat(2, 1fr)" gap={4}>
 
                 <FormControl isRequired>
-                  <FormLabel fontSize="sm">District</FormLabel>
+                  <FormLabel fontSize="sm">Location</FormLabel>
                   <Select
                     name="district"
                     value={editingCamera.district}
                     isDisabled={modalMode === "edit"}
                     onChange={handleModalDistrictChange}
-                    placeholder="Select District"
+                    placeholder="Select Location"
                     size="lg"
                   >
                     {districtsList.map((d) => (
@@ -849,29 +833,13 @@ const Boxes = () => {
                   </Select>
                 </FormControl>
 
-                <FormControl isRequired>
-                  <FormLabel fontSize="sm">Assembly</FormLabel>
-                  <Select
-                    name="assembly"
-                    value={editingCamera.assembly}
-                    onChange={handleEditInputChange}
-                    placeholder="Select Assembly"
-                    isDisabled={modalMode === "edit"}
-                    size="lg"
-                  >
-                    {modalAssembliesList.map((a) => (
-                      <option key={a} value={a}>{a}</option>
-                    ))}
-                  </Select>
-                </FormControl>
-
                 <FormControl isRequired mt={2}>
-                  <FormLabel fontSize="sm">Location</FormLabel>
+                  <FormLabel fontSize="sm">Camera Location Name</FormLabel>
                   <Input
                     name="location"
                     value={editingCamera.location || ""}
                     onChange={handleEditInputChange}
-                    placeholder="Vehicle No"
+                    placeholder="Enter camera location name"
                     size="lg"
                   />
                 </FormControl>
