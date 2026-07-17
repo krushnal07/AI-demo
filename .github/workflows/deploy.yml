@@ -157,6 +157,6 @@ jobs:
         # Record this commit as the last successfully deployed commit
         git rev-parse origin/main > .last_deployed_commit
 
-        echo "Deployment completed successfully!"
+        echo "Deployment completed successfully!!"
 
         EOF
