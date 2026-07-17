@@ -285,7 +285,7 @@ const Login = () => {
               Live Video Management System
             </Heading>
             <Text fontSize="13px" opacity={0.85}>
-              Real-time monitoring, playback and analytics for field surveillance vehicles.
+              Real-time monitoring, playback and analytics.
             </Text>
           </Box>
         </Flex>
