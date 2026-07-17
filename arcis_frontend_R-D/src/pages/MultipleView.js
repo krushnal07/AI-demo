@@ -483,7 +483,7 @@ const handleGridChange = (event) => {
           </Box>
           <Flex gap={4} flexWrap="wrap" mb={{ base: 2, md: 2 }}>
 
-            <Select value={selectedDistrictName} onChange={handleDistrictChange} placeholder={loadingDistricts ? "Loading..." : "Select District"} isDisabled={loadingDistricts || !userEmail} borderRadius="10px" bg={buttonGradientColor} w={"auto"} height={"34px"} fontSize={"12px"}>
+            <Select value={selectedDistrictName} onChange={handleDistrictChange} placeholder={loadingDistricts ? "Loading..." : "Select Location"} isDisabled={loadingDistricts || !userEmail} borderRadius="10px" bg={buttonGradientColor} w={"auto"} height={"34px"} fontSize={"12px"}>
               {uniqueDistricts.map((d) => (<option key={d.dist_name} value={d.name}>{d.name}</option>))}
             </Select>
 
@@ -544,13 +544,13 @@ const handleGridChange = (event) => {
                 <Flex flexDirection="column" gap={4}>
                   {/* Re-implementing filter logic inside panel for fullscreen */}
                   <Box>
-                    <Text fontSize="2xs" mb={1} color="white" bg="blue.500" px={2} py={0.5} borderRadius="md" w="fit-content" fontWeight="bold" textTransform="uppercase">Select District</Text>
-                    <Select value={selectedDistrictName} onChange={handleDistrictChange} placeholder="All District" bg={filterInputBg} color={filterInputColor}>{uniqueDistricts.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}</Select>
+                    <Text fontSize="2xs" mb={1} color="white" bg="blue.500" px={2} py={0.5} borderRadius="md" w="fit-content" fontWeight="bold" textTransform="uppercase">Select location</Text>
+                    <Select value={selectedDistrictName} onChange={handleDistrictChange} placeholder="All Locations" bg={filterInputBg} color={filterInputColor}>{uniqueDistricts.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}</Select>
                   </Box>
-                  <Box>
+                  {/* <Box>
                     <Text fontSize="2xs" mb={1} color="white" bg="blue.500" px={2} py={0.5} borderRadius="md" w="fit-content" fontWeight="bold" textTransform="uppercase">Select Assembly</Text>
                     <Select value={selectedAssemblyValue} onChange={handleAssemblyChange} placeholder="All Assembly" bg={filterInputBg} color={filterInputColor}>{assemblies.map(a => <option key={a.accName} value={a.accName}>{a.accName}</option>)}</Select>
-                  </Box>
+                  </Box> */}
                   <Box>
                     <Text fontSize="2xs" mb={1} color="white" bg="blue.500" px={2} py={0.5} borderRadius="md" w="fit-content" fontWeight="bold" textTransform="uppercase">Select Grid Layout</Text>
                     <Select
