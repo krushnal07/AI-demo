@@ -40,7 +40,7 @@ const allMenuItems = [
      { label: "Events", path: "/events" },
     ],
   },
-  { label: "AnalyticsImage", icon: <RiCheckboxMultipleBlankLine />, path: "/AnalyticsImage" },
+  { label: "AnalyticsReports", icon: <RiCheckboxMultipleBlankLine />, path: "/AnalyticsImage" },
   // {
   //   label: "Reports",
   //   icon: <IoDocumentTextOutline />,
@@ -72,7 +72,7 @@ const allMenuItems = [
 ];
 
 const rolePermissions = {
-  MasterAdmin: {Dashboard: true,"AI Dashboard": true,"Camera Status": true, View: true, AnalyticsImage: true,Reports:["Consolidated Report","Installation Report","Connected Report","Gps Report","Mobile App Report"],"Helpdesk":["Call Activity","Incidence Master"],"Admin Panel":["VMS Master","Vehicle Logs","Hardware Service"]},
+  MasterAdmin: {Dashboard: true,"AI Dashboard": true,"Camera Status": true, View: true, AnalyticsReports: true,Reports:["Consolidated Report","Installation Report","Connected Report","Gps Report","Mobile App Report"],"Helpdesk":["Call Activity","Incidence Master"],"Admin Panel":["VMS Master","Vehicle Logs","Hardware Service"]},
   VmuktiAdmin: {Dashboard: true,"AI Dashboard": true,"Camera Status": true, View: true, Heatmap: true,Reports:["Consolidated Report","Gps Report","Mobile App Report"],"Helpdesk":["Call Activity","Incidence Master"],"Admin Panel":["Vehicle Master","Vehicle Logs","Hardware Service"]},
   CEO: { Dashboard: true,"AI Dashboard": true,"Camera Status": true, View: true },
   ECI: { View: ["Multiscreen"] },

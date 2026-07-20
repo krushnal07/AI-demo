@@ -336,8 +336,8 @@ const Boxes = () => {
                 location_Type: editingCamera.location_Type,
                 operatorName: editingCamera.operatorName || "N/A",
                 operatorMobile: editingCamera.operatorMobile || "N/A",
-                 userEmail: userEmail, // ADDED
-      source: "Portal" 
+                userEmail: userEmail, // ADDED
+                source: "Portal"
               };
 
               const updatePayload2 = {
@@ -348,8 +348,8 @@ const Boxes = () => {
                 location_Type: conflictingCamera.location_Type || "indoor",
                 operatorName: conflictingCamera.operatorName || "N/A",
                 operatorMobile: conflictingCamera.operatorMobile || "N/A",
-                 userEmail: userEmail, // ADDED
-      source: "Portal" 
+                userEmail: userEmail, // ADDED
+                source: "Portal"
               };
 
               await Promise.all([
@@ -412,7 +412,7 @@ const Boxes = () => {
             location_Type: editingCamera.location_Type,
             operatorName: editingCamera.operatorName || "N/A",
             operatorMobile: editingCamera.operatorMobile || "N/A",
-             userEmail: userEmail, 
+            userEmail: userEmail,
             source: "Portal"
           }
         );
@@ -589,7 +589,7 @@ const Boxes = () => {
             <Text fontWeight={700} fontSize="28px" color={pageHeading} lineHeight="1.2">
               VMS Master
             </Text>
-            
+
           </Box>
           <Button
             onClick={handleOpenAddModal}
@@ -888,7 +888,7 @@ const Boxes = () => {
                   )}
                 </FormControl>
 
-                {/* <FormControl mt={2}>
+                <FormControl mt={2}>
                   <FormLabel fontSize="sm">Driver Name</FormLabel>
                   <Input
                     name="operatorName"
@@ -917,9 +917,9 @@ const Boxes = () => {
                     placeholder="Enter 10-digit number"
                     size="lg"
                   />
-                </FormControl> */}
+                </FormControl>
 
-                {/* <FormControl mt={2}>
+                {<FormControl mt={2}>
                   <FormLabel fontSize="sm">Vehicle Type</FormLabel>
                   <Input
                     name="location_Type"
@@ -928,7 +928,7 @@ const Boxes = () => {
                     placeholder="Enter Vehicle"
                     size="lg"
                   />
-                </FormControl> */}
+                </FormControl>}
 
               </Grid>
             </ModalBody>
