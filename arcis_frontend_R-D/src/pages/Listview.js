@@ -748,75 +748,14 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
 
 
           {/* View Toggle */}
-          <Flex gap={3}>
-
-            {/* <Box
-              borderRadius="12px"
-              p="1px"
-              bg={
-                location.pathname === "/cameras"
-                  ? gradientBorderColor
-                  : "transparent"
-              }
-            >
-              <Box
-                as={RouterLink}
-                to="/cameras"
-                bg={
-                  location.pathname === "/cameras"
-                    ? buttonGradientColor
-                    : "transparent"
-                }
-                p="8px"
-                borderRadius="12px"
-                onClick={() => console.log("Switched to grid view")}
-                aria-label="Grid View"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-           
-                {colorMode === 'light' ?
-                  <Image src="/images/grid_view_icon_light.png" alt="Grid View" boxSize="20px" /> :
-                  <Image src="/images/grid_view_icon.png" alt="Grid View" boxSize="20px" />}
-               
-              </Box>
-            </Box> */}
-
-          
-            {/* <Box
-              borderRadius="12px"
-              p="1px"
-              bg={
-                location.pathname === "/listview"
-                  ? gradientBorderColor
-                  : "transparent"
-              }
-            >
-              <Box
-                as={RouterLink}
-                to="/listview"
-                bg={
-                  location.pathname === "/listview"
-                    ? buttonGradientColor
-                    : "transparent"
-                }
-                p="8px"
-                borderRadius="12px"
-                onClick={() => console.log("Switched to list view")}
-                aria-label="List View"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-        
-                {colorMode === 'light' ?
-                  <Image src="/images/list_view_icon_light.png" alt="List View" boxSize="20px" /> :
-                  <Image src="/images/list_view_icon.png" alt="List View" boxSize="20px" />}
-         
-              </Box>
-            </Box> */}
-          </Flex>
+          <HStack h="32px" border="2px solid" borderColor="blue.400" borderRadius="full" spacing={0}>
+            <Box as={RouterLink} to="/multiple" h="full" display="flex" alignItems="center" px={4} borderRadius="full" fontSize="sm" fontWeight="medium" bg={location.pathname === "/multiple" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/multiple" ? "sm" : "none"} color={location.pathname === "/multiple" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
+              Grid View
+            </Box>
+            <Box as={RouterLink} to="/listview" h="full" display="flex" alignItems="center" px={4} borderRadius="full" fontSize="sm" fontWeight="medium" bg={location.pathname === "/listview" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/listview" ? "sm" : "none"} color={location.pathname === "/listview" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
+              List View
+            </Box>
+          </HStack>
         </Flex>
 
         {/* Filter Row */}

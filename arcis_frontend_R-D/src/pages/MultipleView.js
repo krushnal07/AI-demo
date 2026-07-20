@@ -17,10 +17,12 @@ import {
   Spinner,
   Button,
   Input,
-   Radio,
-  RadioGroup
+  Radio,
+  RadioGroup,
+  Image
 } from "@chakra-ui/react";
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate, Link as RouterLink, useLocation } from "react-router-dom";
 import {
   getdistrictwiseAccess,
   getDistrictNameByAssemblyName,
@@ -53,6 +55,8 @@ const getPageNumbersForBlockPagination = (activePage, totalPages, windowSize = 3
 };
 
 function MultipleView() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const [gridOption, setGridOption] = useState("2x2");
@@ -77,6 +81,8 @@ function MultipleView() {
   const filterInputColor = useColorModeValue("gray.800", "white");
   const filterInputBorder = useColorModeValue("gray.200", "transparent");
   const filterOptionBg = useColorModeValue("white", "#2D3748");
+  const listViewIconSrc = useColorModeValue("/images/list_view_icon_light.png", "/images/list_view_icon.png");
+  const inactiveTabColor = useColorModeValue("gray.600", "gray.300");
   const [mutedCameras, setMutedCameras] = useState({});
 
   const [userEmail, setUserEmail] = useState(typeof window !== 'undefined' ? localStorage.getItem("email") || '' : '');
@@ -96,7 +102,7 @@ function MultipleView() {
   const [camerasToDisplay, setCamerasToDisplay] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const cardTextColor = useColorModeValue("gray.800", "white");
-  const [psOption, setPsOption] = useState("ps"); // "ps" for Vehicle No, "camera" for Camera ID
+  const [psOption, setPsOption] = useState("camera"); // "ps" for Vehicle No, "camera" for Camera ID
   const [searchDeviceId, setSearchDeviceId] = useState("");
   const textColor = useColorModeValue("black", "white");
 
@@ -203,18 +209,18 @@ function MultipleView() {
   }, [userEmail, selectedDistrictName]);
 
   // Reset all mutes to "True" (Default) whenever the page or layout changes
-useEffect(() => {
-  setMutedCameras({});
-}, [activePage, itemsPerPage]);
+  useEffect(() => {
+    setMutedCameras({});
+  }, [activePage, itemsPerPage]);
 
   // --- Mute/Fullscreen Handlers ---
-const toggleMute = (deviceId) => {
+  const toggleMute = (deviceId) => {
     setMutedCameras(prev => ({
       ...prev,
       // Default to true (muted) if undefined, then flip
-      [deviceId]: !(prev[deviceId] ?? true) 
+      [deviceId]: !(prev[deviceId] ?? true)
     }));
-    
+
     // Remove the manual "video.muted" lines here. 
     // Your Player.js component is now handling the audio engine correctly via the 'muted' prop.
   };
@@ -229,10 +235,10 @@ const toggleMute = (deviceId) => {
     }
   };
 
- const toggleFullScreen = () => {
+  const toggleFullScreen = () => {
     const container = containerRef.current;
     if (!container) return;
-    
+
     if (!isFullScreen) {
       if (container.requestFullscreen) {
         container.requestFullscreen();
@@ -281,7 +287,7 @@ const toggleMute = (deviceId) => {
 
       let fetchedCameras = Array.isArray(response) ? response : [];
       // Sorting: Online first
-       fetchedCameras.sort((a, b) => {
+      fetchedCameras.sort((a, b) => {
         const aStatus = !!a.status;
         const bStatus = !!b.status;
 
@@ -307,61 +313,61 @@ const toggleMute = (deviceId) => {
   };
 
   // --- Pagination & Filtering Logic ---
-useEffect(() => {
-  if (isLoading) return;
+  useEffect(() => {
+    if (isLoading) return;
 
-  let camerasToProcess = allFetchedCameras;
+    let camerasToProcess = allFetchedCameras;
 
-  // 1. APPLY ROLE-BASED RESTRICTION (Keep from Local)
-  const currentUserRole = localStorage.getItem("role");
-  if (currentUserRole === "CEO" || currentUserRole === "ECI") {
-    camerasToProcess = camerasToProcess.filter(camera => !!camera.status);
-  }
+    // 1. APPLY ROLE-BASED RESTRICTION (Keep from Local)
+    const currentUserRole = localStorage.getItem("role");
+    if (currentUserRole === "CEO" || currentUserRole === "ECI") {
+      camerasToProcess = camerasToProcess.filter(camera => !!camera.status);
+    }
 
-  // 2. LOCATION TYPE FILTER
-  if (selectedLocationType && selectedLocationType !== 'all') {
-    camerasToProcess = camerasToProcess.filter(camera => {
-      const locationType = camera.location_Type ? camera.location_Type.toLowerCase() : null;
-      if (selectedLocationType === 'auxiliary') return locationType === 'auxiliary';
-      return locationType === selectedLocationType;
-    });
-  }
+    // 2. LOCATION TYPE FILTER
+    if (selectedLocationType && selectedLocationType !== 'all') {
+      camerasToProcess = camerasToProcess.filter(camera => {
+        const locationType = camera.location_Type ? camera.location_Type.toLowerCase() : null;
+        if (selectedLocationType === 'auxiliary') return locationType === 'auxiliary';
+        return locationType === selectedLocationType;
+      });
+    }
 
-  // 3. INTEGRATED SEARCH LOGIC (From Github)
-  const activeSearch = searchDeviceId.trim() || searchInput.trim();
-  if (activeSearch !== "") {
-    const term = activeSearch.toLowerCase();
-    camerasToProcess = camerasToProcess.filter(c => {
-      if (psOption === "ps") {
-        // Search by Vehicle No (checks locations array or location string)
-        const vehicleNo = Array.isArray(c.locations) ? c.locations[0] : (c.location || "");
-        return String(vehicleNo).toLowerCase().includes(term);
-      } else {
-        // Search by Camera ID or Name
-        return (
-          c.deviceId?.toLowerCase().includes(term) || 
-          c.name?.toLowerCase().includes(term) ||
-          c.operatorName?.toLowerCase().includes(term)
-        );
-      }
-    });
-  }
+    // 3. INTEGRATED SEARCH LOGIC (From Github)
+    const activeSearch = searchDeviceId.trim() || searchInput.trim();
+    if (activeSearch !== "") {
+      const term = activeSearch.toLowerCase();
+      camerasToProcess = camerasToProcess.filter(c => {
+        if (psOption === "ps") {
+          // Search by Vehicle No (checks locations array or location string)
+          const vehicleNo = Array.isArray(c.locations) ? c.locations[0] : (c.location || "");
+          return String(vehicleNo).toLowerCase().includes(term);
+        } else {
+          // Search by Camera ID or Name
+          return (
+            c.deviceId?.toLowerCase().includes(term) ||
+            c.name?.toLowerCase().includes(term) ||
+            c.operatorName?.toLowerCase().includes(term)
+          );
+        }
+      });
+    }
 
-  // 4. Update Pagination (Keep from Local)
-  const calculatedTotalPages = Math.ceil(camerasToProcess.length / itemsPerPage);
-  setTotalPages(calculatedTotalPages > 0 ? calculatedTotalPages : 1);
+    // 4. Update Pagination (Keep from Local)
+    const calculatedTotalPages = Math.ceil(camerasToProcess.length / itemsPerPage);
+    setTotalPages(calculatedTotalPages > 0 ? calculatedTotalPages : 1);
 
-  let currentPageToUse = activePage;
-  if (activePage > calculatedTotalPages && calculatedTotalPages > 0) currentPageToUse = calculatedTotalPages;
-  else if (calculatedTotalPages > 0 && activePage < 1) currentPageToUse = 1;
+    let currentPageToUse = activePage;
+    if (activePage > calculatedTotalPages && calculatedTotalPages > 0) currentPageToUse = calculatedTotalPages;
+    else if (calculatedTotalPages > 0 && activePage < 1) currentPageToUse = 1;
 
-  if (currentPageToUse !== activePage) setActivePage(currentPageToUse);
+    if (currentPageToUse !== activePage) setActivePage(currentPageToUse);
 
-  const startIndex = (currentPageToUse - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  setCamerasToDisplay(camerasToProcess.slice(startIndex, endIndex));
+    const startIndex = (currentPageToUse - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    setCamerasToDisplay(camerasToProcess.slice(startIndex, endIndex));
 
-}, [allFetchedCameras, searchInput, searchDeviceId, psOption, activePage, itemsPerPage, isLoading, selectedLocationType]);
+  }, [allFetchedCameras, searchInput, searchDeviceId, psOption, activePage, itemsPerPage, isLoading, selectedLocationType]);
 
 
   const refreshMultipleCameras = () => {
@@ -382,32 +388,32 @@ useEffect(() => {
     borderRadius: "8px",
   });
 
-const handleGridChange = (event) => {
+  const handleGridChange = (event) => {
     const value = event.target.value;
     if (value === gridOption) return;
 
     setGridOption(value);
     let newItemsPerPage = 4;
-    
+
     switch (value) {
-      case "2x2": 
-        newItemsPerPage = 4; 
-        setGridLayout("repeat(2, 1fr)"); 
+      case "2x2":
+        newItemsPerPage = 4;
+        setGridLayout("repeat(2, 1fr)");
         break;
       case "3x2": // Renamed for clarity
-        newItemsPerPage = 6; 
-        setGridLayout("repeat(3, 1fr)"); 
+        newItemsPerPage = 6;
+        setGridLayout("repeat(3, 1fr)");
         break;
       case "3x3": // New 3x3 Case
-        newItemsPerPage = 9; 
-        setGridLayout("repeat(3, 1fr)"); 
+        newItemsPerPage = 9;
+        setGridLayout("repeat(3, 1fr)");
         break;
-        case "4x3": // Add this block
-        newItemsPerPage = 12; 
-        setGridLayout("repeat(4, 1fr)"); 
+      case "4x3": // Add this block
+        newItemsPerPage = 12;
+        setGridLayout("repeat(4, 1fr)");
         break;
-      default: 
-        newItemsPerPage = 4; 
+      default:
+        newItemsPerPage = 4;
         setGridLayout("repeat(2, 1fr)");
     }
     setItemsPerPage(newItemsPerPage);
@@ -453,7 +459,7 @@ const handleGridChange = (event) => {
     };
   }, []);
 
- 
+
 
   const Camera = camerasToDisplay.length > 0 && currentCameraIndex < camerasToDisplay.length ? camerasToDisplay[currentCameraIndex] : null;
   const text = useColorModeValue('gray.500', 'gray.400');
@@ -466,19 +472,70 @@ const handleGridChange = (event) => {
           <Box display="flex" justifyContent="space-between" alignItems="center" flexDirection={{ base: "column", md: "row" }} mb={4}>
             <Text fontWeight={400} fontSize="26px" color={text}>Multiscreen</Text>
             <Flex justifyContent={"space-between"} alignItems={"center"} gap={2} flexWrap="wrap">
-             {totalPages > 1 && (
-  <Flex align="center" justify="center" gap={2}>
-    <Button size="sm" onClick={() => handlePageChange(activePage - 1)} isDisabled={activePage === 1} bg={bgColor}>Previous</Button>
-    <Button size="sm" onClick={() => handlePageChange(activePage + 1)} isDisabled={activePage === totalPages} bg={bgColor}>Next</Button>
-  </Flex>
-)}
-              <Select bg={bgColor} width={{ base: "100%", md: "120px" }} mt={{ base: 2, md: 0 }} mb={-2} value={gridOption} onChange={handleGridChange} borderRadius={"8px"}>
-                 <option value="2x2">2x2 Grid</option>
-  <option value="3x2">3x2 Grid</option>
-  <option value="3x3">3x3 Grid</option> {/* Added this */}
-  <option value="4x3">3x4 Grid</option>
+              {totalPages > 1 && (
+                <Flex align="center" justify="center" gap={2}>
+                  <Button size="sm" onClick={() => handlePageChange(activePage - 1)} isDisabled={activePage === 1} bg={bgColor}>Previous</Button>
+
+                  {(() => {
+                    const pageNumbers = [];
+                    const delta = 1;
+
+                    for (let i = 1; i <= totalPages; i++) {
+                      if (
+                        i === 1 ||
+                        i === totalPages ||
+                        (i >= activePage - delta && i <= activePage + delta)
+                      ) {
+                        pageNumbers.push(i);
+                      } else if (
+                        (i === activePage - delta - 1 && i > 1) ||
+                        (i === activePage + delta + 1 && i < totalPages)
+                      ) {
+                        if (pageNumbers[pageNumbers.length - 1] !== "...") {
+                          pageNumbers.push("...");
+                        }
+                      }
+                    }
+
+                    return pageNumbers.map((page, idx) =>
+                      page === "..." ? (
+                        <Text key={`ellipsis-${idx}`} mx={1} alignSelf="center">
+                          ...
+                        </Text>
+                      ) : (
+                        <Button
+                          key={page}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          fontWeight={activePage === page ? "bold" : "normal"}
+                          textDecoration={activePage === page ? "underline" : "none"}
+                          bg={activePage === page ? "blue.400" : bgColor}
+                          color={activePage === page ? "white" : "inherit"}
+                        >
+                          {page}
+                        </Button>
+                      )
+                    );
+                  })()}
+
+                  <Button size="sm" onClick={() => handlePageChange(activePage + 1)} isDisabled={activePage === totalPages} bg={bgColor}>Next</Button>
+                </Flex>
+              )}
+              <Select size="sm" bg={bgColor} width={{ base: "100%", md: "120px" }} value={gridOption} onChange={handleGridChange} borderRadius={"8px"}>
+                <option value="2x2">2x2 Grid</option>
+                <option value="3x2">3x2 Grid</option>
+                <option value="3x3">3x3 Grid</option> {/* Added this */}
+                <option value="4x3">3x4 Grid</option>
               </Select>
-              <Tooltip label="Fullscreen"><IconButton bg={bgColor} borderRadius={"8px"} icon={<BsArrowsFullscreen />} onClick={toggleFullScreen} boxSize={"10"} variant="outline" /></Tooltip>
+              <Tooltip label="Fullscreen"><IconButton size="sm" bg={bgColor} borderRadius={"8px"} icon={<BsArrowsFullscreen />} onClick={toggleFullScreen} variant="outline" /></Tooltip>
+              <HStack h="32px" border="2px solid" borderColor="blue.400" borderRadius="full" spacing={0}>
+                <Box as={RouterLink} to="/multiple" h="full" display="flex" alignItems="center" px={4} borderRadius="full" fontSize="sm" fontWeight="medium" bg={location.pathname === "/multiple" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/multiple" ? "sm" : "none"} color={location.pathname === "/multiple" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
+                  Grid View
+                </Box>
+                <Box as={RouterLink} to="/listview" h="full" display="flex" alignItems="center" px={4} borderRadius="full" fontSize="sm" fontWeight="medium" bg={location.pathname === "/listview" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/listview" ? "sm" : "none"} color={location.pathname === "/listview" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
+                  List View
+                </Box>
+              </HStack>
             </Flex>
           </Box>
           <Flex gap={4} flexWrap="wrap" mb={{ base: 2, md: 2 }}>
@@ -492,29 +549,29 @@ const handleGridChange = (event) => {
               {assemblies.map((a) => (<option key={a._id} value={a.accName}>{a.accName}</option>))}
             </Select> */}
 
-             {/* NEW SEARCH TOGGLE FROM GITHUB */}
-  <RadioGroup onChange={setPsOption} value={psOption}>
-    <HStack spacing={3}>
-      {/* <Radio value="ps" size="md" colorScheme="blue">
+            {/* NEW SEARCH TOGGLE FROM GITHUB */}
+            <RadioGroup onChange={setPsOption} value={psOption}>
+              <HStack spacing={3}>
+                {/* <Radio value="ps" size="md" colorScheme="blue">
         <Text fontSize="12px" fontWeight={psOption === "ps" ? "bold" : "normal"}>Vehicle No</Text>
       </Radio> */}
-      <Radio value="camera" size="md" colorScheme="blue">
-        <Text fontSize="12px" fontWeight={psOption === "camera" ? "bold" : "normal"}>Camera ID</Text>
-      </Radio>
-    </HStack>
-  </RadioGroup>
+                <Radio value="camera" size="md" colorScheme="blue">
+                  <Text fontSize="12px" fontWeight={psOption === "camera" ? "bold" : "normal"}>Camera ID</Text>
+                </Radio>
+              </HStack>
+            </RadioGroup>
 
-  <Input
-    placeholder={psOption === "ps" ? " " : "Search Camera ID"}
-    value={searchDeviceId}
-    onChange={(e) => setSearchDeviceId(e.target.value)}
-    width={"160px"}
-    height={"34px"}
-    fontSize={"12px"}
-    bg={buttonGradientColor}
-    borderRadius={"10px"}
-    _placeholder={{ color: placeholderColor }}
-  />
+            <Input
+              placeholder={psOption === "ps" ? " " : "Search Camera ID"}
+              value={searchDeviceId}
+              onChange={(e) => setSearchDeviceId(e.target.value)}
+              width={"160px"}
+              height={"34px"}
+              fontSize={"12px"}
+              bg={buttonGradientColor}
+              borderRadius={"10px"}
+              _placeholder={{ color: placeholderColor }}
+            />
 
             <Select mt={{ base: 2, md: 0 }} mb={-2} value={autoRefreshInterval} onChange={(e) => setAutoRefreshInterval(Number(e.target.value))} borderRadius={"8px"} bg={buttonGradientColor} width={"70px"} height={"34px"} fontSize={"12px"}>
               <option value={0}>Off</option>
@@ -527,14 +584,57 @@ const handleGridChange = (event) => {
             {isFullScreen && (
               <Box position="absolute" top="4" right="4" zIndex="1000"><Button onClick={() => setShowFilterPanel(!showFilterPanel)} colorScheme="blue" size="sm" borderRadius="full">Filter</Button></Box>
             )}
-           {isFullScreen && totalPages > 1 && (
-  <Box position="absolute" top="4" left="50%" transform="translateX(-50%)" zIndex="1000">
-    <Flex align="center" justify="center" gap={2}>
-      <Button size="sm" colorScheme="gray" variant="solid" onClick={() => handlePageChange(activePage - 1)} isDisabled={activePage === 1}>Previous</Button>
-      <Button size="sm" colorScheme="gray" variant="solid" onClick={() => handlePageChange(activePage + 1)} isDisabled={activePage === totalPages}>Next</Button>
-    </Flex>
-  </Box>
-)}
+            {isFullScreen && totalPages > 1 && (
+              <Box position="absolute" top="4" left="50%" transform="translateX(-50%)" zIndex="1000">
+                <Flex align="center" justify="center" gap={2}>
+                  <Button size="sm" colorScheme="gray" variant="solid" onClick={() => handlePageChange(activePage - 1)} isDisabled={activePage === 1}>Previous</Button>
+
+                  {(() => {
+                    const pageNumbers = [];
+                    const delta = 1;
+
+                    for (let i = 1; i <= totalPages; i++) {
+                      if (
+                        i === 1 ||
+                        i === totalPages ||
+                        (i >= activePage - delta && i <= activePage + delta)
+                      ) {
+                        pageNumbers.push(i);
+                      } else if (
+                        (i === activePage - delta - 1 && i > 1) ||
+                        (i === activePage + delta + 1 && i < totalPages)
+                      ) {
+                        if (pageNumbers[pageNumbers.length - 1] !== "...") {
+                          pageNumbers.push("...");
+                        }
+                      }
+                    }
+
+                    return pageNumbers.map((page, idx) =>
+                      page === "..." ? (
+                        <Text key={`ellipsis-${idx}`} mx={1} alignSelf="center">
+                          ...
+                        </Text>
+                      ) : (
+                        <Button
+                          key={page}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          fontWeight={activePage === page ? "bold" : "normal"}
+                          textDecoration={activePage === page ? "underline" : "none"}
+                          bg={activePage === page ? "blue.400" : "gray.200"}
+                          color={activePage === page ? "white" : "inherit"}
+                        >
+                          {page}
+                        </Button>
+                      )
+                    );
+                  })()}
+
+                  <Button size="sm" colorScheme="gray" variant="solid" onClick={() => handlePageChange(activePage + 1)} isDisabled={activePage === totalPages}>Next</Button>
+                </Flex>
+              </Box>
+            )}
             {isFullScreen && showFilterPanel && (
               <Box position="fixed" top="4" right="4" bottom="4" width="300px" bg={filterPanelBg} backdropFilter="blur(20px)" borderRadius="2xl" zIndex="999" p={6} boxShadow="dark-lg" color={filterPanelColor} border={`1px solid ${filterPanelBorder}`}>
                 <Flex justifyContent="space-between" alignItems="center" mb={6} bg="blue.500" p={2} borderRadius="xl" boxShadow="md">
@@ -562,10 +662,10 @@ const handleGridChange = (event) => {
                       borderRadius="xl"
                       height="45px"
                     >
-                     <option value="2x2" style={{ background: filterOptionBg, color: filterInputColor }}>2x2 Grid</option>
-  <option value="3x2" style={{ background: filterOptionBg, color: filterInputColor }}>3x2 Grid</option>
-  <option value="3x3" style={{ background: filterOptionBg, color: filterInputColor }}>3x3 Grid</option> {/* Added this */}
-  <option value="4x3" style={{ background: filterOptionBg, color: filterInputColor }}>3x4 Grid</option>
+                      <option value="2x2" style={{ background: filterOptionBg, color: filterInputColor }}>2x2 Grid</option>
+                      <option value="3x2" style={{ background: filterOptionBg, color: filterInputColor }}>3x2 Grid</option>
+                      <option value="3x3" style={{ background: filterOptionBg, color: filterInputColor }}>3x3 Grid</option> {/* Added this */}
+                      <option value="4x3" style={{ background: filterOptionBg, color: filterInputColor }}>3x4 Grid</option>
                     </Select>
                   </Box>
 
@@ -615,70 +715,70 @@ const handleGridChange = (event) => {
               </Box>
             )}
 
-           {/* Inside the Desktop Grid .map loop (around line 470) */}
-<Grid templateColumns={gridLayout} gap={1} width="100%" pt={isFullScreen ? 2 : 0} borderRadius="md" boxShadow="sm" overflow="hidden">
-  {camerasToDisplay.length > 0 ? camerasToDisplay.map((camera, index) => {
-    // Local variable to determine mute state (Default to true)
-    const isMuted = mutedCameras[camera.deviceId] ?? true;
+            {/* Inside the Desktop Grid .map loop (around line 470) */}
+            <Grid templateColumns={gridLayout} gap={1} width="100%" pt={isFullScreen ? 2 : 0} borderRadius="md" boxShadow="sm" overflow="hidden">
+              {camerasToDisplay.length > 0 ? camerasToDisplay.map((camera, index) => {
+                // Local variable to determine mute state (Default to true)
+                const isMuted = mutedCameras[camera.deviceId] ?? true;
 
-    return (
-      <Box key={camera.deviceId + "-desktop" + index} id={`camera-box-${camera.deviceId}`} position="relative" borderRadius="8px" overflow="hidden" >
-        <Box position="relative">
-          {camera.deviceId && camera.deviceId.startsWith("SSAN") ? (
-            <SimpleFLVPlayer 
-              url={generateStreamUrl(camera)} 
-              style={getResponsivePlayerStyle()} 
-              muted={isMuted} 
-            />
-          ) : (
-            <Player
-              device={camera}
-              initialPlayUrl={generateStreamUrl(camera)}
-              width="100%"
-              style={getResponsivePlayerStyle()}
-              height="100%"
-              showControls={false}
-              showOverlay={false}
-              muted={isMuted} // Passing to updated Player.js
-            />
-          )}
+                return (
+                  <Box key={camera.deviceId + "-desktop" + index} id={`camera-box-${camera.deviceId}`} position="relative" borderRadius="8px" overflow="hidden" >
+                    <Box position="relative">
+                      {camera.deviceId && camera.deviceId.startsWith("SSAN") ? (
+                        <SimpleFLVPlayer
+                          url={generateStreamUrl(camera)}
+                          style={getResponsivePlayerStyle()}
+                          muted={isMuted}
+                        />
+                      ) : (
+                        <Player
+                          device={camera}
+                          initialPlayUrl={generateStreamUrl(camera)}
+                          width="100%"
+                          style={getResponsivePlayerStyle()}
+                          height="100%"
+                          showControls={false}
+                          showOverlay={false}
+                          muted={isMuted} // Passing to updated Player.js
+                        />
+                      )}
 
-          <Box position="absolute" bottom="0" left="0" right="0" bg="rgba(0, 0, 0, 0.5)" p={2} zIndex="10">
-  <Text color="white" fontSize="11px" fontWeight="500" >
-    {camera.dist_name} / {camera.accName} / 
-    {Array.isArray(camera.locations) ? ` ${camera.locations[0]} / ` : ""} 
-    {camera.deviceId}
-  </Text>
-</Box>
+                      <Box position="absolute" bottom="0" left="0" right="0" bg="rgba(0, 0, 0, 0.5)" p={2} zIndex="10">
+                        <Text color="white" fontSize="11px" fontWeight="500" >
+                          {camera.dist_name} / {camera.accName} /
+                          {Array.isArray(camera.locations) ? ` ${camera.locations[0]} / ` : ""}
+                          {camera.deviceId}
+                        </Text>
+                      </Box>
 
-          {/* Action Buttons Overlay - Fixed width/variant prevents collapsing */}
-          <HStack position="absolute" bottom="35px" right="10px" zIndex="20" spacing={2}>
-            <IconButton 
-              variant="solid" 
-              size="sm" 
-              bg="rgba(0,0,0,0.6)" 
-              _hover={{ bg: "black" }}
-              color="white" 
-              borderRadius="full"
-              icon={isMuted ? <BsVolumeMute fontSize="18px" /> : <BsVolumeUp fontSize="18px" />} 
-              onClick={() => toggleMute(camera.deviceId)} 
-            />
-            <IconButton 
-              variant="solid" 
-              size="sm" 
-              bg="rgba(0,0,0,0.6)" 
-              _hover={{ bg: "black" }}
-              color="white" 
-              borderRadius="full"
-              icon={<BsArrowsFullscreen fontSize="16px" />} 
-              onClick={() => toggleCameraFullscreen(camera.deviceId)} 
-            />
-          </HStack>
-        </Box>
-      </Box>
-    );
-  }) : (!isLoading && <GridItem colSpan={2}><NoCameraFound title="No cameras" /></GridItem>)}
-</Grid>
+                      {/* Action Buttons Overlay - Fixed width/variant prevents collapsing */}
+                      <HStack position="absolute" bottom="35px" right="10px" zIndex="20" spacing={2}>
+                        <IconButton
+                          variant="solid"
+                          size="sm"
+                          bg="rgba(0,0,0,0.6)"
+                          _hover={{ bg: "black" }}
+                          color="white"
+                          borderRadius="full"
+                          icon={isMuted ? <BsVolumeMute fontSize="18px" /> : <BsVolumeUp fontSize="18px" />}
+                          onClick={() => toggleMute(camera.deviceId)}
+                        />
+                        <IconButton
+                          variant="solid"
+                          size="sm"
+                          bg="rgba(0,0,0,0.6)"
+                          _hover={{ bg: "black" }}
+                          color="white"
+                          borderRadius="full"
+                          icon={<BsArrowsFullscreen fontSize="16px" />}
+                          onClick={() => toggleCameraFullscreen(camera.deviceId)}
+                        />
+                      </HStack>
+                    </Box>
+                  </Box>
+                );
+              }) : (!isLoading && <GridItem colSpan={2}><NoCameraFound title="No cameras" /></GridItem>)}
+            </Grid>
           </Box>
         </Box>
       )}
@@ -691,12 +791,55 @@ const handleGridChange = (event) => {
 
       {isMobile && (
         <Box p={2} mt="50px">
-         {totalPages > 1 && (
-  <Flex align="center" justify="center" gap={4} mb={3}>
-    <Button size="sm" bg={bgColor} onClick={() => handlePageChange(activePage - 1)} isDisabled={activePage === 1}>Previous</Button>
-    <Button size="sm" bg={bgColor} onClick={() => handlePageChange(activePage + 1)} isDisabled={activePage === totalPages}>Next</Button>
-  </Flex>
-)}
+          {totalPages > 1 && (
+            <Flex align="center" justify="center" gap={2} mb={3} overflowX="auto" pb={2}>
+              <Button size="sm" bg={bgColor} onClick={() => handlePageChange(activePage - 1)} isDisabled={activePage === 1}>Previous</Button>
+
+              {(() => {
+                const pageNumbers = [];
+                const delta = 1;
+
+                for (let i = 1; i <= totalPages; i++) {
+                  if (
+                    i === 1 ||
+                    i === totalPages ||
+                    (i >= activePage - delta && i <= activePage + delta)
+                  ) {
+                    pageNumbers.push(i);
+                  } else if (
+                    (i === activePage - delta - 1 && i > 1) ||
+                    (i === activePage + delta + 1 && i < totalPages)
+                  ) {
+                    if (pageNumbers[pageNumbers.length - 1] !== "...") {
+                      pageNumbers.push("...");
+                    }
+                  }
+                }
+
+                return pageNumbers.map((page, idx) =>
+                  page === "..." ? (
+                    <Text key={`ellipsis-${idx}`} mx={0.5} alignSelf="center" fontSize="sm">
+                      ...
+                    </Text>
+                  ) : (
+                    <Button
+                      key={page}
+                      size="sm"
+                      onClick={() => handlePageChange(page)}
+                      fontWeight={activePage === page ? "bold" : "normal"}
+                      textDecoration={activePage === page ? "underline" : "none"}
+                      bg={activePage === page ? "blue.400" : bgColor}
+                      color={activePage === page ? "white" : "inherit"}
+                    >
+                      {page}
+                    </Button>
+                  )
+                );
+              })()}
+
+              <Button size="sm" bg={bgColor} onClick={() => handlePageChange(activePage + 1)} isDisabled={activePage === totalPages}>Next</Button>
+            </Flex>
+          )}
           <Flex direction="column" gap={2}>
             <Flex gap={2}>
               <Select value={selectedDistrictName} onChange={handleDistrictChange} placeholder="District" size="sm" borderRadius="8px" bg={buttonGradientColor}>{uniqueDistricts.map((d) => (<option key={d.dist_name} value={d.name}>{d.name}</option>))}</Select>
@@ -727,23 +870,23 @@ const handleGridChange = (event) => {
                       <Box key={Camera.deviceId + "-main"} borderRadius="md" p={0} mb={2} width="100%" overflow="hidden" position="relative" id={`camera-box-${Camera.deviceId}`}>
                         <Box position="relative">
                           <Box id={`video-${Camera.deviceId}`}>
-                           {/* Replace Main Mobile Player (around line 560) */}
-{Camera.deviceId && Camera.deviceId.startsWith("SSAN") ? (
-  <SimpleFLVPlayer url={generateStreamUrl(Camera)} style={getResponsivePlayerStyle()} muted={mutedCameras[Camera.deviceId] ?? true} />
-) : (
-  <Player device={Camera} initialPlayUrl={generateStreamUrl(Camera)} width="100%" style={getResponsivePlayerStyle()} height="100%" showControls={false} showOverlay={false} muted={mutedCameras[Camera.deviceId] ?? true} />
-)}
+                            {/* Replace Main Mobile Player (around line 560) */}
+                            {Camera.deviceId && Camera.deviceId.startsWith("SSAN") ? (
+                              <SimpleFLVPlayer url={generateStreamUrl(Camera)} style={getResponsivePlayerStyle()} muted={mutedCameras[Camera.deviceId] ?? true} />
+                            ) : (
+                              <Player device={Camera} initialPlayUrl={generateStreamUrl(Camera)} width="100%" style={getResponsivePlayerStyle()} height="100%" showControls={false} showOverlay={false} muted={mutedCameras[Camera.deviceId] ?? true} />
+                            )}
 
-{/* Mobile Main Mute Button */}
-<IconButton 
-  variant="solid" 
-  size="sm" 
-  bg="rgba(0,0,0,0.6)" 
-  color="white" 
-  borderRadius="full" 
-  icon={(mutedCameras[Camera.deviceId] ?? true) ? <BsVolumeMute fontSize="20px" /> : <BsVolumeUp fontSize="20px" />} 
-  onClick={() => toggleMute(Camera.deviceId)} 
-/>
+                            {/* Mobile Main Mute Button */}
+                            <IconButton
+                              variant="solid"
+                              size="sm"
+                              bg="rgba(0,0,0,0.6)"
+                              color="white"
+                              borderRadius="full"
+                              icon={(mutedCameras[Camera.deviceId] ?? true) ? <BsVolumeMute fontSize="20px" /> : <BsVolumeUp fontSize="20px" />}
+                              onClick={() => toggleMute(Camera.deviceId)}
+                            />
                             <Box position="absolute" bottom="0" left="0" right="0" bg="rgba(0,0,0,0.5)" p={2} zIndex="10"><Text color="white" fontSize="12px" fontWeight="500">
                               {Camera.dist_name} / {Camera.accName} / {Camera.deviceId} / {Camera.operatorName} / {Camera.operatorMobile}
                             </Text></Box>
@@ -766,44 +909,45 @@ const handleGridChange = (event) => {
 
                     <Box overflowY="auto" maxH="auto" pb={0}>
                       <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4}>
-                      
+
                         {camerasToDisplay.filter((_, idx) => idx !== currentCameraIndex).map((camera) => {
                           const originalIndex = camerasToDisplay.findIndex(c => c.deviceId === camera.deviceId);
-                          
-                          return (
-                          <GridItem key={camera.deviceId + "-grid"}>
-                            <Box onClick={() => setMainCameraIndex(originalIndex)} borderRadius="md" p={0} mb={0} width="100%" position="relative" overflow="hidden" id={`camera-box-${camera.deviceId}`}>
-                              <Box position="relative">
-                                {/* Replace Mobile Grid Player (around line 595) */}
-{camera.deviceId && camera.deviceId.startsWith("SSAN") ? (
-  <SimpleFLVPlayer url={generateStreamUrl(camera)} style={getResponsivePlayerStyle()} muted={mutedCameras[camera.deviceId] ?? true} />
-) : (
-  <Player device={camera} initialPlayUrl={generateStreamUrl(camera)} width="100%" style={getResponsivePlayerStyle()} height="100%" showControls={false} showOverlay={false} muted={mutedCameras[camera.deviceId] ?? true} />
-)}
 
-{/* Mobile Grid Mute Button */}
-<IconButton 
-  size="xs" 
-  variant="solid" 
-  bg="rgba(0,0,0,0.6)" 
-  color="white" 
-  borderRadius="full"
-  icon={(mutedCameras[camera.deviceId] ?? true) ? <BsVolumeMute /> : <BsVolumeUp />} 
-  onClick={(e) => { e.stopPropagation(); toggleMute(camera.deviceId); }} 
-/>
-                                <Box position="absolute" bottom="0" left="0" right="0" bg="rgba(0,0,0,0.5)" p={1} zIndex="10"><Text color="white" fontSize="10px" noOfLines={1}>
-                                  {camera.dist_name} / {camera.accName} / {camera.deviceId} / {camera.operatorName} / {camera.operatorMobile}
-                                </Text></Box>
-                                {!(camera.deviceId && camera.deviceId.startsWith("SSAN")) && (
-                                  <HStack position="absolute" bottom="25px" right="5px" zIndex="20" spacing={1}>
-                                    <IconButton size="xs" variant="solid" bg="rgba(0,0,0,0.5)" color="white" icon={<BsVolumeMute />} onClick={(e) => { e.stopPropagation(); toggleMute(camera.deviceId); }} />
-                                    <IconButton size="xs" variant="solid" bg="rgba(0,0,0,0.5)" color="white" icon={<BsArrowsFullscreen />} onClick={(e) => { e.stopPropagation(); toggleCameraFullscreen(camera.deviceId); }} />
-                                  </HStack>
-                                )}
+                          return (
+                            <GridItem key={camera.deviceId + "-grid"}>
+                              <Box onClick={() => setMainCameraIndex(originalIndex)} borderRadius="md" p={0} mb={0} width="100%" position="relative" overflow="hidden" id={`camera-box-${camera.deviceId}`}>
+                                <Box position="relative">
+                                  {/* Replace Mobile Grid Player (around line 595) */}
+                                  {camera.deviceId && camera.deviceId.startsWith("SSAN") ? (
+                                    <SimpleFLVPlayer url={generateStreamUrl(camera)} style={getResponsivePlayerStyle()} muted={mutedCameras[camera.deviceId] ?? true} />
+                                  ) : (
+                                    <Player device={camera} initialPlayUrl={generateStreamUrl(camera)} width="100%" style={getResponsivePlayerStyle()} height="100%" showControls={false} showOverlay={false} muted={mutedCameras[camera.deviceId] ?? true} />
+                                  )}
+
+                                  {/* Mobile Grid Mute Button */}
+                                  <IconButton
+                                    size="xs"
+                                    variant="solid"
+                                    bg="rgba(0,0,0,0.6)"
+                                    color="white"
+                                    borderRadius="full"
+                                    icon={(mutedCameras[camera.deviceId] ?? true) ? <BsVolumeMute /> : <BsVolumeUp />}
+                                    onClick={(e) => { e.stopPropagation(); toggleMute(camera.deviceId); }}
+                                  />
+                                  <Box position="absolute" bottom="0" left="0" right="0" bg="rgba(0,0,0,0.5)" p={1} zIndex="10"><Text color="white" fontSize="10px" noOfLines={1}>
+                                    {camera.dist_name} / {camera.accName} / {camera.deviceId} / {camera.operatorName} / {camera.operatorMobile}
+                                  </Text></Box>
+                                  {!(camera.deviceId && camera.deviceId.startsWith("SSAN")) && (
+                                    <HStack position="absolute" bottom="25px" right="5px" zIndex="20" spacing={1}>
+                                      <IconButton size="xs" variant="solid" bg="rgba(0,0,0,0.5)" color="white" icon={<BsVolumeMute />} onClick={(e) => { e.stopPropagation(); toggleMute(camera.deviceId); }} />
+                                      <IconButton size="xs" variant="solid" bg="rgba(0,0,0,0.5)" color="white" icon={<BsArrowsFullscreen />} onClick={(e) => { e.stopPropagation(); toggleCameraFullscreen(camera.deviceId); }} />
+                                    </HStack>
+                                  )}
+                                </Box>
                               </Box>
-                            </Box>
-                          </GridItem>
-                        );})}
+                            </GridItem>
+                          );
+                        })}
                       </SimpleGrid>
                     </Box>
                   </Box>

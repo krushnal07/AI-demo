@@ -16,7 +16,9 @@ import {
   MdKeyboardArrowRight,
   MdKeyboardArrowDown,
   MdLocationOn,
-  MdSchool
+  MdSchool,
+  MdVideocam,
+  MdEvent
 } from "react-icons/md";
 import { TbDeviceCctv } from "react-icons/tb";
 import { BsCpu } from "react-icons/bs";
@@ -30,16 +32,10 @@ import AnalyticsImage from "../pages/AnalyticsImage";
 const allMenuItems = [
   { label: "Dashboard", icon: <MdOutlineSpaceDashboard />, path: "/dash" },
   { label: "AI Dashboard", icon: <BsCpu />, path: "/ai-dashboard" },
- // { label: "Camera Status", icon: <MdLocationOn/>, path: "/camerastatus" },
-  {
-    label: "View",
-    icon: <TbDeviceCctv />,
-    subItems: [
-      { label: "Cameras", path: "/Cameras" },
-      { label: "Multiscreen", path: "/multiple" },
-     { label: "Events", path: "/events" },
-    ],
-  },
+  // { label: "Camera Status", icon: <MdLocationOn/>, path: "/camerastatus" },
+  { label: "View", icon: <TbDeviceCctv />, path: "/multiple" },
+  { label: "Cameras", icon: <MdVideocam />, path: "/Cameras" },
+  { label: "Events", icon: <MdEvent />, path: "/events" },
   { label: "AnalyticsReports", icon: <RiCheckboxMultipleBlankLine />, path: "/AnalyticsImage" },
   // {
   //   label: "Reports",
@@ -62,7 +58,7 @@ const allMenuItems = [
   // },
   {
     label: "Admin Panel",
-    icon: <MdSchool/>,
+    icon: <MdSchool />,
     subItems: [
       { label: "VMS Master", path: "/EditableReport" },
       // { label: "Vehicle Logs", path: "/VehicleLogs" },
@@ -72,13 +68,13 @@ const allMenuItems = [
 ];
 
 const rolePermissions = {
-  MasterAdmin: {Dashboard: true,"AI Dashboard": true,"Camera Status": true, View: true, AnalyticsReports: true,Reports:["Consolidated Report","Installation Report","Connected Report","Gps Report","Mobile App Report"],"Helpdesk":["Call Activity","Incidence Master"],"Admin Panel":["VMS Master","Vehicle Logs","Hardware Service"]},
-  VmuktiAdmin: {Dashboard: true,"AI Dashboard": true,"Camera Status": true, View: true, Heatmap: true,Reports:["Consolidated Report","Gps Report","Mobile App Report"],"Helpdesk":["Call Activity","Incidence Master"],"Admin Panel":["Vehicle Master","Vehicle Logs","Hardware Service"]},
-  CEO: { Dashboard: true,"AI Dashboard": true,"Camera Status": true, View: true },
-  ECI: { View: ["Multiscreen"] },
-  DistrictLevel: { Dashboard: true,"Camera Status": true, View: true, Heatmap: true},
-  AssemblyLevel: { Dashboard: true,"Camera Status": true,View: true, Heatmap: true },
-  Guest: {}, 
+  MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, View: true, Cameras: true, Events: true, AnalyticsReports: true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Vehicle Logs", "Hardware Service"] },
+  VmuktiAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, View: true, Cameras: true, Events: true, Heatmap: true, Reports: ["Consolidated Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["Vehicle Master", "Vehicle Logs", "Hardware Service"] },
+  CEO: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, View: true, Cameras: true, Events: true },
+  ECI: { View: true },
+  DistrictLevel: { Dashboard: true, "Camera Status": true, View: true, Cameras: true, Events: true, Heatmap: true },
+  AssemblyLevel: { Dashboard: true, "Camera Status": true, View: true, Cameras: true, Events: true, Heatmap: true },
+  Guest: {},
 };
 
 const getFilteredMenu = (items, role) => {
@@ -150,7 +146,7 @@ function Sidebar({ isSidebarExpanded, setSidebarExpanded }) {
       onMouseEnter={() => setSidebarExpanded(true)}
       onMouseLeave={() => {
         setSidebarExpanded(false);
-        setOpenSubMenuLabel(""); 
+        setOpenSubMenuLabel("");
       }}
       boxShadow="2px 0px 20px rgba(0, 0, 0, 0.2)"
       w={isSidebarExpanded ? "214px" : "60px"}
