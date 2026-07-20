@@ -35,8 +35,8 @@ const allMenuItems = [
   // { label: "Camera Status", icon: <MdLocationOn/>, path: "/camerastatus" },
   { label: "View", icon: <TbDeviceCctv />, path: "/multiple" },
   { label: "Cameras", icon: <MdVideocam />, path: "/Cameras" },
-  { label: "Events", icon: <MdEvent />, path: "/events" },
-  { label: "AnalyticsReports", icon: <RiCheckboxMultipleBlankLine />, path: "/AnalyticsImage" },
+  { label: "AI Events", icon: <MdEvent />, path: "/events" },
+  { label: "Analytics Reports", icon: <RiCheckboxMultipleBlankLine />, path: "/AnalyticsImage" },
   // {
   //   label: "Reports",
   //   icon: <IoDocumentTextOutline />,
@@ -68,12 +68,12 @@ const allMenuItems = [
 ];
 
 const rolePermissions = {
-  MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, View: true, Cameras: true, Events: true, AnalyticsReports: true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Vehicle Logs", "Hardware Service"] },
-  VmuktiAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, View: true, Cameras: true, Events: true, Heatmap: true, Reports: ["Consolidated Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["Vehicle Master", "Vehicle Logs", "Hardware Service"] },
-  CEO: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, View: true, Cameras: true, Events: true },
+  MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, View: true, Cameras: true, "AI Events": true, "Analytics Reports": true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Vehicle Logs", "Hardware Service"] },
+  VmuktiAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, View: true, Cameras: true, "AI Events": true, Heatmap: true, Reports: ["Consolidated Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["Vehicle Master", "Vehicle Logs", "Hardware Service"] },
+  CEO: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, View: true, Cameras: true, "AI Events": true },
   ECI: { View: true },
-  DistrictLevel: { Dashboard: true, "Camera Status": true, View: true, Cameras: true, Events: true, Heatmap: true },
-  AssemblyLevel: { Dashboard: true, "Camera Status": true, View: true, Cameras: true, Events: true, Heatmap: true },
+  DistrictLevel: { Dashboard: true, "Camera Status": true, View: true, Cameras: true, "AI Events": true, Heatmap: true },
+  AssemblyLevel: { Dashboard: true, "Camera Status": true, View: true, Cameras: true, "AI Events": true, Heatmap: true },
   Guest: {},
 };
 
