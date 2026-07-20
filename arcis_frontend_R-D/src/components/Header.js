@@ -140,8 +140,7 @@ const Header = ({
         top="0"
         right="0"
 
-        // Match the Sidebar widths: 60px (collapsed) and 214px (expanded)
-        left={{ base: 0, md: isSidebarExpanded ? "214px" : "60px" }}
+        left={{ base: 0, md: "60px" }}
         transition="left 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
         zIndex="1000"
       >
@@ -161,9 +160,9 @@ const Header = ({
           </Flex>
           <Box lineHeight="1.2" display={{ base: "none", sm: "block" }}>
             <Text fontSize="17px" fontWeight="700" color={brandTitle} whiteSpace="nowrap">
-              Live Video Management System 
+              Live Video Management System
             </Text>
-           
+
           </Box>
         </Flex>
 
@@ -188,7 +187,7 @@ const Header = ({
             </Text>
           </Flex>
 
-          
+
 
           {/* Theme toggle */}
           <Tooltip label={colorMode === "light" ? "Dark mode" : "Light mode"} hasArrow>

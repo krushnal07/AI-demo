@@ -266,7 +266,7 @@ function MainApp() {
                     ? "0"
                     : isMobile
                     ? "0"
-                    : { md: isSidebarExpanded ? "245px" : "100px" }
+                    : { md: "60px" }
                 }
                 top={
                   isLoginPage
@@ -283,9 +283,7 @@ function MainApp() {
                     : isMobile
                     ? "100%"
                     : {
-                        lg: isSidebarExpanded
-                          ? "calc(100% - 280px)"
-                          : "calc(100% - 120px)",
+                        md: "calc(100% - 60px)",
                       }
                 }
                 transition="left 0.2s, width 0.2s"
