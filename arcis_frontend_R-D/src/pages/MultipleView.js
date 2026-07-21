@@ -38,6 +38,8 @@ import Loading from "../components/Loading";
 import MobileHeader from "../components/MobileHeader";
 import ChatPanel from "./ChatPanel";
 import { BsArrowsFullscreen, BsVolumeMute, BsVolumeUp } from "react-icons/bs";
+import { MdGridView } from "react-icons/md";
+import { TfiLayoutListThumb } from "react-icons/tfi";
 
 // --- Pagination Helper ---
 const getPageNumbersForBlockPagination = (activePage, totalPages, windowSize = 3) => {
@@ -470,7 +472,17 @@ function MultipleView() {
       {!isMobile && (
         <Box maxW="1440px" mx="auto" mt={0}>
           <Box display="flex" justifyContent="space-between" alignItems="center" flexDirection={{ base: "column", md: "row" }} mb={4}>
-            <Text fontWeight={400} fontSize="26px" color={text}>Multiscreen</Text>
+            <HStack spacing={4} align="center">
+              <Text fontWeight={400} fontSize="26px" color={text}>Multiscreen View</Text>
+              <HStack h="26px" border="2px solid" borderColor="blue.400" borderRadius="full" spacing={0} ml={2}>
+                <Box as={RouterLink} to="/multiple" h="full" display="flex" alignItems="center" px={2} borderRadius="full" bg={location.pathname === "/multiple" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/multiple" ? "sm" : "none"} color={location.pathname === "/multiple" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
+                  <MdGridView size="26px" />
+                </Box>
+                <Box as={RouterLink} to="/listview" h="full" display="flex" alignItems="center" px={2} borderRadius="full" bg={location.pathname === "/listview" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/listview" ? "sm" : "none"} color={location.pathname === "/listview" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
+                  <TfiLayoutListThumb size="26px" />
+                </Box>
+              </HStack>
+            </HStack>
             <Flex justifyContent={"space-between"} alignItems={"center"} gap={2} flexWrap="wrap">
               {totalPages > 1 && (
                 <Flex align="center" justify="center" gap={2}>
@@ -528,14 +540,6 @@ function MultipleView() {
                 <option value="4x3">3x4 Grid</option>
               </Select>
               <Tooltip label="Fullscreen"><IconButton size="sm" bg={bgColor} borderRadius={"8px"} icon={<BsArrowsFullscreen />} onClick={toggleFullScreen} variant="outline" /></Tooltip>
-              <HStack h="32px" border="2px solid" borderColor="blue.400" borderRadius="full" spacing={0}>
-                <Box as={RouterLink} to="/multiple" h="full" display="flex" alignItems="center" px={4} borderRadius="full" fontSize="sm" fontWeight="medium" bg={location.pathname === "/multiple" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/multiple" ? "sm" : "none"} color={location.pathname === "/multiple" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
-                  Grid View
-                </Box>
-                <Box as={RouterLink} to="/listview" h="full" display="flex" alignItems="center" px={4} borderRadius="full" fontSize="sm" fontWeight="medium" bg={location.pathname === "/listview" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/listview" ? "sm" : "none"} color={location.pathname === "/listview" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
-                  List View
-                </Box>
-              </HStack>
             </Flex>
           </Box>
           <Flex gap={4} flexWrap="wrap" mb={{ base: 2, md: 2 }}>
@@ -744,10 +748,10 @@ function MultipleView() {
                       )}
 
                       <Box position="absolute" bottom="0" left="0" right="0" bg="rgba(0, 0, 0, 0.5)" p={2} zIndex="10">
-                        <Text color="white" fontSize="11px" fontWeight="500" >
+                        <Text color="white" fontSize="11px" fontWeight="500" noOfLines={1}>
                           {camera.dist_name} / {camera.accName} /
-                          {Array.isArray(camera.locations) ? ` ${camera.locations[0]} / ` : ""}
-                          {camera.deviceId}
+                          {Array.isArray(camera.locations) ? ` ${camera.locations[0]} / ` : " "}
+                          {camera.deviceId} / {camera.operatorName || "N/A"} / {camera.operatorMobile || "N/A"}
                         </Text>
                       </Box>
 
@@ -887,9 +891,11 @@ function MultipleView() {
                               icon={(mutedCameras[Camera.deviceId] ?? true) ? <BsVolumeMute fontSize="20px" /> : <BsVolumeUp fontSize="20px" />}
                               onClick={() => toggleMute(Camera.deviceId)}
                             />
-                            <Box position="absolute" bottom="0" left="0" right="0" bg="rgba(0,0,0,0.5)" p={2} zIndex="10"><Text color="white" fontSize="12px" fontWeight="500">
-                              {Camera.dist_name} / {Camera.accName} / {Camera.deviceId} / {Camera.operatorName} / {Camera.operatorMobile}
-                            </Text></Box>
+                            <Box position="absolute" bottom="0" left="0" right="0" bg="rgba(0,0,0,0.5)" p={2} zIndex="10">
+                              <Text color="white" fontSize="12px" fontWeight="500" noOfLines={1}>
+                                {Camera.dist_name} / {Camera.accName} / {Camera.deviceId} / {Camera.operatorName || "N/A"} / {Camera.operatorMobile || "N/A"}
+                              </Text>
+                            </Box>
                           </Box>
                           {!(Camera.deviceId && Camera.deviceId.startsWith("SSAN")) && (
                             <HStack position="absolute" bottom="40px" right="15px" zIndex="20" spacing={3}>
@@ -934,9 +940,11 @@ function MultipleView() {
                                     icon={(mutedCameras[camera.deviceId] ?? true) ? <BsVolumeMute /> : <BsVolumeUp />}
                                     onClick={(e) => { e.stopPropagation(); toggleMute(camera.deviceId); }}
                                   />
-                                  <Box position="absolute" bottom="0" left="0" right="0" bg="rgba(0,0,0,0.5)" p={1} zIndex="10"><Text color="white" fontSize="10px" noOfLines={1}>
-                                    {camera.dist_name} / {camera.accName} / {camera.deviceId} / {camera.operatorName} / {camera.operatorMobile}
-                                  </Text></Box>
+                                  <Box position="absolute" bottom="0" left="0" right="0" bg="rgba(0,0,0,0.5)" p={1} zIndex="10">
+                                    <Text color="white" fontSize="10px" noOfLines={1}>
+                                      {camera.dist_name} / {camera.accName} / {camera.deviceId} / {camera.operatorName || "N/A"} / {camera.operatorMobile || "N/A"}
+                                    </Text>
+                                  </Box>
                                   {!(camera.deviceId && camera.deviceId.startsWith("SSAN")) && (
                                     <HStack position="absolute" bottom="25px" right="5px" zIndex="20" spacing={1}>
                                       <IconButton size="xs" variant="solid" bg="rgba(0,0,0,0.5)" color="white" icon={<BsVolumeMute />} onClick={(e) => { e.stopPropagation(); toggleMute(camera.deviceId); }} />

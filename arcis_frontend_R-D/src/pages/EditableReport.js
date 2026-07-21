@@ -679,6 +679,8 @@ const Boxes = () => {
                       <Th sx={thStyle}>Location</Th>
                       <Th sx={thStyle}>Camera Location Name</Th>
                       <Th sx={thStyle}>Device Id</Th>
+                      <Th sx={thStyle}>Operator Name</Th>
+                      <Th sx={thStyle}>Operator Mobile No.</Th>
                       <Th sx={thStyle}>Actions</Th>
                     </Tr>
                   </Thead>
@@ -690,6 +692,8 @@ const Boxes = () => {
                           <Td sx={tdStyle}>{camera.district || "N/A"}</Td>
                           <Td sx={tdStyle} title={camera.location || "N/A"}>{camera.location || "N/A"}</Td>
                           <Td sx={tdStyle} fontWeight="600" color={accent}>{camera.DeviceId || "N/A"}</Td>
+                          <Td sx={tdStyle}>{camera.operatorName || "N/A"}</Td>
+                          <Td sx={tdStyle}>{camera.operatorMobile || "N/A"}</Td>
                           <Td sx={tdStyle}>
                             <HStack spacing={2} justify="center">
                               <Tooltip label="Edit" hasArrow>
@@ -721,7 +725,7 @@ const Boxes = () => {
                       ))
                     ) : (
                       <Tr>
-                        <Td colSpan={5} textAlign="center" py={12} color={subText} borderColor={cardBorder}>
+                        <Td colSpan={7} textAlign="center" py={12} color={subText} borderColor={cardBorder}>
                           No records found for the selected filters.
                         </Td>
                       </Tr>
@@ -889,18 +893,18 @@ const Boxes = () => {
                 </FormControl>
 
                 <FormControl mt={2}>
-                  <FormLabel fontSize="sm">Driver Name</FormLabel>
+                  <FormLabel fontSize="sm">Operator Name</FormLabel>
                   <Input
                     name="operatorName"
                     value={editingCamera.operatorName || ""}
                     onChange={handleEditInputChange}
-                    placeholder="Enter driver Name"
+                    placeholder="Enter Operator  Name"
                     size="lg"
                   />
                 </FormControl>
 
                 <FormControl mt={2}>
-                  <FormLabel fontSize="sm">Driver Mobile No.</FormLabel>
+                  <FormLabel fontSize="sm">Operator Mobile No.</FormLabel>
                   <Input
                     name="operatorMobile"
                     type="tel"
@@ -919,7 +923,7 @@ const Boxes = () => {
                   />
                 </FormControl>
 
-                {<FormControl mt={2}>
+                {/*<FormControl mt={2}>
                   <FormLabel fontSize="sm">Vehicle Type</FormLabel>
                   <Input
                     name="location_Type"
@@ -928,7 +932,7 @@ const Boxes = () => {
                     placeholder="Enter Vehicle"
                     size="lg"
                   />
-                </FormControl>}
+                </FormControl>*/}
 
               </Grid>
             </ModalBody>

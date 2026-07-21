@@ -645,10 +645,9 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
       "Sr No.": index + 1,
       "Device Id": camera.DeviceId,
       "District": camera.district || "N/A",
-      "location": camera.assembly || "N/A",
-    //  "Vehicle No.": camera.location || "N/A",
-      // "Driver Name": camera.operatorName || "N/A",
-      // "Driver Contact": camera.operatorMobile || "N/A",
+      "Location": camera.assembly || "N/A",
+      "Driver Name": camera.operatorName || "N/A",
+      "Driver Mobile No.": camera.operatorMobile || "N/A",
       "Status": camera.status ? "Online" : "Offline",
     }));
 
@@ -689,9 +688,8 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
       "Device Id": camera.DeviceId,
       "District": camera.district || "N/A",
       "Location": camera.assembly || "N/A",
-      // "Vehicle No.": camera.location || "N/A",
-      // "Driver Name": camera.operatorName || "N/A",
-      // "Driver Mobile": camera.operatorMobile || "N/A",
+      "Driver Name": camera.operatorName || "N/A",
+      "Driver Mobile No.": camera.operatorMobile || "N/A",
       "Status": camera.status ? "Online" : "Offline",
     }));
 
@@ -742,19 +740,18 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
       >
         {/* Header Row */}
         <Flex justifyContent="space-between" align="center">
-          <Text fontWeight={400} fontSize="26px" mb={2} color={text}>
-            List View
-          </Text>
-
-
-          {/* View Toggle */}
-          <HStack h="32px" border="2px solid" borderColor="blue.400" borderRadius="full" spacing={0}>
-            <Box as={RouterLink} to="/multiple" h="full" display="flex" alignItems="center" px={4} borderRadius="full" fontSize="sm" fontWeight="medium" bg={location.pathname === "/multiple" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/multiple" ? "sm" : "none"} color={location.pathname === "/multiple" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
-              Grid View
-            </Box>
-            <Box as={RouterLink} to="/listview" h="full" display="flex" alignItems="center" px={4} borderRadius="full" fontSize="sm" fontWeight="medium" bg={location.pathname === "/listview" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/listview" ? "sm" : "none"} color={location.pathname === "/listview" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
+          <HStack spacing={4} align="center">
+            <Text fontWeight={400} fontSize="26px" mb={2} color={text}>
               List View
-            </Box>
+            </Text>
+            <HStack h="26px" border="2px solid" borderColor="blue.400" borderRadius="full" spacing={0} ml={2}>
+              <Box as={RouterLink} to="/multiple" h="full" display="flex" alignItems="center" px={2} borderRadius="full" bg={location.pathname === "/multiple" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/multiple" ? "sm" : "none"} color={location.pathname === "/multiple" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
+                <MdGridView size="26px" />
+              </Box>
+              <Box as={RouterLink} to="/listview" h="full" display="flex" alignItems="center" px={2} borderRadius="full" bg={location.pathname === "/listview" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/listview" ? "sm" : "none"} color={location.pathname === "/listview" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
+                <TfiLayoutListThumb size="26px" />
+              </Box>
+            </HStack>
           </HStack>
         </Flex>
 
@@ -1125,10 +1122,8 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
                       <Th style={tableHeaderStyle}>Sr No.<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>District<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>Location<VerticalLine /></Th>
-                      {/* <Th style={tableHeaderStyle}>Vehicle No.<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>Vehicle Type<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>Driver Name<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>Driver Mobile No.<VerticalLine /></Th> */}
+                      <Th style={tableHeaderStyle}>operator Name<VerticalLine /></Th>
+                      <Th style={tableHeaderStyle}>operator Mobile No.<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>Device Id<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>Status<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>Preview</Th>
@@ -1141,10 +1136,8 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
                           <Td style={tableDataStyle}>{(currentPage - 1) * itemsPerPage + index + 1}<VerticalLine /></Td>
                           <Td style={tableDataStyle}>{camera.district || "N/A"}<VerticalLine /></Td>
                           <Td style={tableDataStyle}>{camera.assembly || "N/A"}<VerticalLine /></Td>
-                          {/* <Td style={tableDataStyle} title={camera.location || "N/A"}>{camera.location || "N/A"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle}>{camera.location_Type || "N/A"}<VerticalLine /></Td> */}
-                          {/* <Td style={tableDataStyle}>{camera.operatorName || "N/A"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle}>{camera.operatorMobile || "N/A"}<VerticalLine /></Td> */}
+                          <Td style={tableDataStyle}>{camera.operatorName || "N/A"}<VerticalLine /></Td>
+                          <Td style={tableDataStyle}>{camera.operatorMobile || "N/A"}<VerticalLine /></Td>
                           <Td style={tableDataStyle}>{camera.DeviceId || "N/A"}<VerticalLine /></Td>
                           <Td style={tableDataStyle} color={camera.status ? "green.400" : "red.400"}>{camera.status ? "⬤" : "⬤"}<VerticalLine /></Td>
                           <Td style={tableDataStyle}>
