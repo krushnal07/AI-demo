@@ -22,6 +22,7 @@ import {
 } from "react-icons/md";
 import { TbDeviceCctv } from "react-icons/tb";
 import { BsCpu } from "react-icons/bs";
+import { MdOutlineQuestionAnswer } from "react-icons/md";
 import {
   RiCheckboxMultipleBlankLine
 } from "react-icons/ri";
@@ -65,16 +66,17 @@ const allMenuItems = [
       // { label: "Hardware Service", path: "/inventoryUpdation" },
     ],
   },
+  { label: "FAQ", icon: <MdOutlineQuestionAnswer />, path: "/faq" },
 ];
 
 const rolePermissions = {
-  MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "Analytics Reports": true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Vehicle Logs", "Hardware Service"] },
-  VmuktiAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true, Reports: ["Consolidated Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["Vehicle Master", "Vehicle Logs", "Hardware Service"] },
-  CEO: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true },
-  ECI: { "Multi View": true },
-  DistrictLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true },
-  AssemblyLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true },
-  Guest: {},
+  MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "Analytics Reports": true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Vehicle Logs", "Hardware Service"], FAQ: true },
+  VmuktiAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true, Reports: ["Consolidated Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["Vehicle Master", "Vehicle Logs", "Hardware Service"], FAQ: true },
+  CEO: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, FAQ: true },
+  ECI: { "Multi View": true, FAQ: true },
+  DistrictLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true, FAQ: true },
+  AssemblyLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true, FAQ: true },
+  Guest: { FAQ: true },
 };
 
 const getFilteredMenu = (items, role) => {

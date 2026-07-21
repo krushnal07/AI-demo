@@ -273,7 +273,12 @@ const Player = React.forwardRef(({
   const destroy = useCallback(async () => {
     clearReconnectTimer();
     if (jessibucaRef.current) {
-      await jessibucaRef.current.destroy();
+      try {
+        await jessibucaRef.current.destroy();
+      } catch (e) {
+        // jessibuca-pro can throw a benign PressureObserver AbortError while
+        // tearing down. Swallow it so it doesn't surface as an app error.
+      }
       jessibucaRef.current = null;
       setIsPlaying(false);
     }

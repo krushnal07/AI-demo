@@ -29,6 +29,7 @@ import Listview from "./pages/Listview";
 import { Scrollbars } from "react-custom-scrollbars-2";
 import CameraView from "./pages/CameraView";
 import MultipleView from "./pages/MultipleView";
+import Faq from "./pages/Faq";
 import theme from "./theme";
 import Subscription from "./pages/Subscription";
 import Events from "./pages/Events";
@@ -199,6 +200,20 @@ function MainApp() {
 
   return (
     <Container maxW="100vw" p="0" bg={useColorModeValue("white", "#231F1F")}>
+      {/* Fixed background — rendered OUTSIDE <Scrollbars> so it stays anchored
+          to the viewport and never scrolls with the page content. */}
+      <Image
+        src={useColorModeValue("/images/background_img_light.png", "/images/background_img.png")}
+        position="fixed"
+        top="0"
+        left="0"
+        w="100vw"
+        h="100vh"
+        objectFit="cover"
+        opacity="0.3"
+        zIndex="0"
+        pointerEvents="none"
+      />
       <Scrollbars
         autoHide
         autoHideTimeout={1000}
@@ -221,16 +236,13 @@ function MainApp() {
           <Flex
             direction="column"
             height="100vh"
-           bg={useColorModeValue("white", "black")}
+           bg="transparent"
             backgroundSize="cover"
             backgroundPosition="center"
             bgRepeat={"no-repeat"}
             position="relative"
             className="rekhaniboombaam"
           >
-            <Image src={useColorModeValue("/images/background_img_light.png","/images/background_img.png")} position="fixed" w={"full"} h="100%" top="50%" left="50%" transform="translate(-50%, -50%)" opacity="0.3" />
-
-          
             <Box zIndex={"999"}>
               {!isMobile &&
                 !isDeleteAccountPage &&
@@ -309,6 +321,7 @@ function MainApp() {
                   <Route path="/Listview" element={<Listview />} />
                   <Route path="/camera/:deviceId" element={<CameraView />} />
                   <Route path="/multiple" element={<MultipleView />} />
+                  <Route path="/faq" element={<Faq />} />
                   {/* <Route path="/subscription" element={<Subscription />} /> */}
                   {isMobile && <Route path="/others" element={<Others />} />}
                   <Route path="/about" element={<ArcisInfo />} />

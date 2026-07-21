@@ -25460,7 +25460,7 @@
           return;
         returnValue = unread[0];
       }
-      else if (!('buffer' in this.need)) {
+      else if (!(this.need && typeof this.need === 'object' && 'buffer' in this.need)) {
         if (notEnough(this.need.byteLength))
           return;
         new Uint8Array(this.need).set(unread.subarray(0, n));
@@ -25487,7 +25487,7 @@
       if (value instanceof Uint8Array) {
         this.malloc(value.length).set(value);
       }
-      else if ('buffer' in value) {
+      else if (value && typeof value === 'object' && 'buffer' in value) {
         this.malloc(value.byteLength).set(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
       }
       else {
@@ -77741,7 +77741,7 @@
     destroy() {
       if (this.observer) {
         // this.observer.unobserve('cpu')
-        this.observer.disconnect();
+        try { this.observer.disconnect(); } catch (e) { /* ignore */ }
         this.observer = null;
       }
 
@@ -77799,7 +77799,10 @@
       });
 
       if (this.observer) {
-        this.observer.observe("cpu");
+        try {
+          var _obsP = this.observer.observe("cpu");
+          if (_obsP && typeof _obsP.catch === "function") _obsP.catch(function () {});
+        } catch (e) { /* PressureObserver may abort if destroyed mid-observe */ }
       }
     }
 
@@ -82999,6 +83002,12 @@
     }
 
     _initPlayer($container, options) {
+      // Guard against replay/reset firing after the container was torn down
+      // (React unmount nulls it) — avoids "Cannot read properties of null
+      // (reading 'appendChild')".
+      if (!$container) {
+        return;
+      }
       this.player = new Player($container, options);
 
       this._bindEvents();

@@ -36,6 +36,7 @@ import NoCameraFound from "../components/NoCameraFound";
 import { PullToRefreshify } from "react-pull-to-refreshify";
 import Loading from "../components/Loading";
 import MobileHeader from "../components/MobileHeader";
+import CameraGroupBar from "../components/CameraGroupBar";
 import ChatPanel from "./ChatPanel";
 import { BsArrowsFullscreen, BsVolumeMute, BsVolumeUp } from "react-icons/bs";
 import { MdGridView } from "react-icons/md";
@@ -88,6 +89,56 @@ function MultipleView() {
   const [mutedCameras, setMutedCameras] = useState({});
 
   const [userEmail, setUserEmail] = useState(typeof window !== 'undefined' ? localStorage.getItem("email") || '' : '');
+
+  // --- Camera Groups (persisted per-user in localStorage) ---
+  const groupsKey = `cameraGroups_${userEmail || "guest"}`;
+
+  const readGroups = (key) => {
+    try {
+      const raw = localStorage.getItem(key);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  // Load synchronously on first render so `groups` is never briefly empty
+  // (which was causing the save effect to overwrite saved data with []).
+  const [groups, setGroups] = useState(() => readGroups(`cameraGroups_${userEmail || "guest"}`));
+  const [selectedGroupId, setSelectedGroupId] = useState(null);
+
+  // Reload when the account (localStorage key) changes — skip the initial mount.
+  const prevGroupsKeyRef = useRef(groupsKey);
+  useEffect(() => {
+    if (prevGroupsKeyRef.current === groupsKey) return;
+    prevGroupsKeyRef.current = groupsKey;
+    setGroups(readGroups(groupsKey));
+    setSelectedGroupId(null);
+  }, [groupsKey]);
+
+  // Persist changes — skip the initial mount, and skip the render right after
+  // the key changes (so we never write the previous account's groups under the
+  // new key). Also safe against StrictMode's double-invoked effects.
+  const savedGroupsKeyRef = useRef(groupsKey);
+  const didInitGroupsRef = useRef(false);
+  useEffect(() => {
+    if (!didInitGroupsRef.current) {
+      didInitGroupsRef.current = true;
+      savedGroupsKeyRef.current = groupsKey;
+      return;
+    }
+    if (savedGroupsKeyRef.current !== groupsKey) {
+      savedGroupsKeyRef.current = groupsKey;
+      return; // key just changed; wait for the reload to populate groups
+    }
+    try {
+      localStorage.setItem(groupsKey, JSON.stringify(groups));
+    } catch (e) {
+      /* ignore quota / serialization errors */
+    }
+  }, [groups, groupsKey]);
+
   const [uniqueDistricts, setUniqueDistricts] = useState([]);
   const [assemblies, setAssemblies] = useState([]);
   const [selectedDistrictName, setSelectedDistrictName] = useState("");
@@ -326,6 +377,13 @@ function MultipleView() {
       camerasToProcess = camerasToProcess.filter(camera => !!camera.status);
     }
 
+    // 1b. CAMERA GROUP FILTER (when a group is selected)
+    if (selectedGroupId) {
+      const activeGroup = groups.find(g => g.id === selectedGroupId);
+      const groupIds = new Set(activeGroup?.deviceIds || []);
+      camerasToProcess = camerasToProcess.filter(camera => groupIds.has(camera.deviceId));
+    }
+
     // 2. LOCATION TYPE FILTER
     if (selectedLocationType && selectedLocationType !== 'all') {
       camerasToProcess = camerasToProcess.filter(camera => {
@@ -369,7 +427,7 @@ function MultipleView() {
     const endIndex = startIndex + itemsPerPage;
     setCamerasToDisplay(camerasToProcess.slice(startIndex, endIndex));
 
-  }, [allFetchedCameras, searchInput, searchDeviceId, psOption, activePage, itemsPerPage, isLoading, selectedLocationType]);
+  }, [allFetchedCameras, searchInput, searchDeviceId, psOption, activePage, itemsPerPage, isLoading, selectedLocationType, selectedGroupId, groups]);
 
 
   const refreshMultipleCameras = () => {
@@ -441,7 +499,7 @@ function MultipleView() {
   useEffect(() => {
     if (activePage !== 1) setActivePage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDistrictName, selectedAssemblyValue, searchInput, selectedLocationType]);
+  }, [selectedDistrictName, selectedAssemblyValue, searchInput, selectedLocationType, selectedGroupId]);
 
   useEffect(() => {
     if (camerasTab === "My Cameras" && userEmail) fetchCamerasByFilters();
@@ -583,6 +641,15 @@ function MultipleView() {
               <option value={60000}>60s</option>
             </Select>
           </Flex>
+
+          <CameraGroupBar
+            allCameras={allFetchedCameras}
+            groups={groups}
+            setGroups={setGroups}
+            selectedGroupId={selectedGroupId}
+            onSelectGroup={setSelectedGroupId}
+            generateStreamUrl={generateStreamUrl}
+          />
 
           <Box ref={containerRef} position="relative" width="100%" bg={isFullScreen ? bgColor : "transparent"} overflow={isFullScreen ? "auto" : "visible"}>
             {isFullScreen && (
@@ -854,6 +921,16 @@ function MultipleView() {
               <Select value={autoRefreshInterval} onChange={(e) => setAutoRefreshInterval(Number(e.target.value))} size="sm" borderRadius="8px" bg={buttonGradientColor} width="120px"><option value={0}>Off</option><option value={45000}>45s</option><option value={60000}>60s</option></Select>
             </Flex>
           </Flex>
+          <Box mt={3}>
+            <CameraGroupBar
+              allCameras={allFetchedCameras}
+              groups={groups}
+              setGroups={setGroups}
+              selectedGroupId={selectedGroupId}
+              onSelectGroup={setSelectedGroupId}
+              generateStreamUrl={generateStreamUrl}
+            />
+          </Box>
         </Box>
       )}
 

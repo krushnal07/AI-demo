@@ -1,6 +1,14 @@
 import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 
 export const registerPushNotifications = async () => {
+  // Push notifications are a native-only Capacitor plugin. On the web build
+  // the plugin isn't implemented and calling it throws, so skip entirely.
+  if (!Capacitor.isNativePlatform()) {
+    console.log('Push notifications skipped (not a native platform)');
+    return;
+  }
+
   console.log('Initializing push notification registration');
 
   // Request permission for push notifications
