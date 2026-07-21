@@ -473,7 +473,7 @@ function MultipleView() {
         <Box maxW="1440px" mx="auto" mt={0}>
           <Box display="flex" justifyContent="space-between" alignItems="center" flexDirection={{ base: "column", md: "row" }} mb={4}>
             <HStack spacing={4} align="center">
-              <Text fontWeight={400} fontSize="26px" color={text}>Multiscreen View</Text>
+              <Text fontWeight={400} fontSize="26px" color={text}>Multiscreen View </Text>
               <HStack h="26px" border="2px solid" borderColor="blue.400" borderRadius="full" spacing={0} ml={2}>
                 <Box as={RouterLink} to="/multiple" h="full" display="flex" alignItems="center" px={2} borderRadius="full" bg={location.pathname === "/multiple" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/multiple" ? "sm" : "none"} color={location.pathname === "/multiple" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
                   <MdGridView size="26px" />
