@@ -22,14 +22,26 @@ const TalkButton = ({ deviceId, size = 'sm' }) => {
     }
   }, [error, toast]);
 
-  // Prevent the press gesture from selecting text / triggering context menus.
-  const press = (e) => {
+  // Mouse handlers: preventDefault to stop text selection / drag.
+  const pressMouse = (e) => {
     e.preventDefault();
     e.stopPropagation();
     start();
   };
-  const release = (e) => {
+  const releaseMouse = (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    stop();
+  };
+
+  // Touch handlers: React attaches touchstart/touchend as passive listeners,
+  // so preventDefault() there is a no-op that just logs a console warning.
+  // touchAction: 'none' below already blocks scroll/gesture handling.
+  const pressTouch = (e) => {
+    e.stopPropagation();
+    start();
+  };
+  const releaseTouch = (e) => {
     e.stopPropagation();
     stop();
   };
@@ -42,11 +54,11 @@ const TalkButton = ({ deviceId, size = 'sm' }) => {
         icon={<FiMic fontSize="16px" />}
         variant="solid"
         size={size}
-        onMouseDown={press}
-        onMouseUp={release}
-        onMouseLeave={release}
-        onTouchStart={press}
-        onTouchEnd={release}
+        onMouseDown={pressMouse}
+        onMouseUp={releaseMouse}
+        onMouseLeave={releaseMouse}
+        onTouchStart={pressTouch}
+        onTouchEnd={releaseTouch}
         onContextMenu={(e) => e.preventDefault()}
         bg={talking ? 'red.500' : 'rgba(0, 0, 0, 0.6)'}
         color="#fff"

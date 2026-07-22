@@ -7,13 +7,11 @@
 //     -> buffer ALL chunks
 //     -> ffmpeg: AAC/ADTS (default) or pcm_alaw, 8kHz, mono, volume=2  (see OUTPUT_CODEC)
 //     -> 640-byte packets, paced 15-20ms
-//     -> MQTT torque/rx/{deviceId}/56 --> camera case 56 --> AU_TWOWAY --> speaker
+//     -> MQTT torque/rx/{deviceId}/56 --> camera case 56 --> speaker
 //
-// Firmware ordering (case 56/57):
-//   - case 57 starts AU_TWOWAY (the local WS server / speaker engine) via a
-//     blocking system() + sleep(1); it ignores its payload.
-//   - case 56 connect()s to AU_TWOWAY on the first audio frame, so AU_TWOWAY must
-//     already be listening. => publish /57, warm up, THEN burst /56 + "Streamend".
+// Matches the proven audio-relay path in services/mqttHelper.js's case-56
+// handler exactly (same ffmpeg params, same chunking/pacing, same topic) —
+// that path never sends anything on topic 57, so this gateway doesn't either.
 
 const { WebSocketServer } = require("ws");
 const url = require("url");
@@ -42,8 +40,6 @@ const AAC_BITRATE = "64k"; // (AAC path only)
 const AAC_FRAME_MS = Math.round((1024 / SAMPLE_RATE) * 1000); // AAC-LC = 1024 samples/frame
 const AAC_PACE_MS = Math.max(20, AAC_FRAME_MS - 15);
 const SESSION_MAX_MS = 5 * 60 * 1000; // hard cap so a hung mic can't stream forever
-const PLAY_PAYLOAD = "start"; // case 57 ignores the payload; any message triggers AU_TWOWAY
-const PLAY_WARMUP_MS = 1500; // wait after /57 for AU_TWOWAY to start + listen before /56
 // ---------------------------------------------------------------------------
 
 // ffmpeg output args for the selected codec. Input (pipe:0) is whatever the
@@ -180,7 +176,6 @@ function initTwoWayTalk(server) {
         }
 
         const audioTopic = `${topicSend}${deviceId}/${commonConfig.MSG_TYPE_AUDIO}`; // .../56
-        const playTopic = `${topicSend}${deviceId}/${commonConfig.MSG_TYPE_PLAY}`; // .../57
         const codec = ws.codec || OUTPUT_CODEC; // per-session (?codec=) or default
 
         let closed = false;
@@ -197,7 +192,7 @@ function initTwoWayTalk(server) {
 
         // Stream the converted audio out to the camera, ONE codec frame per MQTT
         // message (ADTS frame for AAC, 640B for A-law), then "Streamend".
-        const streamToCamera = (audioBuffer, startedAt) => {
+        const streamToCamera = (audioBuffer) => {
             const queue = packetize(audioBuffer, codec);
             console.log(`[talk] ${deviceId}: converted ${audioBuffer.length} bytes -> ${queue.length} ${codec} frames`);
 
@@ -213,11 +208,7 @@ function initTwoWayTalk(server) {
                 setTimeout(sendNext, delay);
             };
 
-            // Don't start /56 until AU_TWOWAY (case 57) has had its warm-up window,
-            // measured from when /57 was published (ffmpeg conversion overlaps it).
-            const elapsed = Date.now() - startedAt;
-            const wait = Math.max(0, PLAY_WARMUP_MS - elapsed);
-            setTimeout(sendNext, wait);
+            sendNext();
         };
 
         // Buffer all -> ffmpeg pcm_alaw / 8kHz / mono / volume=2 -> 640-byte packets.
@@ -234,10 +225,7 @@ function initTwoWayTalk(server) {
                 return;
             }
 
-            // 1) Start AU_TWOWAY on the camera, then convert in parallel.
-            mqttClient.publish(playTopic, PLAY_PAYLOAD, { qos: 0 });
-            const startedAt = Date.now();
-            console.log(`[talk] ${deviceId}: PLAY(57) sent; converting ${audioBuffer.length} bytes via ffmpeg`);
+            console.log(`[talk] ${deviceId}: converting ${audioBuffer.length} bytes via ffmpeg`);
 
             const ffmpeg = spawn(ffmpegPath, [
                 "-hide_banner",
@@ -255,10 +243,10 @@ function initTwoWayTalk(server) {
                     console.error(`[talk] ${deviceId}: ffmpeg exited ${code}, no audio sent`);
                     return;
                 }
-                streamToCamera(outputBuffer, startedAt);
+                streamToCamera(outputBuffer);
             });
 
-            // 2) Feed the buffered compressed audio to ffmpeg.
+            // Feed the buffered compressed audio to ffmpeg.
             ffmpeg.stdin.write(audioBuffer);
             ffmpeg.stdin.end();
         };
