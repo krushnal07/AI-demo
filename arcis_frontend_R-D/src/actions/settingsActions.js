@@ -146,6 +146,64 @@ export const setVideoSettings = async (deviceId, brightness, contrast, saturatio
     }
 }
 
+export const getVideoEncodeChannelMain = async (deviceId) => {
+    try {
+        const response = await instance.get('/getVideoEncodeChannelMain', {
+            params: { deviceId },
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const setVideoEncodeChannelMain = async (deviceId, codecType, resolution, bitRateControlType, constantBitRate, frameRate) => {
+    try {
+        const response = await instance.post('/setVideoEncodeChannelMain', {
+            codecType,
+            resolution,
+            bitRateControlType,
+            constantBitRate,
+            frameRate,
+        },
+            {
+                params: { deviceId },
+            });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const getVideoEncodeChannelSub = async (deviceId) => {
+    try {
+        const response = await instance.get('/getVideoEncodeChannelSub', {
+            params: { deviceId },
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const setVideoEncodeChannelSub = async (deviceId, codecType, resolution, bitRateControlType, constantBitRate, frameRate) => {
+    try {
+        const response = await instance.post('/setVideoEncodeChannelSub', {
+            codecType,
+            resolution,
+            bitRateControlType,
+            constantBitRate,
+            frameRate,
+        },
+            {
+                params: { deviceId },
+            });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
 export const getQuality = async (deviceId) => {
     try {
         const response = await instance.get('/getQuality', {

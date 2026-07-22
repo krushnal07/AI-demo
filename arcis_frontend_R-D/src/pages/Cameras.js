@@ -82,46 +82,20 @@ import { IoPlayCircleOutline, IoSearchOutline } from "react-icons/io5";
 import { LuLayoutList } from "react-icons/lu";
 import { Link as RouterLink, useLocation } from "react-router-dom";
 import theme from "../theme";
-import { ChevronDownIcon, ChevronUpIcon, InfoIcon } from "@chakra-ui/icons";
+import { InfoIcon } from "@chakra-ui/icons";
 import {
-  getAlertSettings,
-  getAreaDetection,
-  getAudioInfo,
-  getCustomerStats,
-  getFace,
-  getHumanoid,
-  getHumanTracking,
   getImageInfo,
-  getLineCross,
-  getMissingObjectDetection,
-  getMotionDetection,
-  getQuality,
-  getUnattendedObjectDetection,
+  setSmartQuality,
+  getVideoEncodeChannelMain,
+  getVideoEncodeChannelSub,
   getVideoSettings,
   rebootCamera,
-  setAlertSettings,
-  setAreaDetection,
-  setAudioInfo,
-  getSmartQuality,
-  setSmartQuality,
-  setCustomerStats,
-  setFace,
-  setHumanoid,
-  setHumanTrackingSettings,
   setImageInfo,
-  setLineCross,
-  setMissingObjectDetection,
-  setMotionDetection,
-  setQualitySettings,
-  setUnattendedObjectDetection,
+  setVideoEncodeChannelMain,
+  setVideoEncodeChannelSub,
   setVideoSettings,
 } from "../actions/settingsActions";
-import LineCrossCanvas from "../components/Canvas/LineCrossCanvas";
-import CustomerCanvas from "../components/Canvas/CustomerCanvas";
-import UAOCanvas from "../components/Canvas/UAOCanvas";
-import MODCanvas from "../components/Canvas/MODCanvas";
 import NoCameraFound from "../components/NoCameraFound";
-import AreaCanvas from "../components/Canvas/AreaCanvas";
 import MobileHeader from "../components/MobileHeader";
 import AudioRecorder from "../components/AudioRecorder";
 import { FiInfo } from "react-icons/fi";
@@ -160,7 +134,7 @@ const Cameras = () => {
   const [selectedCameraType, setSelectedCameraType] = useState(null);
   const [selectedEmailId, setSelectedEmailId] = useState(null);
   const [shareEmail, setShareEmail] = useState("");
-  const [activeTab, setActiveTab] = useState("General");
+  const [activeTab, setActiveTab] = useState("Video settings");
   const [camerasTab, setCamerasTab] = useState("My Cameras");
   const [timeZoneOffset, setTimeZoneOffset] = useState("+00:00"); // Initial timezone value
   const [brightness, setBrightness] = useState(50);
@@ -169,78 +143,21 @@ const Cameras = () => {
   const [hue, setHue] = useState(0);
   const [sharpness, setSharpness] = useState(50);
   const [flip, setFlip] = useState(false);
-  const [audio, setAudio] = useState(false);
   const [mirror, setMirror] = useState(false);
   const [irCutMode, setIrCutMode] = useState(false);
-  const [quality, setQuality] = useState("");
   const [sharedEmails, setSharedEmails] = useState([]);
   const [totalCameras, setTotalCameras] = useState(0);
   const [totalSharedCameras, setTotalSharedCameras] = useState(0);
-  // AI Settings States
-  const [aiEnabled, setAiEnabled] = useState(false);
-  const [humanTracking, setHumanTracking] = useState(false);
-  const [cruiseMode, setCruiseMode] = useState("");
-  const [activeDropdown, setActiveDropdown] = useState(null);
   const cardDetailsColor = useColorModeValue("linear-gradient(180deg, rgba(173, 209, 235) 5.17%, rgba(255, 255, 255) 45.14%)", "linear-gradient(to right bottom, #163B74 10.53%, rgba(3, 7, 17) 100.32%)")
-  // Motion Detection States
-  const [motionEnabled, setMotionEnabled] = useState(false);
-  const [motionSensitivity, setMotionSensitivity] = useState(0);
-  const [motionAudioAlert, setMotionAudioAlert] = useState(false);
-  const [motionLightAlert, setMotionLightAlert] = useState(false);
-  // Human Detection States
-  const [humanEnabled, setHumanEnabled] = useState(false);
-  const [humanSensitivity, setHumanSensitivity] = useState(0);
-  const [humanSensitivityLevel, setHumanSensitivityLevel] = useState(0);
-  const [humanAudioAlert, setHumanAudioAlert] = useState(false);
-  const [humanLightAlert, setHumanLightAlert] = useState(false);
-  // Face Detection States
-  const [faceEnabled, setFaceEnabled] = useState(false);
-  const [audioAlert, setAudioAlert] = useState(false);
+  // Video Settings Tab (raw encode config)
+  const [streamType, setStreamType] = useState("main");
+  const [bitRate, setBitRate] = useState("");
+  const [frameRate, setFrameRate] = useState("");
+  const [codecType, setCodecType] = useState("");
+  const [resolution, setResolution] = useState("");
+  const [bitRateType, setBitRateType] = useState("");
   const [enablesmartQuality, setenableSmartQuality] = useState(false);
   const [dataPlan, setdataPlan] = useState(0);
-  const [lightAlert, setLightAlert] = useState(false);
-  const [faceSensitivity, setFaceSensitivity] = useState(0);
-  // Line Crossing States
-  const [lineCrossEnabled, setLineCrossEnabled] = useState(false);
-  const [lineCrossAudioAlert, setLineCrossAudioAlert] = useState(false);
-  const [lineCrossLightAlert, setLineCrossLightAlert] = useState(false);
-  const [lineCrossSensitivity, setLineCrossSensitivity] = useState(0);
-  // Line Cross Canvas States
-  const [detectLine, setDetectLine] = useState(null);
-  const [direction, setDirection] = useState(null);
-  const [isCanvasModalOpen, setIsCanvasModalOpen] = useState(false);
-  // Area Detection States
-  const [areaEnabled, setAreaEnabled] = useState(false);
-  const [areaAudioAlert, setAreaAudioAlert] = useState(false);
-  const [areaLightAlert, setAreaLightAlert] = useState(false);
-  const [areaSensitivity, setAreaSensitivity] = useState(0);
-  const [isAreaModalOpen, setIsAreaModalOpen] = useState(false);
-  const [detectArea, setDetectArea] = useState([]);
-  const [areaDirection, setAreaDirection] = useState(null);
-  const [Action, setAction] = useState("");
-  // Traffic Detection States
-  const [trafficEnabled, setTrafficEnabled] = useState(false);
-  const [isTrafficModalOpen, setIsTrafficModalOpen] = useState(false);
-  const [detectTraffic, setDetectTraffic] = useState(null);
-  const [trafficDirection, setTrafficDirection] = useState(null);
-  // Unattended Object Detection States
-  const [unattendedEnabled, setUnattendedEnabled] = useState(false);
-  const [unattendedAudioAlert, setUnattendedAudioAlert] = useState(false);
-  const [unattendedLightAlert, setUnattendedLightAlert] = useState(false);
-  const [unattendedSensitivity, setUnattendedSensitivity] = useState(0);
-  const [isUnattendedModalOpen, setIsUnattendedModalOpen] = useState(false);
-  const [detectUnattended, setDetectUnattended] = useState(null);
-  const [unattendedDirection, setUnattendedDirection] = useState(null);
-  // Missing Object Detection States
-  const [missingEnabled, setMissingEnabled] = useState(false);
-  const [missingAudioAlert, setMissingAudioAlert] = useState(false);
-  const [missingLightAlert, setMissingLightAlert] = useState(false);
-  const [missingSensitivity, setMissingSensitivity] = useState(0);
-  const [isMissingModalOpen, setIsMissingModalOpen] = useState(false);
-  const [detectMissing, setDetectMissing] = useState(null);
-  const [missingDirection, setMissingDirection] = useState(null);
-  const [unattendedDuration, setUnattendedDuration] = useState(0);
-  const [missingDuration, setMissingDuration] = useState(0);
   // wifi settings
   const [wifiName, setWifiName] = useState("");
   const [wifiPassword, setWifiPassword] = useState("");
@@ -359,7 +276,7 @@ const Cameras = () => {
 
   const closeModal = () => {
     setActiveModal(null);
-    setActiveTab("General");
+    setActiveTab("Video settings");
     onClose();
   };
 
@@ -800,114 +717,17 @@ const Cameras = () => {
         setHue(response.hueLevel);
         setMirror(response.mirrorEnabled);
         setFlip(response.flipEnabled);
-      } else if (activeTab === "General") {
-        // console.log("getGeneralSettings");
-        const qualityResponse = await getQuality(selectedDeviceId);
-        // console.log("getQuality", qualityResponse);
-        // console.log("selectedCameraType", selectedCameraType);
-        setQuality(qualityResponse.quality.quality);
-        if (selectedCameraType && selectedCameraType.includes("S-Series")) {
-          // Check the camera type
-          // console.log("S-Series");
-          const aiResponse = await getAlertSettings(selectedDeviceId);
-          setAiEnabled(aiResponse.bEnable);
-          const aiResponse2 = await getHumanTracking(selectedDeviceId);
-          setHumanTracking(aiResponse2.motionTracking);
-          setCruiseMode(aiResponse2.cruiseMode);
-          // console.log("getAlertSettings", aiResponse2);
+      } else if (activeTab === "Video settings") {
+        const response = streamType === "main"
+          ? await getVideoEncodeChannelMain(selectedDeviceId)
+          : await getVideoEncodeChannelSub(selectedDeviceId);
+        if (response) {
+          setBitRate(response.constantBitRate || "");
+          setFrameRate(response.frameRate || "");
+          setCodecType(response.codecType || "");
+          setResolution(response.resolution || "");
+          setBitRateType(response.bitRateControlType || "");
         }
-        const response = await getAudioInfo(selectedDeviceId);
-        setAudio(response.enabled);
-        const smartQualityresponse = await getSmartQuality(selectedDeviceId);
-        // // console.log("response", response);
-        setenableSmartQuality(smartQualityresponse.smartQuality.smartQuality);
-        setdataPlan(smartQualityresponse.smartQuality.dataPlan);
-        // // console.log("getSmartQuality", smartQuality);
-      } else if (
-        activeTab === "AI Settings" &&
-        activeDropdown === "Motion Detection"
-      ) {
-        const response = await getMotionDetection(selectedDeviceId);
-        setMotionEnabled(response.enabled);
-        setMotionSensitivity(response.detectionGrid.sensitivityLevel);
-        setMotionAudioAlert(response.alarmOut.audioAlert.enabled);
-        setMotionLightAlert(response.alarmOut.lightAlert.enabled);
-        // // console.log("getMotionDetection", response);
-      } else if (
-        activeTab === "AI Settings" &&
-        activeDropdown === "Human Detection"
-      ) {
-        // // console.log("getAISettings");
-        const response = await getHumanoid(selectedDeviceId);
-        setHumanEnabled(response.Enabled ? response.Enabled : response.enabled);
-        setHumanSensitivity(response.Sensitivity);
-        setHumanSensitivityLevel(response.sensitivityStep);
-        setHumanAudioAlert(response.AlarmOut.AudioAlert.Enabled);
-        setHumanLightAlert(response.AlarmOut.LightAlert.Enabled);
-        // // console.log("getHumanDetection", response);
-      } else if (
-        activeTab === "AI Settings" &&
-        activeDropdown === "Face Detection"
-      ) {
-        const response = await getFace(selectedDeviceId);
-        setFaceEnabled(response.Enabled);
-        setFaceSensitivity(response.Sensitivity);
-        setAudioAlert(response.AlarmOut.AudioAlert.Enabled);
-        setLightAlert(response.AlarmOut.LightAlert.Enabled);
-        // // console.log("getFace", response);
-      } else if (
-        activeTab === "AI Settings" &&
-        activeDropdown === "Line Crossing Detection"
-      ) {
-        const response = await getLineCross(selectedDeviceId);
-        setLineCrossEnabled(response.Enabled);
-        setLineCrossSensitivity(response.Sensitivity);
-        setLineCrossAudioAlert(response.AlarmOut.AudioAlert.Enabled);
-        setLineCrossLightAlert(response.AlarmOut.LightAlert.Enabled);
-        // // console.log("getLineCross", response);
-      } else if (
-        activeTab === "AI Settings" &&
-        activeDropdown === "Area Detection"
-      ) {
-        const response = await getAreaDetection(selectedDeviceId);
-        setAreaEnabled(response.Enabled);
-        setAreaSensitivity(response.Sensitivity);
-        setAreaAudioAlert(response.AlarmOut.AudioAlert.Enabled);
-        setAreaLightAlert(response.AlarmOut.LightAlert.Enabled);
-        setAction(response.Action);
-        setAreaDirection(response.Direction);
-        // setDetectArea(response.DetectRegion);
-        // setAreaDuration(response.MinDuration);
-        // console.log("getAreaDetection", response);
-      } else if (
-        activeTab === "AI Settings" &&
-        activeDropdown === "Traffic Detection"
-      ) {
-        const response = await getCustomerStats(selectedDeviceId);
-        setTrafficEnabled(response.Enabled);
-        // // console.log("getCustomerStats", response);
-      } else if (
-        activeTab === "AI Settings" &&
-        activeDropdown === "Unattended Object"
-      ) {
-        const response = await getUnattendedObjectDetection(selectedDeviceId);
-        setUnattendedEnabled(response.Enabled);
-        setUnattendedSensitivity(response.Sensitivity);
-        setUnattendedAudioAlert(response.AlarmOut.AudioAlert.Enabled);
-        setUnattendedLightAlert(response.AlarmOut.LightAlert.Enabled);
-        setUnattendedDuration(response.Duration);
-        // // console.log("getunattendedobject", response);
-      } else if (
-        activeTab === "AI Settings" &&
-        activeDropdown === "Missing Object"
-      ) {
-        const response = await getMissingObjectDetection(selectedDeviceId);
-        setMissingEnabled(response.Enabled);
-        setMissingSensitivity(response.Sensitivity);
-        setMissingAudioAlert(response.AlarmOut.AudioAlert.Enabled);
-        setMissingLightAlert(response.AlarmOut.LightAlert.Enabled);
-        setMissingDuration(response.Duration);
-        // // console.log("getMissing", response);
       }
     } catch (error) {
       console.error(`Failed to fetch ${activeTab} settings:`, error);
@@ -919,7 +739,7 @@ const Cameras = () => {
     if (isOpen && activeModal === "Camera Settings") {
       fetchData();
     }
-  }, [isOpen, activeModal, activeTab, activeDropdown, selectedDeviceId]);
+  }, [isOpen, activeModal, activeTab, selectedDeviceId, streamType]);
 
 
   // --- useEffect to Fetch Districts ---
@@ -985,183 +805,24 @@ const Cameras = () => {
 
   // Set AI Settings
 
-  const handleAISettings = async () => {
+  const handleVideoEncodeSave = async () => {
     try {
-      // console.log("handleAISettings", activeDropdown);
-      if (activeDropdown === "Motion Detection") {
-        const response = await setMotionDetection(
-          selectedDeviceId,
-          motionEnabled,
-          motionSensitivity,
-          motionAudioAlert,
-          motionLightAlert
-        );
-        // console.log("setMotionDetection", response);
-        toast({
-          title: "Motion Settings Updated Successfully",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } else if (activeDropdown === "Human Detection") {
-        const response = await setHumanoid(
-          selectedDeviceId,
-          humanEnabled,
-          humanSensitivity,
-          humanSensitivityLevel,
-          humanAudioAlert,
-          humanLightAlert
-        );
-        // // console.log("setHumanoid", response);
-        toast({
-          title: "Human Settings Updated Successfully",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } else if (activeDropdown === "Face Detection") {
-        const response = await setFace(
-          selectedDeviceId,
-          faceEnabled,
-          faceSensitivity,
-          audioAlert,
-          lightAlert
-        );
-        // console.log("setFace", response);
-        toast({
-          title: "Face Settings Updated Successfully",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } else if (activeDropdown === "Traffic Detection") {
-        const response = await setCustomerStats(
-          selectedDeviceId,
-          trafficEnabled,
-          detectTraffic,
-          trafficDirection
-        );
-        // console.log("setLineCross", response);
-        toast({
-          title: "Line Crossing Settings Updated Successfully",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } else if (activeDropdown === "Line Crossing Detection") {
-        const response = await setLineCross(
-          selectedDeviceId,
-          lineCrossEnabled,
-          lineCrossSensitivity,
-          lineCrossAudioAlert,
-          lineCrossLightAlert,
-          detectLine,
-          direction
-        );
-        // console.log("setLineCross", response);
-        toast({
-          title: "Line Crossing Settings Updated Successfully",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } else if (activeDropdown === "Area Detection") {
-        const response = await setAreaDetection(
-          selectedDeviceId,
-          areaEnabled,
-          areaSensitivity,
-          areaAudioAlert,
-          areaLightAlert,
-          detectArea,
-          areaDirection,
-          Action
-        );
-        // console.log("setAreaDetection", response);
-        toast({
-          title: "Area Detection Settings Updated Successfully",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } else if (activeDropdown === "Missing Object") {
-        const response = await setMissingObjectDetection(
-          selectedDeviceId,
-          missingEnabled,
-          missingSensitivity,
-          missingAudioAlert,
-          missingLightAlert,
-          detectMissing,
-          missingDuration
-        );
-        // console.log("setMissingObjectDetection", response);
-        toast({
-          title: "Missing Object Settings Updated Successfully",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } else if (activeDropdown === "Unattended Object") {
-        const response = await setUnattendedObjectDetection(
-          selectedDeviceId,
-          unattendedEnabled,
-          unattendedSensitivity,
-          unattendedAudioAlert,
-          unattendedLightAlert,
-          detectUnattended,
-          unattendedDuration
-        );
-        // console.log("setUnattendedObjectDetection", response);
-        toast({
-          title: "Unattended Object Settings Updated Successfully",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
+      if (streamType === "main") {
+        await setVideoEncodeChannelMain(selectedDeviceId, codecType, resolution, bitRateType, bitRate, frameRate);
+      } else {
+        await setVideoEncodeChannelSub(selectedDeviceId, codecType, resolution, bitRateType, bitRate, frameRate);
       }
-    } catch (error) {
-      console.error("Error updating camera:", error);
-    }
-  };
-
-  // const handleQualityChange = async (value) => {
-  //   setQuality(value); // Update the state with the selected quality
-  //   const qualityResponse = await setQualitySettings(selectedDeviceId, value);
-  //   toast({
-  //     title: "Quality Settings Updated Successfully",
-  //     status: "success",
-  //     duration: 3000,
-  //     isClosable: true,
-  //   });
-  //   fetchData();
-  //   // console.log("qualityResponse", qualityResponse);
-  // };
-
-  // State for quality loader
-  const [qualityLoading, setQualityLoading] = useState(false);
-
-  const handleQualityChange = async (value) => {
-    setQuality(value); // Update the state with the selected quality
-    setQualityLoading(true); // Show the loader
-    try {
-      const qualityResponse = await setQualitySettings(selectedDeviceId, value);
+      fetchData();
+      setSelectedDeviceId(null);
+      closeModal();
       toast({
-        title: "Quality Settings Updated Successfully",
+        title: "Video Settings Updated Successfully",
         status: "success",
         duration: 3000,
         isClosable: true,
       });
-      fetchData(); // Fetch updated data
-      // console.log("qualityResponse", qualityResponse);
     } catch (error) {
-      toast({
-        title: "Failed to Update Quality Settings",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      console.error("Error updating quality settings:", error);
-    } finally {
-      setQualityLoading(false); // Hide the loader
+      console.error("Error updating camera:", error);
     }
   };
 
@@ -1179,38 +840,6 @@ const Cameras = () => {
       console.error("Error updating camera:", error);
     }
   }
-
-  const handleGeneralSettings = async () => {
-    try {
-      // try {
-      const response = await setAudioInfo(selectedDeviceId, audio);
-      // } catch (error) {
-      //   console.error("Error updating camera:", error);
-      // }
-      const aiResponse = await setAlertSettings(selectedDeviceId, aiEnabled);
-      // const savesmartQuality = await setSmartQuality(
-      //   selectedDeviceId,
-      //   enablesmartQuality,
-      //   dataPlan
-      // );
-      const humanTrackingResponse = await setHumanTrackingSettings(
-        selectedDeviceId,
-        humanTracking,
-        cruiseMode
-      );
-      fetchData();
-      setSelectedDeviceId(null);
-      closeModal();
-      toast({
-        title: "Settings Updated Successfully",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error("Error updating camera:", error);
-    }
-  };
 
   const handleWifiSettings = async () => {
     const payload = {
@@ -1293,69 +922,6 @@ const Cameras = () => {
       console.error("Error updating camera:", error);
     }
   };
-  const openCanvasModal = () => {
-    setIsCanvasModalOpen(true);
-  };
-  const closeCanvasModal = () => {
-    setIsCanvasModalOpen(false);
-  };
-
-  // CANVAS MODAL'S
-
-  // line cross modal
-  const handleCanvasData = (line, direction) => {
-    setDetectLine(line);
-    setDirection(direction);
-  };
-  // traffic detection modal
-  const openTrafficModal = () => {
-    setIsTrafficModalOpen(true);
-  };
-  const closeTrafficModal = () => {
-    setIsTrafficModalOpen(false);
-  };
-  const handleTrafficData = (traffic, direction) => {
-    setDetectTraffic(traffic);
-    setTrafficDirection(direction);
-  };
-  // unattended object modal
-  const openUnattendedModal = () => {
-    setIsUnattendedModalOpen(true);
-  };
-  const closeUnattendedModal = () => {
-    setIsUnattendedModalOpen(false);
-  };
-  const handleUnattendedData = (unattended, direction) => {
-    setDetectUnattended(unattended);
-    setUnattendedDirection(direction);
-  };
-
-  // missing object modal
-  const openMissingModal = () => {
-    setIsMissingModalOpen(true);
-  };
-  const closeMissingModal = () => {
-    setIsMissingModalOpen(false);
-  };
-  const handleMissingData = (missing, direction) => {
-    setDetectMissing(missing);
-    setMissingDirection(direction);
-  };
-
-  // Area detection modal
-  const openAreaModal = () => {
-    setIsAreaModalOpen(true);
-  };
-  const closeAreaModal = () => {
-    setIsAreaModalOpen(false);
-  };
-  const handleAreaData = (area, direction) => {
-    setDetectArea(area);
-    setAreaDirection(direction);
-  };
-
-  // Canvas gets over here //
-
   const saveButtonBackgroundColor = useColorModeValue(
     theme.colors.custom.primary,
     theme.colors.custom.darkModePrimary
@@ -3178,9 +2744,8 @@ const Cameras = () => {
               onChange={(index) =>
                 setActiveTab(
                   [
-                    "General",
+                    "Video settings",
                     "Media",
-                    "AI Settings",
                     "Wifi Settings",
                     "System",
                   ][index]
@@ -3198,7 +2763,7 @@ const Cameras = () => {
                     ),
                   }}
                 >
-                  General
+                  Video settings
                 </Tab>
                 <Tab
                   _selected={{
@@ -3210,19 +2775,7 @@ const Cameras = () => {
                     ),
                   }}
                 >
-                  Media
-                </Tab>
-                <Tab
-                  _selected={{
-                    fontWeight: "bold",
-                    borderBottom: "4px solid",
-                    borderColor: useColorModeValue(
-                      theme.colors.custom.primary,
-                      theme.colors.custom.darkModeText
-                    ),
-                  }}
-                >
-                  AI Settings
+                  Image settings
                 </Tab>
                 {selectedCameraType === "Wifi-S-Series" && (
                   <Tab
@@ -3239,179 +2792,72 @@ const Cameras = () => {
             </Tabs>
 
             {/* Conditional Content Based on Active Tab */}
-            {activeTab === "General" && (
-              <>
-                {selectedCameraType &&
-                  selectedCameraType.includes("S-Series") && (
-                    <>
-                      <Flex
-                        justifyContent="space-between"
-                        alignItems="center"
-                        mb={4}
-                      >
-                        <Text>AI Notifications</Text>
-                        <Switch
-                          isChecked={aiEnabled}
-                          onChange={() => setAiEnabled(!aiEnabled)}
-                          size="md"
-                        />
-                      </Flex>
-                      <Flex
-                        justifyContent="space-between"
-                        alignItems="center"
-                        mb={4}
-                      >
-                        <Text>Human Tracking</Text>
-                        <Switch
-                          isChecked={humanTracking}
-                          onChange={() => setHumanTracking(!humanTracking)}
-                          size="md"
-                        />
-                      </Flex>
-                    </>
-                  )}
-
-                <Flex justifyContent="space-between" alignItems="center" mb={4}>
-                  <Text>Audio</Text>
-                  <Switch
-                    isChecked={audio}
-                    onChange={() => setAudio(!audio)}
-                    size="md"
-                  />
-                </Flex>
-
+            {activeTab === "Video settings" && (
+              <Box>
                 <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                  <Text>Camera name</Text>
+                  <Text>Device Name</Text>
                   <Input
                     disabled
-                    defaultValue={selectedCameraName}
+                    defaultValue={selectedDeviceId}
                     size="sm"
                     maxW="60%"
                   />
                 </Flex>
 
-                <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                  <Text>Camera model</Text>
-                  <Text fontWeight="bold">{selectedCameraType}</Text>
-                </Flex>
-
-                <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                  <Text>Device ID</Text>
-                  <Text fontWeight="bold">{selectedDeviceId}</Text>
-                </Flex>
-
-                <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                  <Text>Firmware</Text>
-                  <Text fontWeight="bold">V12.98630</Text>
-                </Flex>
-
-
-
-                <Flex alignItems="center" justifyContent="space-between">
-                  <Text>Quality</Text>
-                  {/* <Flex maxW="60%" alignItems="center"> */}
-                  <Select
-                    disabled={enablesmartQuality}
-                    value={quality}
-                    onChange={(e) => handleQualityChange(e.target.value)}
-                    size="sm"
-                    maxW="60%"
-                  >
-                    <option value="verylow">Very Low</option>
-                    <option value="low">Low</option>
-                    <option value="mid">Medium</option>
-                    <option value="high">High</option>
-                    <option value="veryhigh">Very High</option>
-                  </Select>
-                  {qualityLoading && <Spinner size="sm" ml={0} />}{" "}
-                  {/* Loader next to the input */}
-                  {/* </Flex> */}
-                </Flex>
-                <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                  <Text>Cruise Mode</Text>
-                  {/* <Flex maxW="60%" alignItems="center"> */}
-                  <Select
-                    value={cruiseMode}
-                    onChange={(e) => setCruiseMode(e.target.value)}
-                    size="sm"
-                    maxW="60%"
-                  >
-                    <option value="cruise_stop">None</option>
-                    <option value="cruise_preset">Preset</option>
-                    <option value="cruise_allround">All Round</option>
-                  </Select>
-                  {qualityLoading && <Spinner size="sm" ml={0} />}{" "}
-                  {/* Loader next to the input */}
-                  {/* </Flex> */}
-                </Flex>
-
-                {/* <Divider mb={4} />
-
-                <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                  <Text>Time Zone</Text>
-                  <Select
-                    value={timeZoneOffset}
-                    onChange={handleTimeZoneChange}
-                    size="sm"
-                    maxW="60%"
-                  >
-                    {[
-                      "-12:00",
-                      "-11:00",
-                      "-10:00",
-                      "-09:00",
-                      "-08:00",
-                      "-07:00",
-                      "-06:00",
-                      "-05:00",
-                      "-04:00",
-                      "-03:00",
-                      "-02:00",
-                      "-01:00",
-                      "+00:00",
-                      "+01:00",
-                      "+02:00",
-                      "+03:00",
-                      "+04:00",
-                      "+05:00",
-                      "+05:30",
-                      "+06:00",
-                      "+07:00",
-                      "+08:00",
-                      "+09:00",
-                      "+10:00",
-                      "+11:00",
-                      "+12:00",
-                    ].map((tz) => (
-                      <option key={tz} value={tz}>{`GMT ${tz}`}</option>
-                    ))}
-                  </Select>
-                </Flex> */}
+                <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)" }} gap={4} mb={4}>
+                  <FormControl>
+                    <FormLabel>Stream Type</FormLabel>
+                    <Select value={streamType} onChange={(e) => setStreamType(e.target.value)} size="sm">
+                      <option value="main">Main Stream</option>
+                      <option value="sub">Sub Stream</option>
+                    </Select>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>Bit Rate</FormLabel>
+                    <Input value={bitRate} onChange={(e) => setBitRate(e.target.value)} placeholder="Bit Rate" size="sm" />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>FPS</FormLabel>
+                    <Input value={frameRate} onChange={(e) => setFrameRate(e.target.value)} placeholder="FPS" size="sm" />
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>Profile</FormLabel>
+                    <Select value={codecType} onChange={(e) => setCodecType(e.target.value)} placeholder="Codec Type" size="sm">
+                      <option value="H.264">H.264</option>
+                      <option value="H.265">H.265</option>
+                      <option value="H.264+">H.264+</option>
+                      <option value="H.265+">H.265+</option>
+                    </Select>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>Bit Rate Type</FormLabel>
+                    <Select value={bitRateType} onChange={(e) => setBitRateType(e.target.value)} placeholder="Select type" size="sm">
+                      <option>CBR</option>
+                      <option>VBR</option>
+                    </Select>
+                  </FormControl>
+                  <FormControl>
+                    <FormLabel>Resolution</FormLabel>
+                    <Select value={resolution} onChange={(e) => setResolution(e.target.value)} placeholder="Select resolution" size="sm">
+                      {streamType === "main" ? (
+                        <>
+                          <option value="2304x1296">2304x1296</option>
+                          <option value="1920x1080">1920x1080</option>
+                          <option value="1280x720">1280x720</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="800x448">800x448</option>
+                          <option value="640x360">640x360</option>
+                        </>
+                      )}
+                    </Select>
+                  </FormControl>
+                </Grid>
 
                 <Divider mb={2} />
 
-                <Flex w="full" justifyContent="space-between">
-                  {/* <Button colorScheme="red" variant="outline" size="sm">
-                Set to Default
-              </Button> */}
-                  <Button
-                    p={0}
-                    colorScheme="red"
-                    variant="ghost"
-                    textDecoration={"underline"}
-                    size="sm"
-                    onClick={() => handleRebootCamera()}
-                  >
-                    Reboot Camera
-                  </Button>
-                  <IconButton
-                    colorScheme="red"
-                    aria-label="Info"
-                    icon={<InfoIcon />}
-                    size="sm"
-                    variant="ghost"
-                  />
-                  <Spacer />
+                <Flex w="full" justifyContent="flex-end">
                   <Button
                     variant="outline"
                     size="sm"
@@ -3429,12 +2875,12 @@ const Cameras = () => {
                       backgroundColor: saveButtonHoverBackgroundColor,
                       color: saveButtonHoverColor,
                     }}
-                    onClick={() => handleGeneralSettings()}
+                    onClick={() => handleVideoEncodeSave()}
                   >
                     Save
                   </Button>
                 </Flex>
-              </>
+              </Box>
             )}
 
             {/* Media Tab Content */}
@@ -3623,1056 +3069,6 @@ const Cameras = () => {
                       color: saveButtonHoverColor,
                     }}
                     onClick={() => handleMediaSettings()}
-                  >
-                    Save
-                  </Button>
-                </Flex>
-              </Box>
-            )}
-
-            {activeTab === "AI Settings" && (
-              <Box>
-                {/* Dropdown for Motion Detection */}
-                <Box>
-                  <Flex
-                    justifyContent="space-between"
-                    alignItems="center"
-                    // color={theme.colors.custom.primary}
-                    onClick={() =>
-                      setActiveDropdown(
-                        activeDropdown === "Motion Detection"
-                          ? null
-                          : "Motion Detection"
-                      )
-                    }
-                    cursor="pointer"
-                    mb={4}
-                  >
-                    <Text>Motion Detection</Text>
-                    <Icon
-                      as={
-                        activeDropdown === "Motion Detection"
-                          ? ChevronUpIcon
-                          : ChevronDownIcon
-                      }
-                    />
-                  </Flex>
-                  {activeDropdown === "Motion Detection" && (
-                    <Box pl={4} pb={4}>
-                      {/* Grid for Switches */}
-                      <Grid
-                        templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
-                        gap={4}
-                        mb={4}
-                      >
-                        <Flex
-                          width={{ base: "auto", md: "260px" }}
-                          justifyContent="space-between"
-                          alignItems="center"
-                        >
-                          <Text>Enable</Text>
-                          <Switch
-                            isChecked={motionEnabled}
-                            onChange={() => setMotionEnabled(!motionEnabled)}
-                            size="md"
-                          />
-                        </Flex>
-                        <Flex
-                          width={{ base: "auto", md: "260px" }}
-                          justifyContent="space-between"
-                          alignItems="center"
-                        >
-                          <Text>Alarm Sound</Text>
-                          <Switch
-                            isChecked={motionAudioAlert}
-                            onChange={() =>
-                              setMotionAudioAlert(!motionAudioAlert)
-                            }
-                            size="md"
-                          />
-                        </Flex>
-                        <Flex
-                          width={{ base: "auto", md: "260px" }}
-                          justifyContent="space-between"
-                          alignItems="center"
-                        >
-                          <Text>Light Alert</Text>
-                          <Switch
-                            isChecked={motionLightAlert}
-                            onChange={() =>
-                              setMotionLightAlert(!motionLightAlert)
-                            }
-                            size="md"
-                          />
-                        </Flex>
-                        {/* <Flex width={{ base: 'auto', md: '260px' }} justifyContent="space-between" alignItems="center">
-                          <Text>App Notification</Text>
-                          <Switch size="md" />
-                        </Flex> */}
-                      </Grid>
-
-                      {/* Slider for Brightness */}
-                      <Flex
-                        alignItems="center"
-                        justifyContent="space-between"
-                        mb={4}
-                      >
-                        <Text flex="1">Sensitivity Level</Text>
-                        <Box flex="1" mx={4}>
-                          <Slider
-                            value={motionSensitivity}
-                            onChange={(val) => setMotionSensitivity(val)}
-                            min={0}
-                            max={100}
-                            step={1}
-                          >
-                            <SliderTrack>
-                              <SliderFilledTrack />
-                            </SliderTrack>
-                            <SliderThumb />
-                          </Slider>
-                        </Box>
-                        <Text>{motionSensitivity}%</Text>
-                      </Flex>
-                    </Box>
-                  )}
-                </Box>
-
-                {/* Dropdown for Human Detection */}
-                <Box>
-                  <Flex
-                    justifyContent="space-between"
-                    alignItems="center"
-                    // color={theme.colors.custom.primary}
-                    onClick={() =>
-                      setActiveDropdown(
-                        activeDropdown === "Human Detection"
-                          ? null
-                          : "Human Detection"
-                      )
-                    }
-                    cursor="pointer"
-                    mb={4}
-                  >
-                    <Text>Human Detection</Text>
-                    <Icon
-                      as={
-                        activeDropdown === "Human Detection"
-                          ? ChevronUpIcon
-                          : ChevronDownIcon
-                      }
-                    />
-                  </Flex>
-                  {activeDropdown === "Human Detection" && (
-                    <Box pl={4} pb={4}>
-                      <Grid
-                        templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
-                        gap={4}
-                        mb={4}
-                      >
-                        <Flex
-                          width={{ base: "auto", md: "260px" }}
-                          justifyContent="space-between"
-                          alignItems="center"
-                        >
-                          <Text>Enable</Text>
-                          <Switch
-                            isChecked={humanEnabled}
-                            onChange={() => setHumanEnabled(!humanEnabled)}
-                            size="md"
-                          />
-                        </Flex>
-                        {selectedCameraType &&
-                          selectedCameraType.includes("S-Series") && (
-                            <>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                              >
-                                <Text>Alarm Alert</Text>
-                                <Switch
-                                  isChecked={humanAudioAlert}
-                                  onChange={() =>
-                                    setHumanAudioAlert(!humanAudioAlert)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                              >
-                                <Text>Light Alert</Text>
-                                <Switch
-                                  isChecked={humanLightAlert}
-                                  onChange={() =>
-                                    setHumanLightAlert(!humanLightAlert)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                              {/* <Flex
-                              width={{ base: "auto", md: "260px" }}
-                              justifyContent="space-between"
-                              alignItems="center"
-                            >
-                              <Text>App Notification</Text>
-                              <Switch size="md" />
-                            </Flex> */}
-                              {/* <Flex width={{ base: 'auto', md: '260px' }} justifyContent="space-between" alignItems="center">
-                          <Text>RTMP Push</Text>
-                          <Switch size="md" />
-                        </Flex>
-                        <Flex width={{ base: 'auto', md: '260px' }} justifyContent="space-between" alignItems="center">
-                          <Text>FTP Push</Text>
-                          <Switch size="md" />
-                        </Flex> */}
-                              {/* <Flex
-                              width={{ base: "auto", md: "260px" }}
-                              justifyContent="space-between"
-                              alignItems="center"
-                            >
-                              <Text>Detection Box</Text>
-                              <Switch size="md" />
-                            </Flex> */}
-                            </>
-                          )}
-                      </Grid>
-                      {selectedCameraType &&
-                        selectedCameraType.includes("S-Series") ? (
-                        <Flex
-                          alignItems="center"
-                          justifyContent="space-between"
-                          mb={4}
-                        >
-                          <Text flex="1">Sensitivity Level</Text>
-                          <Box flex="1" mx={4} position="relative">
-                            <Slider
-                              value={humanSensitivity}
-                              onChange={(val) => setHumanSensitivity(val)}
-                              min={0}
-                              max={10}
-                              step={2} // Makes the slider snap to 0, 20, 40, 60, 80, 100
-                            >
-                              <SliderTrack>
-                                <SliderFilledTrack />
-                              </SliderTrack>
-                              <SliderThumb />
-                            </Slider>
-                            {/* Custom labels for slider points */}
-                            {/* <Flex justifyContent="space-between" mt={2} position="absolute" width="100%">
-                            {[0, 20, 40, 60, 80, 100].map((point) => (
-                              <Text key={point} fontSize="sm" textAlign="center" width="25px">
-                                {point}
-                              </Text>
-                            ))}
-                          </Flex> */}
-                          </Box>
-                          <Text>{humanSensitivity}</Text>
-                        </Flex>
-                      ) : (
-                        <Flex
-                          alignItems="center"
-                          justifyContent="space-between"
-                          mb={4}
-                        >
-                          <Text>Sensitivity Level</Text>
-                          <Select
-                            value={humanSensitivityLevel}
-                            onChange={(e) =>
-                              setHumanSensitivityLevel(e.target.value)
-                            }
-                            size="sm"
-                            maxW="60%"
-                          >
-                            <option value="lowest">Lowest</option>
-                            <option value="low">Low</option>
-                            <option value="normal">Normal</option>
-                            <option value="high">High</option>
-                            <option value="highest">Highest</option>
-                          </Select>
-                          {/* <IconButton aria-label="Info" icon={<InfoIcon />} size="xs" variant="ghost" /> */}
-                        </Flex>
-                      )}
-                    </Box>
-                  )}
-                </Box>
-
-                {selectedCameraType &&
-                  selectedCameraType.includes("S-Series") && (
-                    <>
-                      {/* Dropdown for Face Detection */}
-                      <Box>
-                        <Flex
-                          justifyContent="space-between"
-                          alignItems="center"
-                          // color={theme.colors.custom.primary}
-                          onClick={() =>
-                            setActiveDropdown(
-                              activeDropdown === "Face Detection"
-                                ? null
-                                : "Face Detection"
-                            )
-                          }
-                          cursor="pointer"
-                          mb={4}
-                        >
-                          <Text>Face Detection</Text>
-                          <Icon
-                            as={
-                              activeDropdown === "Face Detection"
-                                ? ChevronUpIcon
-                                : ChevronDownIcon
-                            }
-                          />
-                        </Flex>
-                        {activeDropdown === "Face Detection" && (
-                          <Box pl={4} pb={4}>
-                            <Grid
-                              templateColumns={{
-                                base: "1fr",
-                                md: "repeat(2, 1fr)",
-                              }}
-                            // gap={4}
-                            // mb={4}
-                            >
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Enable Face Detection</Text>
-                                <Switch
-                                  isChecked={faceEnabled}
-                                  onChange={() => setFaceEnabled(!faceEnabled)}
-                                  size="md"
-                                />
-                              </Flex>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Audio Alert</Text>
-                                <Switch
-                                  isChecked={audioAlert}
-                                  onChange={() => setAudioAlert(!audioAlert)}
-                                  size="md"
-                                />
-                              </Flex>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Light Alert</Text>
-                                <Switch
-                                  isChecked={lightAlert}
-                                  onChange={() => setLightAlert(!lightAlert)}
-                                  size="md"
-                                />
-                              </Flex>
-                            </Grid>
-                            <Flex
-                              alignItems="center"
-                              justifyContent="space-between"
-                              mb={4}
-                            >
-                              <Text flex="1">Sensitivity Level</Text>
-                              <Box flex="1" mx={4}>
-                                <Slider
-                                  value={faceSensitivity}
-                                  onChange={(val) => setFaceSensitivity(val)}
-                                  min={0}
-                                  max={10}
-                                  step={1}
-                                >
-                                  <SliderTrack>
-                                    <SliderFilledTrack />
-                                  </SliderTrack>
-                                  <SliderThumb />
-                                </Slider>
-                              </Box>
-                              <Text>{faceSensitivity}</Text>
-                            </Flex>
-                            {/* Add additional controls here */}
-                          </Box>
-                        )}
-                      </Box>
-
-                      {/* Dropdown for Line Crossing Detection */}
-                      <Box>
-                        <Flex
-                          justifyContent="space-between"
-                          alignItems="center"
-                          // color={theme.colors.custom.primary}
-                          onClick={() =>
-                            setActiveDropdown(
-                              activeDropdown === "Line Crossing Detection"
-                                ? null
-                                : "Line Crossing Detection"
-                            )
-                          }
-                          cursor="pointer"
-                          mb={4}
-                        >
-                          <Text>Line Crossing Detection</Text>
-                          <Icon
-                            as={
-                              activeDropdown === "Line Crossing Detection"
-                                ? ChevronUpIcon
-                                : ChevronDownIcon
-                            }
-                          />
-                        </Flex>
-                        {activeDropdown === "Line Crossing Detection" && (
-                          <Box pl={4} pb={4}>
-                            <Grid
-                              templateColumns={{
-                                base: "1fr",
-                                md: "repeat(2, 1fr)",
-                              }}
-                            // gap={4}
-                            // mb={4}
-                            >
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Line Crossing Detection</Text>
-                                <Switch
-                                  isChecked={lineCrossEnabled}
-                                  onChange={() =>
-                                    setLineCrossEnabled(!lineCrossEnabled)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Alarm Alert</Text>
-                                <Switch
-                                  isChecked={lineCrossAudioAlert}
-                                  onChange={() =>
-                                    setLineCrossAudioAlert(!lineCrossAudioAlert)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Light Alert</Text>
-                                <Switch
-                                  isChecked={lineCrossLightAlert}
-                                  onChange={() =>
-                                    setLineCrossLightAlert(!lineCrossLightAlert)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                            </Grid>
-                            {/* <Flex
-                            alignItems="center"
-                            justifyContent="space-between"
-                            mb={4}
-                          >
-                            <Text flex="1">Sensitivity Level</Text>
-                            <Box flex="1" mx={4}>
-                              <Slider
-                                value={lineCrossSensitivity}
-                                onChange={(val) => setLineCrossSensitivity(val)}
-                                min={0}
-                                max={100}
-                                step={1}
-                              >
-                                <SliderTrack>
-                                  <SliderFilledTrack />
-                                </SliderTrack>
-                                <SliderThumb />
-                              </Slider>
-                            </Box>
-                            <Text>{lineCrossSensitivity}</Text>
-                          </Flex> */}
-                            <Flex
-                              width={{ base: "auto", md: "260px" }}
-                              justifyContent="space-between"
-                              alignItems="center"
-                              mb={4}
-                            >
-                              <Button onClick={openCanvasModal}>
-                                Open Canvas
-                              </Button>
-                            </Flex>
-                          </Box>
-                        )}
-                      </Box>
-
-                      <LineCrossCanvas
-                        isOpen={isCanvasModalOpen}
-                        onClose={closeCanvasModal}
-                        onCanvasData={handleCanvasData}
-                        existingCoordinates={detectLine}
-                        existingDirection={direction}
-                        deviceId={selectedDeviceId}
-                      />
-
-                      {/* Dropdown for Traffic/Customer Statistics */}
-                      <Box>
-                        <Flex
-                          justifyContent="space-between"
-                          alignItems="center"
-                          // color={theme.colors.custom.primary}
-                          onClick={() =>
-                            setActiveDropdown(
-                              activeDropdown === "Traffic Detection"
-                                ? null
-                                : "Traffic Detection"
-                            )
-                          }
-                          cursor="pointer"
-                          mb={4}
-                        >
-                          <Text>Traffic Detection</Text>
-                          <Icon
-                            as={
-                              activeDropdown === "Traffic Detection"
-                                ? ChevronUpIcon
-                                : ChevronDownIcon
-                            }
-                          />
-                        </Flex>
-                        {activeDropdown === "Traffic Detection" && (
-                          <Box pl={4} pb={4}>
-                            <Grid
-                              templateColumns={{
-                                base: "1fr",
-                                md: "repeat(2, 1fr)",
-                              }}
-                            // gap={4}
-                            // mb={4}
-                            >
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Traffic Detection</Text>
-                                <Switch
-                                  isChecked={trafficEnabled}
-                                  onChange={() =>
-                                    setTrafficEnabled(!trafficEnabled)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                              {/* <Flex width={{ base: 'auto', md: '260px' }} justifyContent="space-between" alignItems="center" mb={4}>
-                          <Text>Audio Alert</Text>
-                          <Switch isChecked={audioAlert} onChange={() => setAudioAlert(!audioAlert)} size="md" />
-                        </Flex> */}
-                            </Grid>
-                            <Flex
-                              width={{ base: "auto", md: "260px" }}
-                              justifyContent="space-between"
-                              alignItems="center"
-                              mb={4}
-                            >
-                              <Button onClick={openTrafficModal}>
-                                Open Canvas
-                              </Button>
-                            </Flex>
-                          </Box>
-                        )}
-                      </Box>
-
-                      <CustomerCanvas
-                        isOpen={isTrafficModalOpen}
-                        onClose={closeTrafficModal}
-                        onCanvasData={handleTrafficData}
-                        existingCoordinates={detectTraffic}
-                        existingDirection={trafficDirection}
-                        deviceId={selectedDeviceId}
-                      />
-
-                      {/* Dropdown for Unattended Luggage Detection */}
-                      <Box>
-                        <Flex
-                          justifyContent="space-between"
-                          alignItems="center"
-                          // color={theme.colors.custom.primary}
-                          onClick={() =>
-                            setActiveDropdown(
-                              activeDropdown === "Unattended Object"
-                                ? null
-                                : "Unattended Object"
-                            )
-                          }
-                          cursor="pointer"
-                          mb={4}
-                        >
-                          <Text>Unattended Object</Text>
-                          <Icon
-                            as={
-                              activeDropdown === "Unattended Object"
-                                ? ChevronUpIcon
-                                : ChevronDownIcon
-                            }
-                          />
-                        </Flex>
-                        {activeDropdown === "Unattended Object" && (
-                          <Box pl={4} pb={4}>
-                            <Grid
-                              templateColumns={{
-                                base: "1fr",
-                                md: "repeat(2, 1fr)",
-                              }}
-                            // gap={4}
-                            // mb={4}
-                            >
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Unattended Object Detection</Text>
-                                <Switch
-                                  isChecked={unattendedEnabled}
-                                  onChange={() =>
-                                    setUnattendedEnabled(!unattendedEnabled)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Alarm Alert</Text>
-                                <Switch
-                                  isChecked={unattendedAudioAlert}
-                                  onChange={() =>
-                                    setUnattendedAudioAlert(
-                                      !unattendedAudioAlert
-                                    )
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Light Alert</Text>
-                                <Switch
-                                  isChecked={unattendedLightAlert}
-                                  onChange={() =>
-                                    setUnattendedLightAlert(
-                                      !unattendedLightAlert
-                                    )
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                            </Grid>
-                            <Flex
-                              alignItems="center"
-                              justifyContent="space-between"
-                              mb={4}
-                            >
-                              <Text flex="1">Min. Duration</Text>
-                              <Box flex="1" mx={4}>
-                                <Slider
-                                  value={unattendedDuration}
-                                  onChange={(val) => setUnattendedDuration(val)}
-                                  min={0}
-                                  max={60}
-                                  step={1}
-                                >
-                                  <SliderTrack>
-                                    <SliderFilledTrack />
-                                  </SliderTrack>
-                                  <SliderThumb />
-                                </Slider>
-                              </Box>
-                              <Text>{unattendedDuration}s</Text>
-                            </Flex>
-                            <Flex
-                              alignItems="center"
-                              justifyContent="space-between"
-                              mb={4}
-                            >
-                              <Text flex="1">Sensitivity Level</Text>
-                              <Box flex="1" mx={4}>
-                                <Slider
-                                  value={unattendedSensitivity}
-                                  onChange={(val) =>
-                                    setUnattendedSensitivity(val)
-                                  }
-                                  min={0}
-                                  max={10}
-                                  step={1}
-                                >
-                                  <SliderTrack>
-                                    <SliderFilledTrack />
-                                  </SliderTrack>
-                                  <SliderThumb />
-                                </Slider>
-                              </Box>
-                              <Text>{unattendedSensitivity}</Text>
-                            </Flex>
-                            <Flex
-                              width={{ base: "auto", md: "260px" }}
-                              justifyContent="space-between"
-                              alignItems="center"
-                              mb={4}
-                            >
-                              <Button onClick={openUnattendedModal}>
-                                Open Canvas
-                              </Button>
-                            </Flex>
-                          </Box>
-                        )}
-                      </Box>
-
-                      <UAOCanvas
-                        isOpen={isUnattendedModalOpen}
-                        onClose={closeUnattendedModal}
-                        onCanvasData={handleUnattendedData}
-                        existingCoordinates={detectUnattended}
-                        deviceId={selectedDeviceId}
-                      />
-
-                      {/* Dropdown for Missing Object */}
-                      <Box>
-                        <Flex
-                          justifyContent="space-between"
-                          alignItems="center"
-                          // color={theme.colors.custom.primary}
-                          onClick={() =>
-                            setActiveDropdown(
-                              activeDropdown === "Missing Object"
-                                ? null
-                                : "Missing Object"
-                            )
-                          }
-                          cursor="pointer"
-                          mb={4}
-                        >
-                          <Text>Missing Object</Text>
-                          <Icon
-                            as={
-                              activeDropdown === "Missing Object"
-                                ? ChevronUpIcon
-                                : ChevronDownIcon
-                            }
-                          />
-                        </Flex>
-                        {activeDropdown === "Missing Object" && (
-                          <Box pl={4} pb={4}>
-                            <Grid
-                              templateColumns={{
-                                base: "1fr",
-                                md: "repeat(2, 1fr)",
-                              }}
-                            // gap={4}
-                            // mb={4}
-                            >
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Missing Object Detection</Text>
-                                <Switch
-                                  isChecked={missingEnabled}
-                                  onChange={() =>
-                                    setMissingEnabled(!missingEnabled)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Alarm Alert</Text>
-                                <Switch
-                                  isChecked={missingAudioAlert}
-                                  onChange={() =>
-                                    setMissingAudioAlert(!missingAudioAlert)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Light Alert</Text>
-                                <Switch
-                                  isChecked={missingLightAlert}
-                                  onChange={() =>
-                                    setMissingLightAlert(!missingLightAlert)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                            </Grid>
-                            <Flex
-                              alignItems="center"
-                              justifyContent="space-between"
-                              mb={4}
-                            >
-                              <Text flex="1">Min. Duration</Text>
-                              <Box flex="1" mx={4}>
-                                <Slider
-                                  value={missingDuration}
-                                  onChange={(val) => setMissingDuration(val)}
-                                  min={0}
-                                  max={60}
-                                  step={1}
-                                >
-                                  <SliderTrack>
-                                    <SliderFilledTrack />
-                                  </SliderTrack>
-                                  <SliderThumb />
-                                </Slider>
-                              </Box>
-                              <Text>{missingDuration}s</Text>
-                            </Flex>
-                            <Flex
-                              alignItems="center"
-                              justifyContent="space-between"
-                              mb={4}
-                            >
-                              <Text flex="1">Sensitivity Level</Text>
-                              <Box flex="1" mx={4}>
-                                <Slider
-                                  value={missingSensitivity}
-                                  onChange={(val) => setMissingSensitivity(val)}
-                                  min={0}
-                                  max={10}
-                                  step={1}
-                                >
-                                  <SliderTrack>
-                                    <SliderFilledTrack />
-                                  </SliderTrack>
-                                  <SliderThumb />
-                                </Slider>
-                              </Box>
-                              <Text>{missingSensitivity}</Text>
-                            </Flex>
-                            <Flex
-                              width={{ base: "auto", md: "260px" }}
-                              justifyContent="space-between"
-                              alignItems="center"
-                              mb={4}
-                            >
-                              <Button onClick={openMissingModal}>
-                                Open Canvas
-                              </Button>
-                            </Flex>
-                          </Box>
-                        )}
-                      </Box>
-                      <MODCanvas
-                        isOpen={isMissingModalOpen}
-                        onClose={closeMissingModal}
-                        onCanvasData={handleMissingData}
-                        existingCoordinates={detectMissing}
-                        deviceId={selectedDeviceId}
-                      />
-
-                      {/* Dropdown for Area Detection */}
-                      <Box>
-                        <Flex
-                          justifyContent="space-between"
-                          alignItems="center"
-                          // color={theme.colors.custom.primary}
-                          onClick={() =>
-                            setActiveDropdown(
-                              activeDropdown === "Area Detection"
-                                ? null
-                                : "Area Detection"
-                            )
-                          }
-                          cursor="pointer"
-                          mb={4}
-                        >
-                          <Text>Area Detection</Text>
-                          <Icon
-                            as={
-                              activeDropdown === "Area Detection"
-                                ? ChevronUpIcon
-                                : ChevronDownIcon
-                            }
-                          />
-                        </Flex>
-                        {activeDropdown === "Area Detection" && (
-                          <Box pl={4} pb={4}>
-                            <Grid
-                              templateColumns={{
-                                base: "1fr",
-                                md: "repeat(2, 1fr)",
-                              }}
-                            >
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Area Detection</Text>
-                                <Switch
-                                  isChecked={areaEnabled}
-                                  onChange={() => setAreaEnabled(!areaEnabled)}
-                                  size="md"
-                                />
-                              </Flex>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Alarm Alert</Text>
-                                <Switch
-                                  isChecked={areaAudioAlert}
-                                  onChange={() =>
-                                    setAreaAudioAlert(!areaAudioAlert)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                              <Flex
-                                width={{ base: "auto", md: "260px" }}
-                                justifyContent="space-between"
-                                alignItems="center"
-                                mb={4}
-                              >
-                                <Text>Light Alert</Text>
-                                <Switch
-                                  isChecked={areaLightAlert}
-                                  onChange={() =>
-                                    setAreaLightAlert(!areaLightAlert)
-                                  }
-                                  size="md"
-                                />
-                              </Flex>
-                            </Grid>
-                            {/* <Flex
-                            alignItems="center"
-                            justifyContent="space-between"
-                            mb={4}
-                          >
-                            <Text flex="1">Sensitivity Level</Text>
-                            <Box flex="1" mx={4}>
-                              <Slider
-                                value={areaSensitivity}
-                                onChange={(val) => setAreaSensitivity(val)}
-                                min={0}
-                                max={100}
-                                step={1}
-                              >
-                                <SliderTrack>
-                                  <SliderFilledTrack />
-                                </SliderTrack>
-                                <SliderThumb />
-                              </Slider>
-                            </Box>
-                            <Text>{areaSensitivity}%</Text>
-                          </Flex> */}
-                            <Flex
-                              width={{ base: "auto", md: "260px" }}
-                              justifyContent="space-between"
-                              alignItems="center"
-                              mb={4}
-                            >
-                              <Button onClick={openAreaModal}>
-                                Open Canvas
-                              </Button>
-                            </Flex>
-                          </Box>
-                        )}
-                      </Box>
-                      <AreaCanvas
-                        isOpen={isAreaModalOpen}
-                        onClose={closeAreaModal}
-                        onCanvasData={handleAreaData}
-                        existingAction={Action}
-                        existingCoordinates={detectArea}
-                        existingDirection={areaDirection}
-                        deviceId={selectedDeviceId}
-                      />
-                    </>
-                  )}
-                <Divider mb={2} />
-
-                <Flex w="full" justifyContent="space-between">
-                  {/* <Button colorScheme="red" variant="outline" size="sm">
-Set to Default
-</Button> */}
-                  <Button
-                    p={0}
-                    colorScheme="red"
-                    variant="ghost"
-                    textDecoration={"underline"}
-                    size="sm"
-                    onClick={() => handleRebootCamera()}
-                  >
-                    Reboot Camera
-                  </Button>
-                  <IconButton
-                    colorScheme="red"
-                    aria-label="Info"
-                    icon={<InfoIcon />}
-                    size="sm"
-                    variant="ghost"
-                  />
-                  <Spacer />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    mr={2}
-                    onClick={closeModal}
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    size="sm"
-                    background={saveButtonBackgroundColor}
-                    color={saveButtonColor}
-                    fontWeight={"normal"}
-                    _hover={{
-                      backgroundColor: saveButtonHoverBackgroundColor,
-                      color: saveButtonHoverColor,
-                    }}
-                    onClick={() => handleAISettings()}
                   >
                     Save
                   </Button>

@@ -1,10 +1,13 @@
 const mqtt = require('mqtt');
-const appTopicSend = 'torque/app/tx/';
-const appTopicReceive = 'torque/app/rx/';
+const appTopicSend = 'torque/rx/';
+const appTopicReceive = 'torque/tx/';
 const Stream = require('../models/streamModel');
 const axios = require('axios');
 const Camera = require('../models/cameraModel');
 const fs = require('fs');
+const ImageSettings = require('../models/imageSettingsModel');
+const VideoSettings = require('../models/videoSettingsModel');
+const VideoEncode = require('../models/videoEncodeModel');
 
 // get video quality
 exports.getQuality = async (req, res) => {
@@ -126,16 +129,24 @@ exports.getVideoSettings = async (req, res) => {
     const client = mqtt.connect(process.env.mqtt_broker_url, options);
 
     // Set a timeout for the response
-    const timeout = setTimeout(() => {
+    const timeout = setTimeout(async () => {
       if (!responseSent) {
         responseSent = true;
         console.error('Timeout: Camera might be out of network');
-        res.status(504).json({ message: 'Camera might be out of network' });
         client.end(); // Close the MQTT connection
+
+        // Fall back to the last known cached settings for this device
+        const cached = await VideoSettings.findOne({ deviceId }).select('-_id -__v -deviceId -createdAt -updatedAt').lean();
+        if (cached) {
+          console.log('Serving cached video settings for', deviceId);
+          res.status(200).json(cached);
+        } else {
+          res.status(504).json({ message: 'Camera might be out of network' });
+        }
       }
     }, 15000); // 15 seconds
 
-    client.on('message', (topic, message) => {
+    client.on('message', async (topic, message) => {
       if (!responseSent) {
         responseSent = true; // Set the flag to true
         clearTimeout(timeout); // Clear the timeout
@@ -143,6 +154,12 @@ exports.getVideoSettings = async (req, res) => {
         try {
           const parsedMessage = JSON.parse(message.toString());
           console.log(`Parsed JSON message on topic ${topic}:`, parsedMessage);
+
+          await VideoSettings.findOneAndUpdate(
+            { deviceId },
+            { $set: parsedMessage },
+            { upsert: true }
+          );
 
           client.end(() => {
             res.status(200).json(parsedMessage);
@@ -209,16 +226,24 @@ exports.setVideoSettings = async (req, res) => {
     const client = mqtt.connect(process.env.mqtt_broker_url, options);
 
     // Set a timeout for the response
-    const timeout = setTimeout(() => {
+    const timeout = setTimeout(async () => {
       if (!responseSent) {
         responseSent = true;
-        console.error('Timeout: Camera might be out of network');
-        res.status(504).json({ message: 'Camera might be out of network' });
+        console.error('Timeout: Camera might be out of network. Saving settings optimistically.');
         client.end(); // Close the MQTT connection
+
+        // Camera didn't confirm in time — save what was requested so the UI/DB stay in sync,
+        // but flag it as unconfirmed by the device.
+        await VideoSettings.findOneAndUpdate(
+          { deviceId },
+          { $set: settings },
+          { upsert: true }
+        );
+        res.status(200).json({ message: 'Camera might be out of network. Settings saved but not confirmed by device.', ...settings });
       }
     }, 15000); // 15 seconds
 
-    client.on('message', (topic, message) => {
+    client.on('message', async (topic, message) => {
       if (!responseSent) {
         responseSent = true; // Set the flag to true
         clearTimeout(timeout); // Clear the timeout
@@ -228,6 +253,12 @@ exports.setVideoSettings = async (req, res) => {
         try {
           const parsedMessage = JSON.parse(messageString);
           console.log(`Parsed JSON message on topic ${topic}:`, parsedMessage);
+
+          await VideoSettings.findOneAndUpdate(
+            { deviceId },
+            { $set: parsedMessage },
+            { upsert: true }
+          );
 
           client.end(() => {
             res.status(200).json(parsedMessage);
@@ -445,16 +476,24 @@ exports.getImageInfo = async (req, res) => {
     const client = mqtt.connect(process.env.mqtt_broker_url, options);
 
     // Set a timeout for the response
-    const timeout = setTimeout(() => {
+    const timeout = setTimeout(async () => {
       if (!responseSent) {
         responseSent = true;
         console.error('Timeout: Device might be out of network');
-        res.status(504).json({ message: 'Device might be out of network' });
         client.end(); // Close the MQTT connection
+
+        // Fall back to the last known cached image settings for this device
+        const cached = await ImageSettings.findOne({ deviceId }).lean();
+        if (cached) {
+          console.log('Serving cached image info for', deviceId);
+          res.status(200).json(cached.irCutFilter);
+        } else {
+          res.status(504).json({ message: 'Device might be out of network' });
+        }
       }
     }, 15000); // 15 seconds timeout
 
-    client.on('message', (topic, message) => {
+    client.on('message', async (topic, message) => {
       if (!responseSent) {
         responseSent = true;
         clearTimeout(timeout); // Clear the timeout when a response is received
@@ -462,6 +501,12 @@ exports.getImageInfo = async (req, res) => {
         try {
           const parsedMessage = JSON.parse(message.toString());
           console.log(`Parsed JSON message on topic ${topic}:`, parsedMessage);
+
+          await ImageSettings.findOneAndUpdate(
+            { deviceId },
+            { $set: parsedMessage },
+            { upsert: true }
+          );
 
           client.end(() => {
             res.status(200).json(parsedMessage.irCutFilter);
@@ -531,16 +576,24 @@ exports.setImageInfo = async (req, res) => {
     const client = mqtt.connect(process.env.mqtt_broker_url, options);
 
     // Set a timeout for the response
-    const timeout = setTimeout(() => {
+    const timeout = setTimeout(async () => {
       if (!responseSent) {
         responseSent = true;
-        console.error('Timeout: Device might be out of network');
-        res.status(504).json({ message: 'Device might be out of network' });
+        console.error('Timeout: Device might be out of network. Saving setting optimistically.');
         client.end(); // Close the MQTT connection
+
+        // Camera didn't confirm in time — save what was requested so the UI/DB stay in sync,
+        // but flag it as unconfirmed by the device.
+        await ImageSettings.findOneAndUpdate(
+          { deviceId },
+          { $set: setting },
+          { upsert: true }
+        );
+        res.status(200).json({ message: 'Device might be out of network. Setting saved but not confirmed by device.', ...setting });
       }
     }, 15000); // 15 seconds timeout
 
-    client.on('message', (topic, message) => {
+    client.on('message', async (topic, message) => {
       if (!responseSent) {
         responseSent = true;
         clearTimeout(timeout); // Clear timeout upon receiving a message
@@ -551,6 +604,12 @@ exports.setImageInfo = async (req, res) => {
         try {
           const parsedMessage = JSON.parse(messageString);
           console.log(`Parsed JSON message on topic ${topic}:`, parsedMessage);
+
+          await ImageSettings.findOneAndUpdate(
+            { deviceId },
+            { $set: parsedMessage },
+            { upsert: true }
+          );
 
           client.end(() => {
             res.status(200).json(parsedMessage);
@@ -949,6 +1008,376 @@ const getRequestData = (quality, deviceid) => {
 
     default:
       throw new Error('Invalid quality parameter');
+  }
+};
+
+// GET VIDEO ENCODE CHANNEL MAIN (channel 101, topic 2)
+exports.getVideoEncodeChannelMain = async (req, res) => {
+  const deviceId = req.query.deviceId;
+  let responseSent = false;
+
+  try {
+    const options = {
+      username: process.env.mqttUser,
+      password: process.env.mqttPassword,
+    };
+
+    const client = mqtt.connect(process.env.mqtt_broker_url, options);
+
+    const timeout = setTimeout(async () => {
+      if (!responseSent) {
+        responseSent = true;
+        console.error('Timeout: Camera might be out of network');
+        client.end();
+
+        const cached = await VideoEncode.findOne({ deviceId, channel: 101 }).select('-_id -__v -deviceId -channel -createdAt -updatedAt').lean();
+        if (cached) {
+          console.log('Serving cached main stream encode settings for', deviceId);
+          res.status(200).json(cached);
+        } else {
+          res.status(504).json({ message: 'Camera might be out of network' });
+        }
+      }
+    }, 15000);
+
+    client.on('message', async (topic, message) => {
+      if (!responseSent) {
+        responseSent = true;
+        clearTimeout(timeout);
+
+        try {
+          const parsedMessage = JSON.parse(message.toString());
+          console.log(`Parsed JSON message on topic ${topic}:`, parsedMessage);
+
+          await VideoEncode.findOneAndUpdate(
+            { deviceId, channel: 101 },
+            { $set: parsedMessage },
+            { upsert: true }
+          );
+
+          client.end(() => {
+            res.status(200).json(parsedMessage);
+          });
+        } catch (err) {
+          console.error('Error parsing JSON:', err);
+          res.status(500).send('Invalid JSON format in the message body.');
+          client.end();
+        }
+      }
+    });
+
+    client.on('connect', () => {
+      console.log('Connected to the device');
+
+      client.subscribe(`${appTopicReceive}${deviceId}/2`, (err) => {
+        if (err) {
+          console.error('Subscription error:', err);
+        } else {
+          console.log(`Subscribed to topics with prefix ${appTopicReceive}`);
+          client.publish(`${appTopicSend}${deviceId}/2`, 'get Video Config');
+        }
+      });
+    });
+
+    client.on('error', (err) => {
+      if (!responseSent) {
+        responseSent = true;
+        clearTimeout(timeout);
+        console.error('MQTT Client Error:', err);
+        res.status(500).json({ message: 'Error with MQTT client' });
+        client.end();
+      }
+    });
+  } catch (error) {
+    if (!responseSent) {
+      responseSent = true;
+      console.error('Error fetching main stream encode settings:', error);
+      res.status(500).json({ message: 'Error fetching main stream encode settings' });
+    }
+  }
+};
+
+// SET VIDEO ENCODE CHANNEL MAIN (channel 101, topic 19)
+exports.setVideoEncodeChannelMain = async (req, res) => {
+  const { codecType, resolution, bitRateControlType, constantBitRate, frameRate } = req.body;
+  const deviceId = req.query.deviceId;
+  let responseSent = false;
+
+  const videoConfig = {
+    codecType,
+    resolution,
+    bitRateControlType,
+    constantBitRate: Math.floor(constantBitRate),
+    frameRate: Math.floor(frameRate),
+  };
+
+  try {
+    const options = {
+      username: process.env.mqttUser,
+      password: process.env.mqttPassword,
+    };
+
+    const client = mqtt.connect(process.env.mqtt_broker_url, options);
+
+    const timeout = setTimeout(async () => {
+      if (!responseSent) {
+        responseSent = true;
+        console.error('Timeout: Camera might be out of network. Saving settings optimistically.');
+        client.end();
+
+        await VideoEncode.findOneAndUpdate(
+          { deviceId, channel: 101 },
+          { $set: videoConfig },
+          { upsert: true }
+        );
+        res.status(200).json({ message: 'Camera might be out of network. Settings saved but not confirmed by device.', ...videoConfig });
+      }
+    }, 15000);
+
+    client.on('message', async (topic, message) => {
+      if (!responseSent) {
+        responseSent = true;
+        clearTimeout(timeout);
+        const messageString = message.toString();
+        console.log(`Message on topic ${topic}:`, messageString);
+
+        try {
+          const parsedMessage = JSON.parse(messageString);
+          console.log(`Parsed JSON message on topic ${topic}:`, parsedMessage);
+
+          await VideoEncode.findOneAndUpdate(
+            { deviceId, channel: 101 },
+            { $set: parsedMessage },
+            { upsert: true }
+          );
+
+          client.end(() => {
+            res.status(200).json(parsedMessage);
+          });
+        } catch (err) {
+          console.error('Error parsing JSON:', err);
+          res.status(500).send('Invalid JSON format in the message body.');
+          client.end();
+        }
+      }
+    });
+
+    client.on('connect', () => {
+      console.log('Connected to the device');
+
+      client.subscribe(`${appTopicReceive}${deviceId}/19`, (err) => {
+        if (err) {
+          console.error('Subscription error:', err);
+        } else {
+          console.log(`Subscribed to topics with prefix ${appTopicReceive}`);
+          client.publish(`${appTopicSend}${deviceId}/19`, JSON.stringify(videoConfig));
+        }
+      });
+    });
+
+    client.on('error', (err) => {
+      if (!responseSent) {
+        responseSent = true;
+        clearTimeout(timeout);
+        console.error('MQTT Client Error:', err);
+        res.status(500).json({ message: 'Error with MQTT client' });
+        client.end();
+      }
+    });
+  } catch (error) {
+    if (!responseSent) {
+      responseSent = true;
+      console.error('Error updating main stream encode settings:', error);
+      res.status(error.response ? error.response.status : 500).json({
+        message: error.message,
+        error: error.response ? error.response.data : null,
+      });
+    }
+  }
+};
+
+// GET VIDEO ENCODE CHANNEL SUB (channel 102, topic 39)
+exports.getVideoEncodeChannelSub = async (req, res) => {
+  const deviceId = req.query.deviceId;
+  let responseSent = false;
+
+  try {
+    const options = {
+      username: process.env.mqttUser,
+      password: process.env.mqttPassword,
+    };
+
+    const client = mqtt.connect(process.env.mqtt_broker_url, options);
+
+    const timeout = setTimeout(async () => {
+      if (!responseSent) {
+        responseSent = true;
+        console.error('Timeout: Camera might be out of network');
+        client.end();
+
+        const cached = await VideoEncode.findOne({ deviceId, channel: 102 }).select('-_id -__v -deviceId -channel -createdAt -updatedAt').lean();
+        if (cached) {
+          console.log('Serving cached sub stream encode settings for', deviceId);
+          res.status(200).json(cached);
+        } else {
+          res.status(504).json({ message: 'Camera might be out of network' });
+        }
+      }
+    }, 15000);
+
+    client.on('message', async (topic, message) => {
+      if (!responseSent) {
+        responseSent = true;
+        clearTimeout(timeout);
+
+        try {
+          const parsedMessage = JSON.parse(message.toString());
+          console.log(`Parsed JSON message on topic ${topic}:`, parsedMessage);
+
+          await VideoEncode.findOneAndUpdate(
+            { deviceId, channel: 102 },
+            { $set: parsedMessage },
+            { upsert: true }
+          );
+
+          client.end(() => {
+            res.status(200).json(parsedMessage);
+          });
+        } catch (err) {
+          console.error('Error parsing JSON:', err);
+          res.status(500).send('Invalid JSON format in the message body.');
+          client.end();
+        }
+      }
+    });
+
+    client.on('connect', () => {
+      console.log('Connected to the device');
+
+      client.subscribe(`${appTopicReceive}${deviceId}/39`, (err) => {
+        if (err) {
+          console.error('Subscription error:', err);
+        } else {
+          console.log(`Subscribed to topics with prefix ${appTopicReceive}`);
+          client.publish(`${appTopicSend}${deviceId}/39`, 'get Video Config');
+        }
+      });
+    });
+
+    client.on('error', (err) => {
+      if (!responseSent) {
+        responseSent = true;
+        clearTimeout(timeout);
+        console.error('MQTT Client Error:', err);
+        res.status(500).json({ message: 'Error with MQTT client' });
+        client.end();
+      }
+    });
+  } catch (error) {
+    if (!responseSent) {
+      responseSent = true;
+      console.error('Error fetching sub stream encode settings:', error);
+      res.status(500).json({ message: 'Error fetching sub stream encode settings' });
+    }
+  }
+};
+
+// SET VIDEO ENCODE CHANNEL SUB (channel 102, topic 40)
+exports.setVideoEncodeChannelSub = async (req, res) => {
+  const { codecType, resolution, bitRateControlType, constantBitRate, frameRate } = req.body;
+  const deviceId = req.query.deviceId;
+  let responseSent = false;
+
+  const videoConfig = {
+    codecType,
+    resolution,
+    bitRateControlType,
+    constantBitRate: Math.floor(constantBitRate),
+    frameRate: Math.floor(frameRate),
+  };
+
+  try {
+    const options = {
+      username: process.env.mqttUser,
+      password: process.env.mqttPassword,
+    };
+
+    const client = mqtt.connect(process.env.mqtt_broker_url, options);
+
+    const timeout = setTimeout(async () => {
+      if (!responseSent) {
+        responseSent = true;
+        console.error('Timeout: Camera might be out of network. Saving settings optimistically.');
+        client.end();
+
+        await VideoEncode.findOneAndUpdate(
+          { deviceId, channel: 102 },
+          { $set: videoConfig },
+          { upsert: true }
+        );
+        res.status(200).json({ message: 'Camera might be out of network. Settings saved but not confirmed by device.', ...videoConfig });
+      }
+    }, 15000);
+
+    client.on('message', async (topic, message) => {
+      if (!responseSent) {
+        responseSent = true;
+        clearTimeout(timeout);
+        const messageString = message.toString();
+        console.log(`Message on topic ${topic}:`, messageString);
+
+        try {
+          const parsedMessage = JSON.parse(messageString);
+          console.log(`Parsed JSON message on topic ${topic}:`, parsedMessage);
+
+          await VideoEncode.findOneAndUpdate(
+            { deviceId, channel: 102 },
+            { $set: parsedMessage },
+            { upsert: true }
+          );
+
+          client.end(() => {
+            res.status(200).json(parsedMessage);
+          });
+        } catch (err) {
+          console.error('Error parsing JSON:', err);
+          res.status(500).send('Invalid JSON format in the message body.');
+          client.end();
+        }
+      }
+    });
+
+    client.on('connect', () => {
+      console.log('Connected to the device');
+
+      client.subscribe(`${appTopicReceive}${deviceId}/40`, (err) => {
+        if (err) {
+          console.error('Subscription error:', err);
+        } else {
+          console.log(`Subscribed to topics with prefix ${appTopicReceive}`);
+          client.publish(`${appTopicSend}${deviceId}/40`, JSON.stringify(videoConfig));
+        }
+      });
+    });
+
+    client.on('error', (err) => {
+      if (!responseSent) {
+        responseSent = true;
+        clearTimeout(timeout);
+        console.error('MQTT Client Error:', err);
+        res.status(500).json({ message: 'Error with MQTT client' });
+        client.end();
+      }
+    });
+  } catch (error) {
+    if (!responseSent) {
+      responseSent = true;
+      console.error('Error updating sub stream encode settings:', error);
+      res.status(error.response ? error.response.status : 500).json({
+        message: error.message,
+        error: error.response ? error.response.data : null,
+      });
+    }
   }
 };
 

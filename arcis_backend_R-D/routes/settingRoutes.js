@@ -12,7 +12,8 @@ const { getQuality, getAudioInfo, setAudioInfo, getImageInfo,
     getMissingObjectDetection, setMissingObjectDetection, setUnattendedObjectDetection,
     getUnattendedObjectDetection, getAlertSettings, setAlertSettings, getTimesettings,
     setTimesettings, ptzSettings, getHumanTracking, setHumanTracking,
-    getAlarmSettings, talkToCamera } = require('../controllers/settingController');
+    getAlarmSettings, talkToCamera, getVideoEncodeChannelMain, setVideoEncodeChannelMain,
+    getVideoEncodeChannelSub, setVideoEncodeChannelSub } = require('../controllers/settingController');
 
 const { isAuthenticatedUser } = require('../middleware/authMiddleware');
 const e = require('express');
@@ -30,6 +31,12 @@ router.post('/setImageInfo', isAuthenticatedUser, setImageInfo);
 
 router.get('/getVideoSettings', isAuthenticatedUser, getVideoSettings);
 router.post('/setVideoSettings', isAuthenticatedUser, setVideoSettings);
+
+router.get('/getVideoEncodeChannelMain', isAuthenticatedUser, getVideoEncodeChannelMain);
+router.post('/setVideoEncodeChannelMain', isAuthenticatedUser, setVideoEncodeChannelMain);
+
+router.get('/getVideoEncodeChannelSub', isAuthenticatedUser, getVideoEncodeChannelSub);
+router.post('/setVideoEncodeChannelSub', isAuthenticatedUser, setVideoEncodeChannelSub);
 
 router.get('/getTimesettings', isAuthenticatedUser, getTimesettings);
 router.post('/setTimesettings', isAuthenticatedUser, setTimesettings);

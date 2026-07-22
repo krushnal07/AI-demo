@@ -9,6 +9,7 @@ dotenv.config({ path: "config/config.env" });
 
 // Import Routes
 const { redisClient } = require("./services/redisClient");
+require("./services/mqttClient"); // logs MQTT broker connection status on boot
 const authRoutes = require("./routes/authRoutes");
 const cameraRoutes = require("./routes/cameraRoutes");
 const streamRoutes = require("./routes/streamRoutes");

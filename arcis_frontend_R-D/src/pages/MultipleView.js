@@ -38,6 +38,7 @@ import Loading from "../components/Loading";
 import MobileHeader from "../components/MobileHeader";
 import CameraGroupBar from "../components/CameraGroupBar";
 import ChatPanel from "./ChatPanel";
+import TalkButton from "../components/TalkButton";
 import { BsArrowsFullscreen, BsVolumeMute, BsVolumeUp } from "react-icons/bs";
 import { MdGridView } from "react-icons/md";
 import { TfiLayoutListThumb } from "react-icons/tfi";
@@ -844,6 +845,7 @@ function MultipleView() {
                           icon={<BsArrowsFullscreen fontSize="16px" />}
                           onClick={() => toggleCameraFullscreen(camera.deviceId)}
                         />
+                        <TalkButton deviceId={camera.deviceId} />
                       </HStack>
                     </Box>
                   </Box>
@@ -978,6 +980,7 @@ function MultipleView() {
                             <HStack position="absolute" bottom="40px" right="15px" zIndex="20" spacing={3}>
                               <IconButton variant="solid" size="sm" bg="rgba(0,0,0,0.6)" color="white" borderRadius="full" icon={<BsVolumeMute fontSize="20px" />} onClick={() => toggleMute(Camera.deviceId)} />
                               <IconButton variant="solid" size="sm" bg="rgba(0,0,0,0.6)" color="white" borderRadius="full" icon={<BsArrowsFullscreen fontSize="18px" />} onClick={() => toggleCameraFullscreen(Camera.deviceId)} />
+                              <TalkButton deviceId={Camera.deviceId} />
                             </HStack>
                           )}
                         </Box>
@@ -1026,6 +1029,7 @@ function MultipleView() {
                                     <HStack position="absolute" bottom="25px" right="5px" zIndex="20" spacing={1}>
                                       <IconButton size="xs" variant="solid" bg="rgba(0,0,0,0.5)" color="white" icon={<BsVolumeMute />} onClick={(e) => { e.stopPropagation(); toggleMute(camera.deviceId); }} />
                                       <IconButton size="xs" variant="solid" bg="rgba(0,0,0,0.5)" color="white" icon={<BsArrowsFullscreen />} onClick={(e) => { e.stopPropagation(); toggleCameraFullscreen(camera.deviceId); }} />
+                                      <TalkButton deviceId={camera.deviceId} size="xs" />
                                     </HStack>
                                   )}
                                 </Box>

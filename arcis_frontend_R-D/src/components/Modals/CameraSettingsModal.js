@@ -6,16 +6,9 @@ import {
     TabList,
     Tab,
     Input,
-    IconButton,
-    Menu,
-    MenuButton,
-    MenuList,
-    MenuItem,
     Button,
     useColorModeValue,
-    Image,
     Divider,
-    Icon,
     Modal,
     ModalOverlay,
     ModalContent,
@@ -30,49 +23,22 @@ import {
     SliderFilledTrack,
     SliderThumb,
     Grid,
+    FormControl,
+    FormLabel,
     useToast,
-    Spinner,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { ChevronDownIcon, ChevronUpIcon, InfoIcon } from "@chakra-ui/icons";
 import {
-    getAlertSettings,
-    getAreaDetection,
-    getAudioInfo,
-    getCustomerStats,
-    getFace,
-    getHumanoid,
-    getHumanTracking,
     getImageInfo,
-    getLineCross,
-    getMissingObjectDetection,
-    getMotionDetection,
-    getQuality,
-    getUnattendedObjectDetection,
+    getVideoEncodeChannelMain,
+    getVideoEncodeChannelSub,
     getVideoSettings,
     rebootCamera,
-    setAlertSettings,
-    setAreaDetection,
-    setAudioInfo,
-    getSmartQuality,
-    setSmartQuality,
-    setCustomerStats,
-    setFace,
-    setHumanoid,
-    setHumanTrackingSettings,
     setImageInfo,
-    setLineCross,
-    setMissingObjectDetection,
-    setMotionDetection,
-    setQualitySettings,
-    setUnattendedObjectDetection,
+    setVideoEncodeChannelMain,
+    setVideoEncodeChannelSub,
     setVideoSettings,
 } from "../../actions/settingsActions";
-import LineCrossCanvas from "../Canvas/LineCrossCanvas";
-import CustomerCanvas from "../Canvas/CustomerCanvas";
-import UAOCanvas from "../Canvas/UAOCanvas";
-import MODCanvas from "../Canvas/MODCanvas";
-import AreaCanvas from "../Canvas/AreaCanvas";
 
 const CameraSettingsModal = ({
     isOpen,
@@ -84,18 +50,15 @@ const CameraSettingsModal = ({
     const toast = useToast();
 
     // -- State Variables Migrated from Cameras.js --
-    const [activeTab, setActiveTab] = useState("General");
-    const [activeDropdown, setActiveDropdown] = useState(null);
+    const [activeTab, setActiveTab] = useState("Video settings");
 
-    // General Tab
-    const [quality, setQuality] = useState("");
-    const [qualityLoading, setQualityLoading] = useState(false);
-    const [aiEnabled, setAiEnabled] = useState(false);
-    const [humanTracking, setHumanTracking] = useState(false);
-    const [cruiseMode, setCruiseMode] = useState("");
-    const [audio, setAudio] = useState(false);
-    const [enablesmartQuality, setenableSmartQuality] = useState(false);
-    const [dataPlan, setdataPlan] = useState(0);
+    // Video Settings Tab (raw encode config)
+    const [streamType, setStreamType] = useState("main");
+    const [bitRate, setBitRate] = useState("");
+    const [frameRate, setFrameRate] = useState("");
+    const [codecType, setCodecType] = useState("");
+    const [resolution, setResolution] = useState("");
+    const [bitRateType, setBitRateType] = useState("");
 
     // Media Tab
     const [irCutMode, setIrCutMode] = useState(false);
@@ -106,71 +69,6 @@ const CameraSettingsModal = ({
     const [sharpness, setSharpness] = useState(50);
     const [flip, setFlip] = useState(false);
     const [mirror, setMirror] = useState(false);
-
-    // AI Settings
-    // Motion Detection
-    const [motionEnabled, setMotionEnabled] = useState(false);
-    const [motionSensitivity, setMotionSensitivity] = useState(0);
-    const [motionAudioAlert, setMotionAudioAlert] = useState(false);
-    const [motionLightAlert, setMotionLightAlert] = useState(false);
-
-    // Human Detection
-    const [humanEnabled, setHumanEnabled] = useState(false);
-    const [humanSensitivity, setHumanSensitivity] = useState(0);
-    const [humanSensitivityLevel, setHumanSensitivityLevel] = useState("normal"); // Default assumption
-    const [humanAudioAlert, setHumanAudioAlert] = useState(false);
-    const [humanLightAlert, setHumanLightAlert] = useState(false);
-
-    // Face Detection
-    const [faceEnabled, setFaceEnabled] = useState(false);
-    const [audioAlert, setAudioAlert] = useState(false);
-    const [lightAlert, setLightAlert] = useState(false);
-    const [faceSensitivity, setFaceSensitivity] = useState(0);
-
-    // Line Cross
-    const [lineCrossEnabled, setLineCrossEnabled] = useState(false);
-    const [lineCrossAudioAlert, setLineCrossAudioAlert] = useState(false);
-    const [lineCrossLightAlert, setLineCrossLightAlert] = useState(false);
-    const [lineCrossSensitivity, setLineCrossSensitivity] = useState(0);
-    const [detectLine, setDetectLine] = useState(null);
-    const [direction, setDirection] = useState(null);
-    const [isCanvasModalOpen, setIsCanvasModalOpen] = useState(false);
-
-    // Area Detection
-    const [areaEnabled, setAreaEnabled] = useState(false);
-    const [areaAudioAlert, setAreaAudioAlert] = useState(false);
-    const [areaLightAlert, setAreaLightAlert] = useState(false);
-    const [areaSensitivity, setAreaSensitivity] = useState(0);
-    const [detectArea, setDetectArea] = useState([]);
-    const [areaDirection, setAreaDirection] = useState(null);
-    const [Action, setAction] = useState("");
-    const [isAreaModalOpen, setIsAreaModalOpen] = useState(false);
-
-    // Traffic (Customer Stats)
-    const [trafficEnabled, setTrafficEnabled] = useState(false);
-    const [detectTraffic, setDetectTraffic] = useState(null);
-    const [trafficDirection, setTrafficDirection] = useState(null);
-    const [isTrafficModalOpen, setIsTrafficModalOpen] = useState(false);
-
-    // Unattended Object
-    const [unattendedEnabled, setUnattendedEnabled] = useState(false);
-    const [unattendedAudioAlert, setUnattendedAudioAlert] = useState(false);
-    const [unattendedLightAlert, setUnattendedLightAlert] = useState(false);
-    const [unattendedSensitivity, setUnattendedSensitivity] = useState(0);
-    const [detectUnattended, setDetectUnattended] = useState(null);
-    const [unattendedDirection, setUnattendedDirection] = useState(null);
-    const [unattendedDuration, setUnattendedDuration] = useState(0);
-    const [isUnattendedModalOpen, setIsUnattendedModalOpen] = useState(false);
-
-    // Missing Object
-    const [missingEnabled, setMissingEnabled] = useState(false);
-    const [missingAudioAlert, setMissingAudioAlert] = useState(false);
-    const [missingLightAlert, setMissingLightAlert] = useState(false);
-    const [missingSensitivity, setMissingSensitivity] = useState(0);
-    const [detectMissing, setDetectMissing] = useState(null);
-    const [missingDirection, setMissingDirection] = useState(null);
-    const [missingDuration, setMissingDuration] = useState(0);
-    const [isMissingModalOpen, setIsMissingModalOpen] = useState(false);
 
     // Wifi Settings (Placeholder from original code)
     // const [wifiName, setWifiName] = useState("");
@@ -202,107 +100,16 @@ const CameraSettingsModal = ({
                     setMirror(response.mirrorEnabled);
                     setFlip(response.flipEnabled);
                 }
-            } else if (activeTab === "General") {
-                const qualityResponse = await getQuality(deviceId);
-                if (qualityResponse && qualityResponse.quality) setQuality(qualityResponse.quality.quality);
-
-                if (productType && productType.includes("S-Series")) {
-                    const aiResponse = await getAlertSettings(deviceId);
-                    if (aiResponse) setAiEnabled(aiResponse.bEnable);
-                    const aiResponse2 = await getHumanTracking(deviceId);
-                    if (aiResponse2) {
-                        setHumanTracking(aiResponse2.motionTracking);
-                        setCruiseMode(aiResponse2.cruiseMode);
-                    }
-                }
-                const audioResponse = await getAudioInfo(deviceId);
-                if (audioResponse) setAudio(audioResponse.enabled);
-
-                const smartQualityresponse = await getSmartQuality(deviceId);
-                if (smartQualityresponse && smartQualityresponse.smartQuality) {
-                    setenableSmartQuality(smartQualityresponse.smartQuality.smartQuality);
-                    setdataPlan(smartQualityresponse.smartQuality.dataPlan);
-                }
-
-            } else if (activeTab === "AI Settings" && activeDropdown) {
-                // Fetch specific AI dropdown settings
-                if (activeDropdown === "Motion Detection") {
-                    const response = await getMotionDetection(deviceId);
-                    if (response) {
-                        setMotionEnabled(response.enabled);
-                        if (response.detectionGrid) setMotionSensitivity(response.detectionGrid.sensitivityLevel);
-                        if (response.alarmOut) {
-                            setMotionAudioAlert(response.alarmOut.audioAlert.enabled);
-                            setMotionLightAlert(response.alarmOut.lightAlert.enabled);
-                        }
-                    }
-                } else if (activeDropdown === "Human Detection") {
-                    const response = await getHumanoid(deviceId);
-                    if (response) {
-                        setHumanEnabled(response.enabled);
-                        setHumanSensitivity(response.sensitivity);
-                        setHumanSensitivityLevel(response.sensitivityLevel);
-                        setHumanAudioAlert(response.audioAlert);
-                        setHumanLightAlert(response.lightAlert);
-                    }
-                } else if (activeDropdown === "Face Detection") {
-                    const response = await getFace(deviceId);
-                    if (response) {
-                        setFaceEnabled(response.enabled);
-                        setFaceSensitivity(response.sensitivity);
-                        setAudioAlert(response.audioAlert);
-                        setLightAlert(response.lightAlert);
-                    }
-                } else if (activeDropdown === "Line Crossing Detection") {
-                    const response = await getLineCross(deviceId);
-                    if (response) {
-                        setLineCrossEnabled(response.enabled);
-                        setLineCrossSensitivity(response.sensitivity);
-                        setLineCrossAudioAlert(response.audioAlert);
-                        setLineCrossLightAlert(response.lightAlert);
-                        setDetectLine(response.detectLine);
-                        setDirection(response.direction);
-                    }
-                } else if (activeDropdown === "Area Detection") {
-                    const response = await getAreaDetection(deviceId);
-                    if (response) {
-                        setAreaEnabled(response.enabled);
-                        setAreaSensitivity(response.sensitivity);
-                        setAreaAudioAlert(response.audioAlert);
-                        setAreaLightAlert(response.lightAlert);
-                        setDetectArea(response.detectArea);
-                        setAreaDirection(response.direction);
-                        setAction(response.action);
-                    }
-                } else if (activeDropdown === "Traffic Detection") {
-                    const response = await getCustomerStats(deviceId);
-                    if (response) {
-                        setTrafficEnabled(response.enabled);
-                        setDetectTraffic(response.detectTraffic);
-                        setTrafficDirection(response.direction);
-                    }
-                } else if (activeDropdown === "Unattended Object") {
-                    const response = await getUnattendedObjectDetection(deviceId);
-                    if (response) {
-                        setUnattendedEnabled(response.enabled);
-                        setUnattendedSensitivity(response.sensitivity);
-                        setUnattendedAudioAlert(response.audioAlert);
-                        setUnattendedLightAlert(response.lightAlert);
-                        setUnattendedDuration(response.duration);
-                        setDetectUnattended(response.detectUnattended);
-                        setUnattendedDirection(response.direction);
-                    }
-                } else if (activeDropdown === "Missing Object") {
-                    const response = await getMissingObjectDetection(deviceId);
-                    if (response) {
-                        setMissingEnabled(response.enabled);
-                        setMissingSensitivity(response.sensitivity);
-                        setMissingAudioAlert(response.audioAlert);
-                        setMissingLightAlert(response.lightAlert);
-                        setMissingDuration(response.duration);
-                        setDetectMissing(response.detectMissing);
-                        setMissingDirection(response.direction);
-                    }
+            } else if (activeTab === "Video settings") {
+                const response = streamType === "main"
+                    ? await getVideoEncodeChannelMain(deviceId)
+                    : await getVideoEncodeChannelSub(deviceId);
+                if (response) {
+                    setBitRate(response.constantBitRate || "");
+                    setFrameRate(response.frameRate || "");
+                    setCodecType(response.codecType || "");
+                    setResolution(response.resolution || "");
+                    setBitRateType(response.bitRateControlType || "");
                 }
             }
         } catch (error) {
@@ -315,7 +122,7 @@ const CameraSettingsModal = ({
         if (isOpen) {
             fetchData();
         }
-    }, [isOpen, activeTab, activeDropdown, deviceId]);
+    }, [isOpen, activeTab, deviceId, streamType]);
 
 
     // --- Handlers ---
@@ -330,31 +137,16 @@ const CameraSettingsModal = ({
         }
     };
 
-    const handleQualityChange = async (newQuality) => {
-        setQualityLoading(true);
-        setQuality(newQuality);
+    const handleVideoEncodeSave = async () => {
         try {
-            await setQualitySettings(deviceId, newQuality);
-            toast({ title: "Quality updated", status: "success", duration: 2000, isClosable: true });
-        } catch (error) {
-            console.error("Error updating quality:", error);
-            toast({ title: "Error updating quality", status: "error", duration: 3000, isClosable: true });
-        } finally {
-            setQualityLoading(false);
-        }
-    };
-
-    const handleGeneralSettings = async () => {
-        try {
-            if (productType && productType.includes("S-Series")) {
-                await setAlertSettings(deviceId, aiEnabled);
-                await setHumanTrackingSettings(deviceId, humanTracking, cruiseMode);
+            if (streamType === "main") {
+                await setVideoEncodeChannelMain(deviceId, codecType, resolution, bitRateType, bitRate, frameRate);
+            } else {
+                await setVideoEncodeChannelSub(deviceId, codecType, resolution, bitRateType, bitRate, frameRate);
             }
-            await setAudioInfo(deviceId, audio);
-            await setSmartQuality(deviceId, enablesmartQuality, dataPlan);
-            toast({ title: "General Settings Saved", status: "success", duration: 3000, isClosable: true });
+            toast({ title: "Video Settings Saved", status: "success", duration: 3000, isClosable: true });
         } catch (error) {
-            console.error("Error saving general settings:", error);
+            console.error("Error saving video settings:", error);
             toast({ title: "Save failed", status: "error", duration: 3000, isClosable: true });
         }
     };
@@ -370,32 +162,6 @@ const CameraSettingsModal = ({
         }
     };
 
-    const handleAISettings = async () => {
-        try {
-            if (activeDropdown === "Motion Detection") {
-                await setMotionDetection(deviceId, motionEnabled, motionSensitivity, motionAudioAlert, motionLightAlert);
-            } else if (activeDropdown === "Human Detection") {
-                await setHumanoid(deviceId, humanEnabled, humanSensitivity, humanSensitivityLevel, humanAudioAlert, humanLightAlert);
-            } else if (activeDropdown === "Face Detection") {
-                await setFace(deviceId, faceEnabled, faceSensitivity, audioAlert, lightAlert);
-            } else if (activeDropdown === "Line Crossing Detection") {
-                await setLineCross(deviceId, lineCrossEnabled, lineCrossSensitivity, lineCrossAudioAlert, lineCrossLightAlert, detectLine, direction);
-            } else if (activeDropdown === "Area Detection") {
-                await setAreaDetection(deviceId, areaEnabled, areaSensitivity, areaAudioAlert, areaLightAlert, detectArea, areaDirection, Action);
-            } else if (activeDropdown === "Traffic Detection") {
-                await setCustomerStats(deviceId, trafficEnabled, detectTraffic, trafficDirection);
-            } else if (activeDropdown === "Unattended Object") {
-                await setUnattendedObjectDetection(deviceId, unattendedEnabled, unattendedSensitivity, unattendedAudioAlert, unattendedLightAlert, unattendedDuration, detectUnattended, unattendedDirection);
-            } else if (activeDropdown === "Missing Object") {
-                await setMissingObjectDetection(deviceId, missingEnabled, missingSensitivity, missingAudioAlert, missingLightAlert, missingDuration, detectMissing, missingDirection);
-            }
-            toast({ title: `${activeDropdown} settings updated`, status: "success", duration: 3000, isClosable: true });
-        } catch (error) {
-            console.error("Error saving AI settings:", error);
-            toast({ title: "Save failed", status: "error", duration: 3000, isClosable: true });
-        }
-    };
-
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="3xl">
@@ -403,9 +169,9 @@ const CameraSettingsModal = ({
             <ModalContent>
                 <ModalHeader>Camera Settings</ModalHeader>
                 <ModalBody>
-                    <Tabs variant="unstyled" mb={6} onChange={(index) => setActiveTab(["General", "Media", "AI Settings", "Wifi Settings"][index])}>
+                    <Tabs variant="unstyled" mb={6} onChange={(index) => setActiveTab(["Video settings", "Media", "Wifi Settings"][index])}>
                         <TabList>
-                            {["General", "Media", "AI Settings"].map((tab) => (
+                            {["Video settings", "Media"].map((tab) => (
                                 <Tab
                                     key={tab}
                                     _selected={{ fontWeight: "bold", borderBottom: "4px solid", borderColor: saveButtonBackgroundColor }}
@@ -421,86 +187,74 @@ const CameraSettingsModal = ({
                         </TabList>
                     </Tabs>
 
-                    {/* --- GENERAL TAB --- */}
-                    {activeTab === "General" && (
+                    {/* --- VIDEO SETTINGS TAB --- */}
+                    {activeTab === "Video settings" && (
                         <Box>
-                            {productType && productType.includes("S-Series") && (
-                                <>
-                                    <Flex justifyContent="space-between" alignItems="center" mb={4}>
-                                        <Text>AI Notifications</Text>
-                                        <Switch isChecked={aiEnabled} onChange={() => setAiEnabled(!aiEnabled)} size="md" />
-                                    </Flex>
-                                    <Flex justifyContent="space-between" alignItems="center" mb={4}>
-                                        <Text>Human Tracking</Text>
-                                        <Switch isChecked={humanTracking} onChange={() => setHumanTracking(!humanTracking)} size="md" />
-                                    </Flex>
-                                </>
-                            )}
-                            <Flex justifyContent="space-between" alignItems="center" mb={4}>
-                                <Text>Audio</Text>
-                                <Switch isChecked={audio} onChange={() => setAudio(!audio)} size="md" />
-                            </Flex>
-
                             <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                                <Text>Camera name</Text>
+                                <Text>Device Name</Text>
                                 <Input disabled defaultValue={cameraName} size="sm" maxW="60%" />
                             </Flex>
 
-                            <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                                <Text>Camera model</Text>
-                                <Text fontWeight="bold">{productType}</Text>
-                            </Flex>
-
-                            <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                                <Text>Device ID</Text>
-                                <Text fontWeight="bold">{deviceId}</Text>
-                            </Flex>
-
-                            <Flex alignItems="center" justifyContent="space-between">
-                                <Text>Quality</Text>
-                                <Select
-                                    disabled={enablesmartQuality}
-                                    value={quality}
-                                    onChange={(e) => handleQualityChange(e.target.value)}
-                                    size="sm"
-                                    maxW="60%"
-                                >
-                                    <option value="verylow">Very Low</option>
-                                    <option value="low">Low</option>
-                                    <option value="mid">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="veryhigh">Very High</option>
-                                </Select>
-                                {qualityLoading && <Spinner size="sm" ml={2} />}
-                            </Flex>
-
-                            <Flex alignItems="center" justifyContent="space-between" mt={4} mb={4}>
-                                <Text>Cruise Mode</Text>
-                                <Select
-                                    value={cruiseMode}
-                                    onChange={(e) => setCruiseMode(e.target.value)}
-                                    size="sm"
-                                    maxW="60%"
-                                >
-                                    <option value="cruise_stop">None</option>
-                                    <option value="cruise_preset">Preset</option>
-                                    <option value="cruise_allround">All Round</option>
-                                </Select>
-                            </Flex>
+                            <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)" }} gap={4} mb={4}>
+                                <FormControl>
+                                    <FormLabel>Stream Type</FormLabel>
+                                    <Select value={streamType} onChange={(e) => setStreamType(e.target.value)} size="sm">
+                                        <option value="main">Main Stream</option>
+                                        <option value="sub">Sub Stream</option>
+                                    </Select>
+                                </FormControl>
+                                <FormControl>
+                                    <FormLabel>Bit Rate</FormLabel>
+                                    <Input value={bitRate} onChange={(e) => setBitRate(e.target.value)} placeholder="Bit Rate" size="sm" />
+                                </FormControl>
+                                <FormControl>
+                                    <FormLabel>FPS</FormLabel>
+                                    <Input value={frameRate} onChange={(e) => setFrameRate(e.target.value)} placeholder="FPS" size="sm" />
+                                </FormControl>
+                                <FormControl>
+                                    <FormLabel>Profile</FormLabel>
+                                    <Select value={codecType} onChange={(e) => setCodecType(e.target.value)} placeholder="Codec Type" size="sm">
+                                        <option value="H.264">H.264</option>
+                                        <option value="H.265">H.265</option>
+                                        <option value="H.264+">H.264+</option>
+                                        <option value="H.265+">H.265+</option>
+                                    </Select>
+                                </FormControl>
+                                <FormControl>
+                                    <FormLabel>Bit Rate Type</FormLabel>
+                                    <Select value={bitRateType} onChange={(e) => setBitRateType(e.target.value)} placeholder="Select type" size="sm">
+                                        <option>CBR</option>
+                                        <option>VBR</option>
+                                    </Select>
+                                </FormControl>
+                                <FormControl>
+                                    <FormLabel>Resolution</FormLabel>
+                                    <Select value={resolution} onChange={(e) => setResolution(e.target.value)} placeholder="Select resolution" size="sm">
+                                        {streamType === "main" ? (
+                                            <>
+                                                <option value="2304x1296">2304x1296</option>
+                                                <option value="1920x1080">1920x1080</option>
+                                                <option value="1280x720">1280x720</option>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <option value="800x448">800x448</option>
+                                                <option value="640x360">640x360</option>
+                                            </>
+                                        )}
+                                    </Select>
+                                </FormControl>
+                            </Grid>
 
                             <Divider mb={2} />
-                            <Flex w="full" justifyContent="space-between">
-                                <Button p={0} colorScheme="red" variant="ghost" textDecoration={"underline"} size="sm" onClick={handleRebootCamera}>
-                                    Reboot Camera
-                                </Button>
-                                <Spacer />
+                            <Flex w="full" justifyContent="flex-end">
                                 <Button variant="outline" size="sm" mr={2} onClick={onClose}>Close</Button>
                                 <Button
                                     size="sm"
                                     background={saveButtonBackgroundColor}
                                     color={saveButtonColor}
                                     _hover={{ backgroundColor: saveButtonHoverBackgroundColor, color: saveButtonHoverColor }}
-                                    onClick={handleGeneralSettings}
+                                    onClick={handleVideoEncodeSave}
                                 >
                                     Save
                                 </Button>
@@ -568,73 +322,6 @@ const CameraSettingsModal = ({
                                     Save
                                 </Button>
                             </Flex>
-                        </Box>
-                    )}
-
-
-                    {/* --- AI SETTINGS TAB --- */}
-                    {activeTab === "AI Settings" && (
-                        <Box>
-                            {/* Motion Detection */}
-                            <Box>
-                                <Flex justifyContent="space-between" alignItems="center" cursor="pointer" onClick={() => setActiveDropdown(activeDropdown === "Motion Detection" ? null : "Motion Detection")} mb={4}>
-                                    <Text>Motion Detection</Text>
-                                    <Icon as={activeDropdown === "Motion Detection" ? ChevronUpIcon : ChevronDownIcon} />
-                                </Flex>
-                                {activeDropdown === "Motion Detection" && (
-                                    <Box pl={4} pb={4}>
-                                        <Flex justifyContent="space-between" mb={2}><Text>Enable</Text><Switch isChecked={motionEnabled} onChange={() => setMotionEnabled(!motionEnabled)} /></Flex>
-                                        <Flex justifyContent="space-between" mb={2}><Text>Audio Alert</Text><Switch isChecked={motionAudioAlert} onChange={() => setMotionAudioAlert(!motionAudioAlert)} /></Flex>
-                                        <Flex justifyContent="space-between" mb={4}><Text>Light Alert</Text><Switch isChecked={motionLightAlert} onChange={() => setMotionLightAlert(!motionLightAlert)} /></Flex>
-                                        <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                                            <Text flex="1">Sensitivity</Text>
-                                            <Box flex="1" mx={4}><Slider value={motionSensitivity} onChange={setMotionSensitivity} min={0} max={100}><SliderTrack><SliderFilledTrack /></SliderTrack><SliderThumb /></Slider></Box>
-                                            <Text>{motionSensitivity}</Text>
-                                        </Flex>
-                                        <Button size="sm" onClick={handleAISettings} colorScheme="blue">Save Motion Settings</Button>
-                                    </Box>
-                                )}
-                            </Box>
-
-                            {/* Human Detection */}
-                            <Box>
-                                <Flex justifyContent="space-between" alignItems="center" cursor="pointer" onClick={() => setActiveDropdown(activeDropdown === "Human Detection" ? null : "Human Detection")} mb={4}>
-                                    <Text>Human Detection</Text>
-                                    <Icon as={activeDropdown === "Human Detection" ? ChevronUpIcon : ChevronDownIcon} />
-                                </Flex>
-                                {activeDropdown === "Human Detection" && (
-                                    <Box pl={4} pb={4}>
-                                        <Flex justifyContent="space-between" mb={2}><Text>Enable</Text><Switch isChecked={humanEnabled} onChange={() => setHumanEnabled(!humanEnabled)} /></Flex>
-                                        {productType && productType.includes("S-Series") && (
-                                            <>
-                                                <Flex justifyContent="space-between" mb={2}><Text>Audio Alert</Text><Switch isChecked={humanAudioAlert} onChange={() => setHumanAudioAlert(!humanAudioAlert)} /></Flex>
-                                                <Flex justifyContent="space-between" mb={4}><Text>Light Alert</Text><Switch isChecked={humanLightAlert} onChange={() => setHumanLightAlert(!humanLightAlert)} /></Flex>
-                                            </>
-                                        )}
-                                        {/* Sensitivity Logic */}
-                                        {productType && productType.includes("S-Series") ? (
-                                            <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                                                <Text flex="1">Sensitivity</Text>
-                                                <Box flex="1" mx={4}><Slider value={humanSensitivity} onChange={setHumanSensitivity} min={0} max={10} step={2}><SliderTrack><SliderFilledTrack /></SliderTrack><SliderThumb /></Slider></Box>
-                                                <Text>{humanSensitivity}</Text>
-                                            </Flex>
-                                        ) : (
-                                            <Flex alignItems="center" justifyContent="space-between" mb={4}>
-                                                <Text>Sensitivity Level</Text>
-                                                <Select value={humanSensitivityLevel} onChange={(e) => setHumanSensitivityLevel(e.target.value)} size="sm" maxW="60%">
-                                                    <option value="lowest">Lowest</option>
-                                                    <option value="low">Low</option>
-                                                    <option value="normal">Normal</option>
-                                                    <option value="high">High</option>
-                                                    <option value="highest">Highest</option>
-                                                </Select>
-                                            </Flex>
-                                        )}
-                                        <Button size="sm" onClick={handleAISettings} colorScheme="blue">Save Human Settings</Button>
-                                    </Box>
-                                )}
-                            </Box>
-
                         </Box>
                     )}
 

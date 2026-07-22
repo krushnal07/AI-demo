@@ -2,6 +2,7 @@ const https = require('https'); // Add the https module
 const path = require('path');
 const fs = require('fs');
 const app = require('./app');
+const { initTwoWayTalk } = require('./services/twoWayTalk');
 
 const key_path = path.join(__dirname, "../certs/vmukti.key")
 const pem_path = path.join(__dirname, "../certs/vmukti.pem")
@@ -15,6 +16,8 @@ const credentials = { key: privateKey, cert: certificate }; // Remove passphrase
 // Create an HTTPS server
 const httpsServer = https.createServer(credentials, app);
 const port = process.env.PORT || 5000;
+
+initTwoWayTalk(httpsServer);
 
 httpsServer.listen(port, () => {
     console.log(`Ambicam-App server is running on port ${port} using HTTPS`);
