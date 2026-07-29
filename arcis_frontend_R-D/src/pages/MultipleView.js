@@ -817,7 +817,7 @@ function MultipleView() {
 
                       <Box position="absolute" bottom="0" left="0" right="0" bg="rgba(0, 0, 0, 0.5)" p={2} zIndex="10">
                         <Text color="white" fontSize="11px" fontWeight="500" noOfLines={1}>
-                          {camera.dist_name} / {camera.accName} /
+                          {camera.dist_name} /
                           {Array.isArray(camera.locations) ? ` ${camera.locations[0]} / ` : " "}
                           {camera.deviceId} / {camera.operatorName || "N/A"} / {camera.operatorMobile || "N/A"}
                         </Text>
