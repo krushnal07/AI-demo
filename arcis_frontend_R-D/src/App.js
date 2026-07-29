@@ -67,6 +67,7 @@ import StopReport from "./pages/StopReport";
 import EventReport from "./pages/EventReport";
 import MobileApp from "./pages/MobileAppReport";
 import AiDashboard from "./pages/AiDashboard";
+import Chatbot from "./pages/Chatbot";
 
 
 const socket = io("https://alert.arcisai.io:5082");
@@ -350,6 +351,7 @@ function MainApp() {
                      <Route path="/EventReport" element={<EventReport/>} />
                       <Route path="/mobileapp" element={<MobileApp/>} />
                      <Route path="/ai-dashboard" element={<AiDashboard/>} />
+                     <Route path="/chatbot" element={<Chatbot/>} />
                   {/* Add more routes here */}
                 </Routes>
               </Box>

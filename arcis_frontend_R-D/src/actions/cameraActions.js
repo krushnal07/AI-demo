@@ -269,11 +269,11 @@ export const getAllAssemblyStatsForUser = async (email) => {
   }
 };
 
-export const addDevice = async (name, deviceId) => {
+export const addDevice = async (name, deviceId, rtmpUrl) => {
   try {
     const response = await instance.post("/addDevice", {
       name,
-      deviceId,
+      ...(rtmpUrl ? { rtmpUrl } : { deviceId }),
     });
     return response.data;
   } catch (error) {

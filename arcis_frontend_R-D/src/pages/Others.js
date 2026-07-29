@@ -21,7 +21,10 @@ import {
   useToast,
   useBreakpointValue,
   Divider,
-  Collapse
+  Collapse,
+  RadioGroup,
+  Radio,
+  Stack
 } from "@chakra-ui/react";
 import { FaRegUser } from "react-icons/fa";
 import { GoThumbsup } from "react-icons/go";
@@ -80,6 +83,8 @@ const Others = () => {
   const [activeModal, setActiveModal] = useState(null);
   const [openSubmenu, setOpenSubmenu] = useState(null); // Track which submenu is open
   const [deviceId, setDeviceId] = useState("");
+  const [rtmpUrl, setRtmpUrl] = useState("");
+  const [addDeviceMode, setAddDeviceMode] = useState("deviceId"); // "deviceId" | "rtmp"
   const [cameraName, setCameraName] = useState("");
   const toast = useToast();
   const navigate = useNavigate();
@@ -98,16 +103,36 @@ const Others = () => {
 
   const closeModal = () => {
     setActiveModal(null);
+    setDeviceId("");
+    setRtmpUrl("");
+    setCameraName("");
+    setAddDeviceMode("deviceId");
     onClose();
   };
 
   const handleAddDevice = async () => {
+    if (!cameraName.trim()) {
+      toast({ title: "Error", description: "Please enter a device name", status: "error" });
+      return;
+    }
+    if (addDeviceMode === "deviceId" && !deviceId.trim()) {
+      toast({ title: "Error", description: "Please enter a Device ID", status: "error" });
+      return;
+    }
+    if (addDeviceMode === "rtmp" && !rtmpUrl.trim()) {
+      toast({ title: "Error", description: "Please enter an RTMP URL", status: "error" });
+      return;
+    }
     try {
-      await addDevice(cameraName, deviceId);
+      await addDevice(cameraName, deviceId, addDeviceMode === "rtmp" ? rtmpUrl : undefined);
       toast({ title: "Device Added", status: "success", duration: 3000 });
       closeModal();
     } catch (error) {
-      toast({ title: "Error", description: "Failed to add device", status: "error" });
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to add device",
+        status: "error",
+      });
     }
   };
 
@@ -220,18 +245,40 @@ const Others = () => {
                 />
               </FormControl>
               <FormControl width="350px" mt={4}>
-                <FormLabel color={textColor}>Enter Device ID:</FormLabel>
-                <Input
-                  placeholder="Device ID"
-                  value={deviceId}
-                  onChange={(e) => setDeviceId(e.target.value)}
-                  _focus={{ borderColor: theme.colors.custom.primary }}
-                />
+                <FormLabel color={textColor}>Add Device Using:</FormLabel>
+                <RadioGroup value={addDeviceMode} onChange={setAddDeviceMode}>
+                  <Stack direction="row" spacing={6} justifyContent="center">
+                    <Radio value="deviceId">Device ID</Radio>
+                    <Radio value="rtmp">RTMP URL</Radio>
+                  </Stack>
+                </RadioGroup>
               </FormControl>
+
+              {addDeviceMode === "deviceId" ? (
+                <FormControl width="350px" mt={4}>
+                  <FormLabel color={textColor}>Enter Device ID:</FormLabel>
+                  <Input
+                    placeholder="Device ID"
+                    value={deviceId}
+                    onChange={(e) => setDeviceId(e.target.value)}
+                    _focus={{ borderColor: theme.colors.custom.primary }}
+                  />
+                </FormControl>
+              ) : (
+                <FormControl width="350px" mt={4}>
+                  <FormLabel color={textColor}>Enter RTMP URL:</FormLabel>
+                  <Input
+                    placeholder="rtmp://server:port/live-record/deviceId"
+                    value={rtmpUrl}
+                    onChange={(e) => setRtmpUrl(e.target.value)}
+                    _focus={{ borderColor: theme.colors.custom.primary }}
+                  />
+                </FormControl>
+              )}
             </Box>
           </ModalBody>
           <ModalFooter justifyContent={"space-evenly"}>
-            <Button onClick={onClose} variant="outline" colorScheme="red">Cancel</Button>
+            <Button onClick={closeModal} variant="outline" colorScheme="red">Cancel</Button>
             <Button onClick={handleAddDevice} bg={theme.colors.custom.primary} color="white">Save Device</Button>
           </ModalFooter>
         </ModalContent>

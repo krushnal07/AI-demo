@@ -13,6 +13,18 @@ const stream = mongoose.Schema({
     mediaUrl: {
         type: String,
     },
+    sourceType: {
+        type: String,
+        enum: ['device', 'rtmp'],
+        default: 'device'
+    },
+    rtmpUrl: {
+        type: String,
+    },
+    rtmpApp: {
+        type: String,
+        default: 'live-record'
+    },
     p2purl: {
         type: String,
         default: "torqueverse.dev"

@@ -13,6 +13,7 @@ const axios = require("axios");
 const https = require("https");
 const mongoose = require("mongoose");
 const { setCache, getCache, deleteCache } = require('./cacheController')
+const { parseRtmpUrl } = require('../utils/rtmpUrlParser');
 const basicAuth = `Basic ${Buffer.from(`admin:admin`).toString("base64")}`;
 const apiUrl = "https://p2p.vmukti.com/api/proxy/http";
 const emsUrl = "https://etaems.arcisai.io:5000/api";
@@ -1524,7 +1525,35 @@ const getFormattedDate = () => {
 // create a new camera
 exports.addDevice = async (req, res) => {
     try {
-        const { name, deviceId, isp2p } = req.body;
+        const { name, isp2p } = req.body;
+        let { deviceId, rtmpUrl } = req.body;
+
+        if (deviceId && rtmpUrl) {
+            return res.status(400).json({
+                success: false,
+                message: "Provide either deviceId or rtmpUrl, not both",
+            });
+        }
+
+        if (!deviceId && !rtmpUrl) {
+            return res.status(400).json({
+                success: false,
+                message: "deviceId or rtmpUrl is required",
+            });
+        }
+
+        let rtmpDetails = null;
+        if (rtmpUrl) {
+            try {
+                rtmpDetails = parseRtmpUrl(rtmpUrl);
+            } catch (parseError) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid RTMP URL",
+                });
+            }
+            deviceId = rtmpDetails.deviceId;
+        }
 
         const created_date = getFormattedDate();
         console.log(created_date);
@@ -1582,18 +1611,25 @@ exports.addDevice = async (req, res) => {
         const planToUpdate = cameraPlan?.storagePlan || "LIVE"; // If storagePlan exists, use it; otherwise, default to "LIVE"
 
         // Update or upsert the stream document
+        const streamSet = { plan: planToUpdate };
+        if (rtmpDetails) {
+            streamSet.mediaUrl = rtmpDetails.serverName;
+            streamSet.rtmpUrl = rtmpUrl;
+            streamSet.rtmpApp = rtmpDetails.app;
+            streamSet.sourceType = "rtmp";
+        }
+
         const updateStream = await Stream.updateOne(
             { deviceId: deviceId }, // Filter to find the camera by deviceId (or any other unique identifier)
             {
-                $set: {
-                    plan: planToUpdate,
-                },
+                $set: streamSet,
             },
             { upsert: true } // Optional: creates a new document if no matching document is found
         );
 
         res.status(200).json({
             success: true,
+            deviceId,
             result,
         });
     } catch (error) {

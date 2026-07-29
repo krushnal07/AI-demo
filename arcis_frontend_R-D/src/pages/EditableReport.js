@@ -40,6 +40,15 @@ import {
 } from "@chakra-ui/react";
 import { FaEdit, FaPlus, FaTrash, FaSearch } from "react-icons/fa";
 import Swal from "sweetalert2";
+import { addDevice } from "../actions/cameraActions";
+
+const RTMP_URL_REGEX = /^rtmp:\/\/([^:/]+)(?::(\d+))?\/([^/]+)\/(.+)$/i;
+const parseRtmpUrlClient = (url) => {
+  const match = String(url || "").trim().match(RTMP_URL_REGEX);
+  if (!match) return null;
+  const [, serverName, port, app, deviceId] = match;
+  return { serverName, port: port || "80", app, deviceId };
+};
 
 const getYourCamerasAPI = async (userEmail, filters = {}) => {
   const API_URL = `${process.env.REACT_APP_URL}/api/camera/getCurrentUserCameras1`;
@@ -136,6 +145,8 @@ const Boxes = () => {
   const [searchDeviceId, setSearchDeviceId] = useState("");
   const [deviceIdSuggestions, setDeviceIdSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [addDeviceMode, setAddDeviceMode] = useState("deviceId"); // "deviceId" | "rtmp"
+  const [rtmpUrlInput, setRtmpUrlInput] = useState("");
   const toast = useToast();
 
   // FIX 1: serverTotal state added
@@ -284,10 +295,41 @@ const Boxes = () => {
 
     setIsSaving(true);
 
+    // 1b. RTMP mode: the hardware doesn't exist in the stream table yet - provision it
+    // first via /addDevice, then fall through into the normal assignment flow below.
+    let skipDuplicateDeviceCheck = false;
+    if (modalMode === "add" && addDeviceMode === "rtmp") {
+      const hwCheck = await checkDuplicateOnServer("camera", editingCamera.DeviceId);
+      if (hwCheck.inStream && hwCheck.exists) {
+        setIsSaving(false);
+        toast({
+          title: "Duplicate Assignment",
+          description: `Device ID "${editingCamera.DeviceId}" is already assigned to another vehicle.`,
+          status: "error",
+        });
+        return;
+      }
+      if (!hwCheck.inStream) {
+        try {
+          await addDevice(editingCamera.location || editingCamera.DeviceId, undefined, rtmpUrlInput);
+          skipDuplicateDeviceCheck = true; // we just created the Camera stub ourselves - step 2 below must not treat it as a conflict
+        } catch (err) {
+          setIsSaving(false);
+          toast({
+            title: "Error",
+            description: err.response?.data?.message || "Failed to register RTMP device",
+            status: "error",
+          });
+          return;
+        }
+      }
+      // else: inStream true, exists false -> already provisioned earlier but not yet assigned; fall through normally.
+    }
+
     const excludeId = modalMode === "edit" ? editingCamera.originalDeviceId : null;
 
     // 2. Check duplicate Device ID (Camera ID) first (across ALL data)
-    const isDeviceIdChanged = modalMode === "add" || (excludeId && editingCamera.DeviceId.toLowerCase() !== excludeId.toLowerCase());
+    const isDeviceIdChanged = !skipDuplicateDeviceCheck && (modalMode === "add" || (excludeId && editingCamera.DeviceId.toLowerCase() !== excludeId.toLowerCase()));
     let cameraCheck = { exists: false, inStream: true };
 
     if (isDeviceIdChanged) {
@@ -456,7 +498,16 @@ const Boxes = () => {
     });
     setDeviceIdSuggestions([]);
     setShowSuggestions(false);
+    setAddDeviceMode("deviceId");
+    setRtmpUrlInput("");
     onOpen();
+  };
+
+  const handleRtmpUrlChange = (e) => {
+    const value = e.target.value;
+    setRtmpUrlInput(value);
+    const parsed = parseRtmpUrlClient(value);
+    setEditingCamera((prev) => ({ ...prev, DeviceId: parsed ? parsed.deviceId : "" }));
   };
 
   const handleEditInputChange = (e) => {
@@ -848,49 +899,82 @@ const Boxes = () => {
                   />
                 </FormControl>
 
-                <FormControl isRequired mt={2} position="relative">
-                  <FormLabel fontSize="sm">Device ID</FormLabel>
-                  <Input
-                    name="DeviceId"
-                    value={editingCamera.DeviceId || ""}
-                    onChange={handleDeviceIdChange}
-                    placeholder="Enter Device ID"
-                    size="lg"
-                    autoComplete="off"
-                  />
-                  {showSuggestions && deviceIdSuggestions.length > 0 && (
-                    <ChakraBox
-                      position="absolute"
-                      top="100%"
-                      left="0"
-                      right="0"
-                      zIndex="9999"
-                      bg={bg}
-                      border="1px solid"
-                      borderColor="gray.200"
-                      borderRadius="md"
-                      boxShadow="lg"
-                      maxH="200px"
-                      overflowY="auto"
-                    >
-                      {deviceIdSuggestions.map((id) => (
-                        <Box
-                          key={id}
-                          px={4}
-                          py={2}
-                          cursor="pointer"
-                          _hover={{ bg: "blue.50", color: "blue.600" }}
-                          onClick={() => handleSelectSuggestion(id)}
-                          fontSize="sm"
-                          borderBottom="1px solid"
-                          borderColor="gray.100"
-                        >
-                          {id}
-                        </Box>
-                      ))}
-                    </ChakraBox>
-                  )}
-                </FormControl>
+                {modalMode === "add" && (
+                  <FormControl mt={2} gridColumn="1 / -1">
+                    <FormLabel fontSize="sm">Add Device Using</FormLabel>
+                    <RadioGroup value={addDeviceMode} onChange={setAddDeviceMode}>
+                      <HStack spacing={6}>
+                        <Radio value="deviceId">Device ID</Radio>
+                        <Radio value="rtmp">RTMP URL</Radio>
+                      </HStack>
+                    </RadioGroup>
+                  </FormControl>
+                )}
+
+                {addDeviceMode === "rtmp" && modalMode === "add" ? (
+                  <FormControl isRequired mt={2}>
+                    <FormLabel fontSize="sm">RTMP URL</FormLabel>
+                    <Input
+                      name="rtmpUrl"
+                      value={rtmpUrlInput}
+                      onChange={handleRtmpUrlChange}
+                      placeholder="rtmp://server:port/live-record/deviceId"
+                      size="lg"
+                      autoComplete="off"
+                    />
+                    {rtmpUrlInput && (
+                      <Text fontSize="xs" mt={1} color={editingCamera.DeviceId ? "gray.500" : "red.500"}>
+                        {editingCamera.DeviceId
+                          ? `Detected Device ID: ${editingCamera.DeviceId}`
+                          : "Invalid RTMP URL format"}
+                      </Text>
+                    )}
+                  </FormControl>
+                ) : (
+                  <FormControl isRequired mt={2} position="relative">
+                    <FormLabel fontSize="sm">Device ID</FormLabel>
+                    <Input
+                      name="DeviceId"
+                      value={editingCamera.DeviceId || ""}
+                      onChange={handleDeviceIdChange}
+                      placeholder="Enter Device ID"
+                      size="lg"
+                      autoComplete="off"
+                    />
+                    {showSuggestions && deviceIdSuggestions.length > 0 && (
+                      <ChakraBox
+                        position="absolute"
+                        top="100%"
+                        left="0"
+                        right="0"
+                        zIndex="9999"
+                        bg={bg}
+                        border="1px solid"
+                        borderColor="gray.200"
+                        borderRadius="md"
+                        boxShadow="lg"
+                        maxH="200px"
+                        overflowY="auto"
+                      >
+                        {deviceIdSuggestions.map((id) => (
+                          <Box
+                            key={id}
+                            px={4}
+                            py={2}
+                            cursor="pointer"
+                            _hover={{ bg: "blue.50", color: "blue.600" }}
+                            onClick={() => handleSelectSuggestion(id)}
+                            fontSize="sm"
+                            borderBottom="1px solid"
+                            borderColor="gray.100"
+                          >
+                            {id}
+                          </Box>
+                        ))}
+                      </ChakraBox>
+                    )}
+                  </FormControl>
+                )}
 
                 <FormControl mt={2}>
                   <FormLabel fontSize="sm">Operator Name</FormLabel>
