@@ -12,7 +12,7 @@ import {
 } from "@chakra-ui/react";
 import { AiOutlineSend } from "react-icons/ai";
 
-const CHATBOT_URL = "https://192.168.4.33:8090/chat";
+const CHATBOT_URL = "http://192.168.4.33:8090/chat";
 const GREETING = { sender: "bot", text: "Hi, how can I help you today?", timestamp: null };
 
 const getStorageKey = () => `chatbot_messages_${localStorage.getItem("email") || "guest"}`;
