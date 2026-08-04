@@ -179,7 +179,7 @@ function MultipleView() {
 
     // 3. Media URL Logic
     if (camera.mediaUrl) {
-      return `wss://root:vvssdj@321@mediastream.vmukti.com/jessica/live-record/VSPL-153358-SFSLD.h264`;
+      return `wss://${camera.mediaUrl}/jessica/live-record/${camera.deviceId}.flv`;
     }
     return "";
   };
