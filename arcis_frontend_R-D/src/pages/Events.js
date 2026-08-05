@@ -45,6 +45,7 @@ const Events = () => {
   const [eventOptions] = useState({
     40: "Max person",
     41: "Box Detection",
+    1: "facial Recognition"
   });
 
   // --- Theme tokens (match dashboard) ---
