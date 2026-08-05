@@ -211,7 +211,6 @@ const AnalyticsImage = () => {
   const defaultEventMap = {
     40: "Max Person",
     41: "Box Detection",
-    1:"facial Recognition"
   };
   const countEmailEventMap = {};
   const countEmails = ["count@vmukti.com", "maheshwara@gmail.com", "Lakshmi@gmail.com", "roopa@gmail.com"];
@@ -544,6 +543,7 @@ const AnalyticsImage = () => {
                 <Th sx={thStyle}>Detection Time</Th>
                 <Th sx={thStyle}>Image</Th>
                 <Th sx={thStyle}>Analytics Type</Th>
+                <Th sx={thStyle}>Person Name</Th>
                 {showNumberPlateColumn(selectedEvent) && <Th sx={thStyle}>Number Plate</Th>}
                 {showPersonNameColumn(selectedEvent) && <Th sx={thStyle}>Person Name</Th>}
                 {showCountColumn(parseInt(selectedEvent)) && <Th sx={thStyle}>Count</Th>}
@@ -611,6 +611,7 @@ const AnalyticsImage = () => {
                           {currentEventMap[anId] || "No Event"}
                         </Badge>
                       </Td>
+                       <Td sx={tdStyle}>{item.person_name}</Td>
                       {showNumberPlateColumn(selectedEvent) && <Td sx={tdStyle}>{item.numberplateid || "N/A"}</Td>}
                       {showPersonNameColumn(selectedEvent) && <Td sx={tdStyle}>{item.person_name || "N/A"}</Td>}
                       {showCountColumn(anId) && <Td sx={tdStyle}>{item.ImgCount}</Td>}
