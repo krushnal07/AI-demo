@@ -62,6 +62,8 @@ const AnalyticsImage = () => {
   });
 
   const [cameraIds, setCameraIds] = useState([]);
+  const [personNames, setPersonNames] = useState([]);
+  const [selectedPersonName, setSelectedPersonName] = useState("");
   const [isFilterChange, setIsFilterChange] = useState(false);
 
   // --- Theme tokens (match dashboard) ---
@@ -107,13 +109,16 @@ const AnalyticsImage = () => {
           );
           setData(validData);
           setCameraIds([...new Set(validData.map((item) => item.cameradid))]);
+          setPersonNames([...new Set(validData.map((item) => item.person_name).filter(Boolean))].sort());
         } else {
           setData([]);
           setCameraIds([]);
+          setPersonNames([]);
         }
       } else {
         setData([]);
         setCameraIds([]);
+        setPersonNames([]);
       }
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -136,7 +141,7 @@ const AnalyticsImage = () => {
   }, [fetchData]);
 
   const filterData = useCallback(
-    (date, event, camera, zone, subEvent) => {
+    (date, event, camera, zone, subEvent, personName) => {
       setFilteredData(() => {
         let filtered = data;
 
@@ -168,6 +173,13 @@ const AnalyticsImage = () => {
             if (subEvent === "unknown") return !item.person_name || item.person_name === "Unknown";
             return true;
           });
+        }
+
+        if (personName) {
+          filtered = filtered.filter((item) => item.person_name === personName);
+          filtered = [...filtered].sort(
+            (a, b) => moment.utc(a.sendtime).valueOf() - moment.utc(b.sendtime).valueOf()
+          );
         }
 
         const counts = {};
@@ -204,9 +216,9 @@ const AnalyticsImage = () => {
 
   useEffect(() => {
     if (data.length > 0) {
-      filterData(selectedDate, selectedEvent, selectedCamera, selectedZone, selectedSubEvent);
+      filterData(selectedDate, selectedEvent, selectedCamera, selectedZone, selectedSubEvent, selectedPersonName);
     }
-  }, [data, selectedDate, selectedEvent, selectedCamera, selectedZone, filterData, selectedSubEvent]);
+  }, [data, selectedDate, selectedEvent, selectedCamera, selectedZone, filterData, selectedSubEvent, selectedPersonName]);
 
   const defaultEventMap = {
     40: "Max Person",
@@ -234,6 +246,9 @@ const AnalyticsImage = () => {
     setSelectedCamera(event.target.value);
     setIsFilterChange(true);
     fetchData();
+  };
+  const handlePersonNameChange = (event) => {
+    setSelectedPersonName(event.target.value);
   };
   const handleImageClick = (imgUrl) => {
     setModalImage(imgUrl);
@@ -490,6 +505,19 @@ const AnalyticsImage = () => {
               {cameraIds.map((cameraId) => (
                 <option key={cameraId} value={cameraId}>
                   {cameraId}
+                </option>
+              ))}
+            </Select>
+          </Box>
+
+          <Box>
+            <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
+              Person Name
+            </Text>
+            <Select value={selectedPersonName} onChange={handlePersonNameChange} bg={inputBg} borderColor={cardBorder} borderRadius="10px" placeholder="All Persons">
+              {personNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
                 </option>
               ))}
             </Select>
