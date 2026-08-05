@@ -50,7 +50,8 @@ const messageMapping = {
   104:"vacant booth",
   103:"evm proximity violation",
   101:"crowd detection (outdoor)",
-  102:"crowd detection (indoor)"
+  102:"crowd detection (indoor)",
+  43:"Intruder"
 };
 
 function renderSendTime(currentsendtime){
