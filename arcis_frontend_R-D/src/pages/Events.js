@@ -46,6 +46,7 @@ const Events = () => {
     40: "Max person",
     41: "Box Detection",
     1: "facial Recognition"
+    20:"Head Count"
   });
 
   // --- Theme tokens (match dashboard) ---
