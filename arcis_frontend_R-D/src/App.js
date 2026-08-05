@@ -68,6 +68,7 @@ import EventReport from "./pages/EventReport";
 import MobileApp from "./pages/MobileAppReport";
 import AiDashboard from "./pages/AiDashboard";
 import Chatbot from "./pages/Chatbot";
+import RegisterFace from "./pages/RegisterFace";
 
 
 const socket = io("https://alert.arcisai.io:5082");
@@ -352,6 +353,7 @@ function MainApp() {
                       <Route path="/mobileapp" element={<MobileApp/>} />
                      <Route path="/ai-dashboard" element={<AiDashboard/>} />
                      <Route path="/chatbot" element={<Chatbot/>} />
+                     <Route path="/RegisterFace" element={<RegisterFace/>} />
                   {/* Add more routes here */}
                 </Routes>
               </Box>
