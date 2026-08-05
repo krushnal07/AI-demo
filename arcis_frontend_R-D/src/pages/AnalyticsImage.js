@@ -239,6 +239,9 @@ const AnalyticsImage = () => {
   };
   const handleEventChange = (event) => {
     setSelectedEvent(event.target.value);
+    if (event.target.value !== "1") {
+      setSelectedPersonName("");
+    }
     setIsFilterChange(true);
     fetchData();
   };
@@ -510,18 +513,20 @@ const AnalyticsImage = () => {
             </Select>
           </Box>
 
-          <Box>
-            <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
-              Person Name
-            </Text>
-            <Select value={selectedPersonName} onChange={handlePersonNameChange} bg={inputBg} borderColor={cardBorder} borderRadius="10px" placeholder="All Persons">
-              {personNames.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </Select>
-          </Box>
+          {selectedEvent === "1" && (
+            <Box>
+              <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
+                Person Name
+              </Text>
+              <Select value={selectedPersonName} onChange={handlePersonNameChange} bg={inputBg} borderColor={cardBorder} borderRadius="10px" placeholder="All Persons">
+                {personNames.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </Select>
+            </Box>
+          )}
         </Grid>
       </Box>
 
@@ -572,7 +577,7 @@ const AnalyticsImage = () => {
                 <Th sx={thStyle}>Detection Time</Th>
                 <Th sx={thStyle}>Image</Th>
                 <Th sx={thStyle}>Analytics Type</Th>
-                <Th sx={thStyle}>Person Name</Th>
+                {/* <Th sx={thStyle}>Person Name</Th> */}
                 {showNumberPlateColumn(selectedEvent) && <Th sx={thStyle}>Number Plate</Th>}
                 {showPersonNameColumn(selectedEvent) && <Th sx={thStyle}>Person Name</Th>}
                 {showCountColumn(parseInt(selectedEvent)) && <Th sx={thStyle}>Count</Th>}
@@ -640,7 +645,7 @@ const AnalyticsImage = () => {
                           {currentEventMap[anId] || "No Event"}
                         </Badge>
                       </Td>
-                       <Td sx={tdStyle}>{item.person_name}</Td>
+                       {/* <Td sx={tdStyle}>{item.person_name}</Td> */}
                       {showNumberPlateColumn(selectedEvent) && <Td sx={tdStyle}>{item.numberplateid || "N/A"}</Td>}
                       {showPersonNameColumn(selectedEvent) && <Td sx={tdStyle}>{item.person_name || "N/A"}</Td>}
                       {showCountColumn(anId) && <Td sx={tdStyle}>{item.ImgCount}</Td>}
