@@ -3,6 +3,9 @@ const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const apminsight = require('apminsight');
+
+
 
 dotenv.config({ path: ".env" });
 dotenv.config({ path: "config/config.env" });
@@ -23,6 +26,7 @@ const AnalyticsRoutes = require("./routes/AnalyticsRoutes");
 const aisettingRoutes = require("./routes/aisettingRoutes");
 const gpsRoutes = require('./routes/gpsRoutes');
 const playbackRoutes = require('./routes/playbackRoutes');
+const faceRoutes = require('./routes/faceRoutes');
 
 const app = express();
 app.set('trust proxy', true);
@@ -65,6 +69,7 @@ app.use("/api/Analytics", AnalyticsRoutes);
 app.use("/aisetting",aisettingRoutes);
 app.use('/api/gps', gpsRoutes);
 app.use('/api/playback', playbackRoutes);
+app.use('/api/face', faceRoutes);
 
 // Database Connection
 mongoose
