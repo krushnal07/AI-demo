@@ -2,6 +2,7 @@ const AnalyticsImage = require("../models/analyticsimage");
 const Camera = require("../models/cameraModel");
 const District = require("../models/district");
 const { sendMailattachment } = require("../utils/sendEmail");
+const StreamDetails = reqire("../models/streamModel");
 const semaphore = require("../utils/semaphore");
 const User = require("../models/userModel");
 // const Settings = require("../models/Settings"); // Assuming Settings model is not used in the provided code
