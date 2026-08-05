@@ -63,6 +63,7 @@ const allMenuItems = [
     icon: <MdSchool />,
     subItems: [
       { label: "VMS Master", path: "/EditableReport" },
+      { label: "Register Face", path: "/RegisterFace" },
       // { label: "Vehicle Logs", path: "/VehicleLogs" },
       // { label: "Hardware Service", path: "/inventoryUpdation" },
     ],
@@ -72,8 +73,8 @@ const allMenuItems = [
 ];
 
 const rolePermissions = {
-  MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "Analytics Reports": true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Vehicle Logs", "Hardware Service"], "AI Assistant": true, FAQ: true },
-  VmuktiAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true, Reports: ["Consolidated Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["Vehicle Master", "Vehicle Logs", "Hardware Service"], "AI Assistant": true, FAQ: true },
+  MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "Analytics Reports": true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Register Face", "Vehicle Logs", "Hardware Service"], "AI Assistant": true, FAQ: true },
+  VmuktiAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true, Reports: ["Consolidated Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["Vehicle Master", "Register Face", "Vehicle Logs", "Hardware Service"], "AI Assistant": true, FAQ: true },
   CEO: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Assistant": true, FAQ: true },
   ECI: { "Multi View": true, "AI Assistant": true, FAQ: true },
   DistrictLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true, "AI Assistant": true, FAQ: true },
