@@ -179,7 +179,7 @@ function MultipleView() {
 
     // 3. Media URL Logic
     if (camera.mediaUrl) {
-      return `wss://${camera.mediaUrl}/jessica/live-record/${camera.deviceId}.flv`;
+      return `wss://${camera.mediaUrl}/jessica/DVR/${camera.deviceId}.flv`;
     }
     return "";
   };
