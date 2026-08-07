@@ -2123,7 +2123,7 @@ const Cameras = () => {
                 <Flex justify="space-between" align="center">
                   <Box>
                     <Text fontWeight="bold" fontSize="14px">
-                      {camera.dist_name}/{camera.accName}/{camera.ps_id}/{camera.deviceId}/
+                      {camera.dist_name}/{camera.deviceId}/
                       {camera.locations && camera.locations.length > 0
                         ? (typeof camera.locations[0] === 'string'
                           ? camera.locations[0]
