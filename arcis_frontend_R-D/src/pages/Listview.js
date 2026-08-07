@@ -764,7 +764,7 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
 
           {/* 1. District Select */}
           <Select
-            placeholder="Select District"
+            placeholder="Select Location"
             bg={buttonGradientColor}
             borderRadius={"12px"}//background_img_light.png
             value={selectedDistrictName}
@@ -1120,7 +1120,6 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
                   <Thead>
                     <Tr style={tableHeaderRowStyle} bg={buttonGradientColor}>
                       <Th style={tableHeaderStyle}>Sr No.<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>District<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>Location<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>operator Name<VerticalLine /></Th>
                       <Th style={tableHeaderStyle}>operator Mobile No.<VerticalLine /></Th>
@@ -1135,7 +1134,6 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
                         <Tr key={`${camera.DeviceId}-${index}`}>
                           <Td style={tableDataStyle}>{(currentPage - 1) * itemsPerPage + index + 1}<VerticalLine /></Td>
                           <Td style={tableDataStyle}>{camera.district || "N/A"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle}>{camera.assembly || "N/A"}<VerticalLine /></Td>
                           <Td style={tableDataStyle}>{camera.operatorName || "N/A"}<VerticalLine /></Td>
                           <Td style={tableDataStyle}>{camera.operatorMobile || "N/A"}<VerticalLine /></Td>
                           <Td style={tableDataStyle}>{camera.DeviceId || "N/A"}<VerticalLine /></Td>
