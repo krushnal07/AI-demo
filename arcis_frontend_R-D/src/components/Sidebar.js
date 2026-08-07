@@ -74,7 +74,7 @@ const allMenuItems = [
 
 const rolePermissions = {
   MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "Analytics Reports": true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Register Face", "Vehicle Logs", "Hardware Service"], "AI Assistant": true, FAQ: true },
-  VmuktiAdmin: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true  },
+  USER: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true  },
   CEO: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Assistant": true, FAQ: true },
   ECI: { "Multi View": true, "AI Assistant": true, FAQ: true },
   DistrictLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true, "AI Assistant": true, FAQ: true },
