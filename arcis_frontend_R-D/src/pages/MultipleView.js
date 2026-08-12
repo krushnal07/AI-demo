@@ -601,7 +601,7 @@ function MultipleView() {
               <Tooltip label="Fullscreen"><IconButton size="sm" bg={bgColor} borderRadius={"8px"} icon={<BsArrowsFullscreen />} onClick={toggleFullScreen} variant="outline" /></Tooltip>
             </Flex>
           </Box>
-          <Flex gap={4} flexWrap="wrap" mb={{ base: 2, md: 2 }}>
+          <Flex gap={4} flexWrap="wrap" alignItems="center" mb={{ base: 2, md: 2 }}>
 
             <Select value={selectedDistrictName} onChange={handleDistrictChange} placeholder={loadingDistricts ? "Loading..." : "Select Location"} isDisabled={loadingDistricts || !userEmail} borderRadius="10px" bg={buttonGradientColor} w={"auto"} height={"34px"} fontSize={"12px"}>
               {uniqueDistricts.map((d) => (<option key={d.dist_name} value={d.name}>{d.name}</option>))}
