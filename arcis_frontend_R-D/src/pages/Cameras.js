@@ -1060,7 +1060,7 @@ const Cameras = () => {
         {/* Filter Row */}
         <Grid
           templateColumns="repeat(7, 1fr)"
-          columnGap={4}
+          columnGap={12}
           rowGap={5}
           alignItems="center"
         >
@@ -1076,7 +1076,7 @@ const Cameras = () => {
               icon={loadingDistricts ? <Spinner size="xs" /> : undefined}
               borderRadius="10px"
               bg={buttonGradientColor}
-              width={"170px"}
+              width={"190px"}
               height={"34px"}
               fontSize={"12px"}
             >
