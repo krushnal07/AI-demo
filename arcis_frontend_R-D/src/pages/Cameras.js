@@ -1076,7 +1076,7 @@ const Cameras = () => {
               icon={loadingDistricts ? <Spinner size="xs" /> : undefined}
               borderRadius="10px"
               bg={buttonGradientColor}
-              width={"190px"}
+              width={"170px"}
               height={"34px"}
               fontSize={"12px"}
             >
@@ -1155,7 +1155,7 @@ const Cameras = () => {
                   fetchAllCameras(page, itemsPerPage, search);
                 }
               }}
-              width={"190px"}
+              width={"180px"}
               height={"34px"}
               fontSize={"12px"}
               color={useColorModeValue("black", "white")}
