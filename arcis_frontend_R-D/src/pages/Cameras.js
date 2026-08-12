@@ -2097,7 +2097,7 @@ const Cameras = () => {
                   position="absolute"
                   top="2"
                   left="2"
-                  bg="#95DA25" // You might want to use camera.status to determine color
+                  bg={camera.status === "online" ? "#95DA25" : "#FF6262"}
                   borderRadius="full"
                   h="13px"
                   w="13px"
