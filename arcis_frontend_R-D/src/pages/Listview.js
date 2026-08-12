@@ -1222,7 +1222,7 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
           zIndex="10"
         >
           <Text color="white" fontSize="13px" fontWeight="500">
-            {selectedCamera.district} / {selectedCamera.assembly} / {selectedCamera.DeviceId}
+            {selectedCamera.district} / {selectedCamera.DeviceId}
           </Text>
         </Box>
       </Box>
