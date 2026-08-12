@@ -1061,7 +1061,7 @@ const Cameras = () => {
         <Grid
           templateColumns="repeat(7, 1fr)"
           columnGap={4}
-          rowGap={2}
+          rowGap={5}
           alignItems="center"
         >
           {/* Dropdowns */}
@@ -1076,7 +1076,7 @@ const Cameras = () => {
               icon={loadingDistricts ? <Spinner size="xs" /> : undefined}
               borderRadius="10px"
               bg={buttonGradientColor}
-              width={"125px"}
+              width={"190px"}
               height={"34px"}
               fontSize={"12px"}
             >
@@ -1141,7 +1141,7 @@ const Cameras = () => {
           {/* 🔍 Search Input */}
           <InputGroup>
             <Input
-              placeholder="Search camera, Location, Model no."
+              placeholder="Search camera"
               _focus={{
                 borderColor: "purple.400", // or theme.colors.custom.primary
                 boxShadow: `0 0 0 1px purple.400`,
@@ -1155,7 +1155,7 @@ const Cameras = () => {
                   fetchAllCameras(page, itemsPerPage, search);
                 }
               }}
-              width={"125px"}
+              width={"190px"}
               height={"34px"}
               fontSize={"12px"}
               color={useColorModeValue("black", "white")}
@@ -2169,7 +2169,7 @@ const Cameras = () => {
                           )
                         }
                       >
-                        View Sharing Access
+                        {/* View Sharing Access */}
                       </MenuItem>
                       <MenuItem
                         _hover={{ bg: "custom.primary" }}
@@ -2193,9 +2193,9 @@ const Cameras = () => {
                           )
                         }
                       >
-                        Grant Access to Another
+                        {/* Grant Access to Another */}
                       </MenuItem>
-                      <Divider my={1} color="#F2E5FF" w="90%" />
+                      {/* <Divider my={1} color="#F2E5FF" w="90%" /> */}
                       <MenuItem
                         _hover={{ bg: "custom.primary" }}
                         color="red.500"
