@@ -1155,7 +1155,7 @@ const Cameras = () => {
                   fetchAllCameras(page, itemsPerPage, search);
                 }
               }}
-              width={"180px"}
+              width={"190px"}
               height={"34px"}
               fontSize={"12px"}
               color={useColorModeValue("black", "white")}
