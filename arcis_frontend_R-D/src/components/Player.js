@@ -433,7 +433,7 @@ const Player = React.forwardRef(({
         <Box display="flex" justifyContent="center" className="container-shell">
           <Box id="container" ref={containerRef} className={className} style={style}></Box>
         </Box>
-      ) : playUrl && (playUrl.includes("record") || playUrl.includes("blob.core.windows.net")) ? (
+      ) : playUrl && (playUrl.includes("record") || playUrl.includes("blob.core.windows.net") || playUrl.includes("storage.googleapis.com") || playUrl.includes(".mp4")) ? (
         <Box position="relative" width={width} height={height}>
           <video style={style} autoPlay controls muted={isMuted} src={playUrl} />
         </Box>
