@@ -47,6 +47,7 @@ const messageMapping = {
   39:"Mobile Detection",
   40: "Max Person",
   41: "Box Detection",
+  42:"Idle WorkStation",
   104:"vacant booth",
   103:"evm proximity violation",
   101:"crowd detection (outdoor)",
