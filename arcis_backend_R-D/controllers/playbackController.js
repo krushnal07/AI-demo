@@ -1,21 +1,21 @@
-const { BlobServiceClient, BlobSASPermissions } = require("@azure/storage-blob");
+const { Storage } = require("@google-cloud/storage");
 
-const CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
-const CONTAINER_NAME = process.env.AZURE_CONTAINER_NAME;
+const KEY_FILE = process.env.GCS_KEY_FILE;
+const BUCKET_NAME = process.env.GCS_BUCKET_NAME;
 
 // Lazily-created singletons (one client per process)
-let _containerClient = null;
-const getContainerClient = () => {
-    if (!_containerClient) {
-        if (!CONNECTION_STRING || !CONTAINER_NAME) {
+let _bucket = null;
+const getBucket = () => {
+    if (!_bucket) {
+        if (!KEY_FILE || !BUCKET_NAME) {
             throw new Error(
-                "Azure storage is not configured (AZURE_STORAGE_CONNECTION_STRING / AZURE_CONTAINER_NAME)"
+                "GCS storage is not configured (GCS_KEY_FILE / GCS_BUCKET_NAME)"
             );
         }
-        const service = BlobServiceClient.fromConnectionString(CONNECTION_STRING);
-        _containerClient = service.getContainerClient(CONTAINER_NAME);
+        const storage = new Storage({ keyFilename: KEY_FILE });
+        _bucket = storage.bucket(BUCKET_NAME);
     }
-    return _containerClient;
+    return _bucket;
 };
 
 // Parse the recording start time out of a filename like:
@@ -34,11 +34,11 @@ const parseTimestampFromName = (name) => {
  *   camera_id   (required)  e.g. VSPL-149178-ARCIS
  *   minutes     (optional)  last N minutes (default 60) — used when from/to absent
  *   from, to    (optional)  ISO strings or epoch ms; overrides `minutes`
- *   prefix      (optional)  override blob prefix (default: DVR/<camera_id>/)
- *   expiry      (optional)  SAS validity in minutes (default 120)
+ *   prefix      (optional)  override object prefix (default: DVR/<camera_id>/)
+ *   expiry      (optional)  signed URL validity in minutes (default 120)
  *
  * Returns a JSON playlist of { name, url, startTime, endTime, sizeBytes }.
- * The actual video bytes stream straight from Azure to the browser via SAS.
+ * The actual video bytes stream straight from GCS to the browser via the signed URL.
  */
 exports.getPlayback = async (req, res) => {
     try {
@@ -60,31 +60,30 @@ exports.getPlayback = async (req, res) => {
         const expiryMinutes = Math.max(1, parseInt(req.query.expiry) || 120);
         const prefix = req.query.prefix || `DVR/${cameraId}/`;
 
-        const container = getContainerClient();
+        const bucket = getBucket();
 
-        // Step 3 + 4: list blobs under the camera's folder and keep those in-window
+        // Step 3 + 4: list objects under the camera's folder and keep those in-window
+        const [files] = await bucket.getFiles({ prefix });
         const segments = [];
-        for await (const blob of container.listBlobsFlat({ prefix })) {
-            const startTime = parseTimestampFromName(blob.name);
+        for (const file of files) {
+            const startTime = parseTimestampFromName(file.name);
             if (!startTime) continue;
             if (startTime < fromDate || startTime > toDate) continue;
-            segments.push({ name: blob.name, startTime, sizeBytes: blob.properties?.contentLength || 0 });
+            segments.push({ name: file.name, startTime, sizeBytes: Number(file.metadata?.size) || 0, file });
         }
 
         // Oldest -> newest for sequential playback
         segments.sort((a, b) => a.startTime - b.startTime);
 
-        // Step 5 + 6: sign a time-limited read-only SAS URL for each segment
-        const expiresOn = new Date(Date.now() + expiryMinutes * 60 * 1000);
-        const startsOn = new Date(Date.now() - 5 * 60 * 1000); // clock-skew guard
+        // Step 5 + 6: sign a time-limited read-only URL for each segment
+        const expires = Date.now() + expiryMinutes * 60 * 1000;
 
         const playlist = await Promise.all(
             segments.map(async (seg, i) => {
-                const blobClient = container.getBlobClient(seg.name);
-                const url = await blobClient.generateSasUrl({
-                    permissions: BlobSASPermissions.parse("r"),
-                    startsOn,
-                    expiresOn,
+                const [url] = await seg.file.getSignedUrl({
+                    version: "v4",
+                    action: "read",
+                    expires,
                 });
                 // Estimate end time from the next segment's start (fallback 5 min)
                 const next = segments[i + 1];
