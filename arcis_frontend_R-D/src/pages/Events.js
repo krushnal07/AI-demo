@@ -44,9 +44,9 @@ const Events = () => {
   const [cameraIds, setCameraIds] = useState([]);
   const [eventOptions] = useState({
     40: "Max person",
-    41: "Box Detection",
+    
     1: "facial Recognition",
-    20:"Head Count",
+    
     43:"Intruder",
     42:"Idle WorkStation",
     17:"line crossing"
