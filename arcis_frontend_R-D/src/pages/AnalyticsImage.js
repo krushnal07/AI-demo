@@ -222,9 +222,9 @@ const AnalyticsImage = () => {
 
   const defaultEventMap = {
     40: "Max Person",
-    41: "Box Detection",
+    
     1:"facial recognition",
-    20:"Head Count",
+    
     43:"Intruder",
     42:"Idle WorkStation",
     17:"line crossing"
