@@ -385,7 +385,9 @@ const Events = () => {
                   {item.cameradid || "Unknown camera"}
                 </Text>
                 <Text fontSize="12px" color={subText} mt={0.5}>
-                  {formatDate(item.sendtime)}
+                   {item.an_id === 20 || item.an_id === 30
+                                            ? moment(item.sendtime).subtract(5, "hours").subtract(30, "minutes").add(5, "hours").add(30, "minutes").format("DD-MM-YYYY HH:mm:ss")
+                                            : moment(item.sendtime).subtract(5, "hours").subtract(30, "minutes").format("DD-MM-YYYY HH:mm:ss")}
                 </Text>
               </Box>
             </Box>
