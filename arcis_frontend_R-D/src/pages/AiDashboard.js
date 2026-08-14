@@ -205,7 +205,7 @@ const AiDashboard = () => {
       {/* keyframes for the live ticker */}
       <style>{`
         @keyframes ai-marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .ai-marquee-track { display: inline-flex; white-space: nowrap; animation: ai-marquee 40s linear infinite; }
+        .ai-marquee-track { display: inline-flex; white-space: nowrap; animation: ai-marquee 100s linear infinite; }
         .ai-marquee-track:hover { animation-play-state: paused; }
         .ai-scroll::-webkit-scrollbar { width: 6px; }
         .ai-scroll::-webkit-scrollbar-thumb { background: ${border}; border-radius: 3px; }
