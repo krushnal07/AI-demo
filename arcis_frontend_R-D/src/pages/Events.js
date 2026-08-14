@@ -48,7 +48,8 @@ const Events = () => {
     1: "facial Recognition",
     20:"Head Count",
     43:"Intruder",
-    42:"Idle WorkStation"
+    42:"Idle WorkStation",
+    17:"line crossing"
   });
 
   // --- Theme tokens (match dashboard) ---
