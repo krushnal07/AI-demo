@@ -226,7 +226,8 @@ const AnalyticsImage = () => {
     1:"facial recognition",
     20:"Head Count",
     43:"Intruder",
-    42:"Idle WorkStation"
+    42:"Idle WorkStation",
+    17:"line crossing"
   };
   const countEmailEventMap = {};
   const countEmails = ["count@vmukti.com", "maheshwara@gmail.com", "Lakshmi@gmail.com", "roopa@gmail.com"];
