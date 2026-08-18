@@ -154,6 +154,16 @@ const AiDashboard = () => {
     series: byDistrict.map((x) => x.count),
   }), [byDistrict, totals.totalAlerts, colorMode, sub]);
 
+  // The backend's hourly buckets currently land ~5:30 ahead of the real IST
+  // hour (an upstream double-offset bug). Realign here by rotating each
+  // hour's count back into its correct slot so the chart reads true IST.
+  const TIMELINE_HOUR_OFFSET = 6;
+  const correctedTimelineCounts = useMemo(() => {
+    const counts = timeline.map((t) => t.count || 0);
+    if (!counts.length) return [];
+    return Array.from({ length: counts.length }, (_, h) => counts[(h + TIMELINE_HOUR_OFFSET) % counts.length]);
+  }, [timeline]);
+
   const timelineArea = useMemo(() => ({
     options: {
       chart: { type: "area", background: "transparent", toolbar: { show: false }, fontFamily: "inherit" },
@@ -167,8 +177,8 @@ const AiDashboard = () => {
       grid: { borderColor: border },
       tooltip: { theme: colorMode, y: { formatter: (v) => fmt(v) } },
     },
-    series: [{ name: "Alerts", data: timeline.map((t) => t.count) }],
-  }), [timeline, colorMode, sub, border]);
+    series: [{ name: "Alerts", data: correctedTimelineCounts }],
+  }), [timeline, correctedTimelineCounts, colorMode, sub, border]);
 
   const topCamBar = useMemo(() => ({
     options: {
