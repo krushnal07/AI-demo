@@ -49,7 +49,8 @@ const Events = () => {
     
     43:"Intruder",
     42:"Idle WorkStation",
-    17:"line crossing"
+    17:"line crossing",
+    100:"heatmap"
   });
 
   // --- Theme tokens (match dashboard) ---
