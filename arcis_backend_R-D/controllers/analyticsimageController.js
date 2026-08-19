@@ -52,7 +52,8 @@ const messageMapping = {
   103:"evm proximity violation",
   101:"crowd detection (outdoor)",
   102:"crowd detection (indoor)",
-  43:"Intruder"
+  43:"Intruder",
+  100:"Heatmap"
 };
 
 function renderSendTime(currentsendtime){
