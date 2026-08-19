@@ -227,7 +227,8 @@ const AnalyticsImage = () => {
     
     43:"Intruder",
     42:"Idle WorkStation",
-    17:"line crossing"
+    17:"line crossing",
+    100:"Heatmap"
   };
   const countEmailEventMap = {};
   const countEmails = ["count@vmukti.com", "maheshwara@gmail.com", "Lakshmi@gmail.com", "roopa@gmail.com"];
