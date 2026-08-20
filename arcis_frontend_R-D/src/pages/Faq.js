@@ -11,7 +11,6 @@ import {
   AccordionButton,
   AccordionPanel,
   AccordionIcon,
-  Badge,
   VStack,
   HStack,
   Icon,
@@ -21,14 +20,6 @@ import {
 } from "@chakra-ui/react";
 import React, { useMemo, useState } from "react";
 import { MdSearch, MdHelpOutline } from "react-icons/md";
-import {
-  TbDeviceCctv,
-  TbLayoutGrid,
-  TbCpu,
-  TbShieldLock,
-  TbReportAnalytics,
-  TbSettings,
-} from "react-icons/tb";
 
 // --- FAQ content -------------------------------------------------------------
 // Each category groups related questions. Answers support plain strings and
@@ -36,7 +27,7 @@ import {
 const FAQ_DATA = [
   {
     category: "Getting Started",
-    icon: TbShieldLock,
+    icon: "🚀",
     items: [
       {
         q: "What is this platform?",
@@ -61,7 +52,7 @@ const FAQ_DATA = [
   },
   {
     category: "Multi View & Live Monitoring",
-    icon: TbDeviceCctv,
+    icon: "📹",
     items: [
       {
         q: "What does the Multi View page do?",
@@ -106,7 +97,7 @@ const FAQ_DATA = [
   },
   {
     category: "Camera Groups",
-    icon: TbLayoutGrid,
+    icon: "📁",
     items: [
       {
         q: "What are Camera Groups?",
@@ -149,7 +140,7 @@ const FAQ_DATA = [
   },
   {
     category: "AI Dashboard & Events",
-    icon: TbCpu,
+    icon: "🤖",
     items: [
       {
         q: "What is the AI Dashboard?",
@@ -167,7 +158,7 @@ const FAQ_DATA = [
   },
   {
     category: "Reports & Analytics",
-    icon: TbReportAnalytics,
+    icon: "📊",
     items: [
       {
         q: "What reports are available?",
@@ -189,7 +180,7 @@ const FAQ_DATA = [
   },
   {
     category: "Display, Theme & Troubleshooting",
-    icon: TbSettings,
+    icon: "⚙️",
     items: [
       {
         q: "Does the app support dark mode?",
@@ -233,11 +224,12 @@ function Faq() {
   const pageText = useColorModeValue("gray.800", "white");
   const subText = useColorModeValue("gray.500", "gray.400");
   const cardBg = useColorModeValue("white", "#1A202C");
-  const cardBorder = useColorModeValue("gray.200", "whiteAlpha.200");
+  const cardBorder = useColorModeValue("gray.100", "whiteAlpha.200");
   const panelText = useColorModeValue("gray.600", "gray.300");
-  const searchBg = useColorModeValue("gray.50", "whiteAlpha.100");
-  const accentIconBg = useColorModeValue("blue.50", "rgba(66,153,225,0.15)");
+  const searchBg = useColorModeValue("white", "whiteAlpha.100");
+  const dividerColor = useColorModeValue("gray.200", "whiteAlpha.200");
   const hoverBg = useColorModeValue("gray.50", "whiteAlpha.50");
+  const cardShadow = useColorModeValue("0 1px 2px rgba(0,0,0,0.04)", "none");
 
   // Filter questions by the search term (matches question or answer text).
   const filteredData = useMemo(() => {
@@ -285,45 +277,34 @@ function Faq() {
   };
 
   return (
-    <Box maxW="960px" mx="auto" px={{ base: 3, md: 4 }} py={{ base: 4, md: 6 }} color={pageText}>
+    <Box maxW="900px" mx="auto" px={{ base: 3, md: 4 }} py={{ base: 4, md: 6 }} color={pageText}>
       {/* Header */}
-      <Flex align="center" gap={3} mb={2}>
-        <Flex
-          w="44px"
-          h="44px"
-          align="center"
-          justify="center"
-          borderRadius="12px"
-          bg={accentIconBg}
-          color="blue.400"
-          flexShrink={0}
-        >
-          <Icon as={MdHelpOutline} boxSize="26px" />
-        </Flex>
-        <Box>
-          <Heading fontSize={{ base: "22px", md: "26px" }} fontWeight="600">
-            Frequently Asked Questions
-          </Heading>
-          <Text fontSize="13px" color={subText}>
-            Answers to common questions about using the platform.
-          </Text>
-        </Box>
-      </Flex>
+      <Box mb={5}>
+        <Heading fontSize={{ base: "22px", md: "24px" }} fontWeight="700">
+          Frequently Asked Questions
+        </Heading>
+        <Text fontSize="14px" color={subText} mt={1}>
+          Answers to common questions about using the VMukti VMS platform.
+        </Text>
+      </Box>
 
       {/* Search */}
-      <InputGroup my={5}>
-        <InputLeftElement pointerEvents="none" color={subText}>
-          <MdSearch />
-        </InputLeftElement>
-        <Input
-          placeholder="Search questions…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          bg={searchBg}
-          borderColor={cardBorder}
-          borderRadius="12px"
-        />
-      </InputGroup>
+      <Flex justify="center" mb={7}>
+        <InputGroup maxW="480px">
+          <InputLeftElement pointerEvents="none" color={subText}>
+            <MdSearch />
+          </InputLeftElement>
+          <Input
+            placeholder="Search questions…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            bg={searchBg}
+            borderColor={cardBorder}
+            borderRadius="10px"
+            boxShadow={cardShadow}
+          />
+        </InputGroup>
+      </Flex>
 
       {/* Categories */}
       {filteredData.length === 0 ? (
@@ -332,17 +313,17 @@ function Faq() {
           <Text color={subText}>No questions match “{search}”.</Text>
         </Flex>
       ) : (
-        <VStack align="stretch" spacing={6}>
+        <VStack align="stretch" spacing={7}>
           {filteredData.map((cat) => (
             <Box key={cat.category}>
               <HStack spacing={2} mb={3}>
-                <Icon as={cat.icon} color="blue.400" boxSize="18px" />
-                <Text fontSize="15px" fontWeight="700">
+                <Text fontSize="15px" lineHeight="1">
+                  {cat.icon}
+                </Text>
+                <Text fontSize="15px" fontWeight="700" whiteSpace="nowrap">
                   {cat.category}
                 </Text>
-                <Badge colorScheme="blue" borderRadius="full" fontSize="10px">
-                  {cat.items.length}
-                </Badge>
+                <Box flex="1" h="1px" bg={dividerColor} ml={2} />
               </HStack>
 
               <Accordion allowMultiple defaultIndex={search ? cat.items.map((_, i) => i) : []}>
@@ -352,8 +333,9 @@ function Faq() {
                       key={idx}
                       border="1px solid"
                       borderColor={cardBorder}
-                      borderRadius="12px"
+                      borderRadius="10px"
                       bg={cardBg}
+                      boxShadow={cardShadow}
                       overflow="hidden"
                     >
                       <AccordionButton
@@ -361,7 +343,7 @@ function Faq() {
                         px={4}
                         _hover={{ bg: hoverBg }}
                         _expanded={{ bg: hoverBg }}
-                        borderRadius="12px"
+                        borderRadius="10px"
                       >
                         <Box flex="1" textAlign="left" fontSize="14px" fontWeight="600">
                           {it.q}

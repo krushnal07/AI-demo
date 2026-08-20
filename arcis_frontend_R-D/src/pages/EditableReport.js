@@ -31,6 +31,7 @@ import {
   Radio,
   Box,
   Link as ChakraLink,
+  Spacer,
   useColorModeValue,
   IconButton,
   InputGroup,
@@ -640,7 +641,9 @@ const Boxes = () => {
             <Text fontWeight={700} fontSize="28px" color={pageHeading} lineHeight="1.2">
               VMS Master
             </Text>
-
+            <Text fontSize="13px" color={subText}>
+              Camera management and configuration
+            </Text>
           </Box>
           <Button
             onClick={handleOpenAddModal}
@@ -651,66 +654,50 @@ const Boxes = () => {
             borderRadius="10px"
             size="md"
           >
-            Add New camera
+            Add New Camera
           </Button>
         </Flex>
 
         {/* Filter bar */}
         <Box bg={cardBg} border="1px solid" borderColor={cardBorder} borderRadius="16px" boxShadow={softShadow} p={4}>
-          <Flex align={{ base: "stretch", lg: "flex-end" }} justify="space-between" gap={4} wrap="wrap" direction={{ base: "column", lg: "row" }}>
-            <Flex gap={3} wrap="wrap" flex={1}>
-              <Box minW="180px">
-                <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">Location</Text>
-                <Select
-                  placeholder="All Locations"
-                  value={selectedDistrictName}
-                  onChange={handleDistrictChange}
-                  bg={inputBg}
-                  borderColor={cardBorder}
-                  borderRadius="10px"
-                  sx={{ "> option": { bg: optionBg, color: pageHeading } }}
-                >
-                  {districtsList.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </Select>
-              </Box>
-
-              <Box minW="240px">
-                <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
-                  Search
-                </Text>
-                <Flex gap={2} align="center">
-                  <RadioGroup onChange={setSearchOption} value={searchOption}>
-                    <HStack spacing={2}>
-                      <Radio value="Location" size="sm" colorScheme="blue">
-                        <Text fontSize="12px" fontWeight={searchOption === "Location" ? "700" : "500"}>Location</Text>
-                      </Radio>
-                      <Radio value="camera" size="sm" colorScheme="blue">
-                        <Text fontSize="12px" fontWeight={searchOption === "camera" ? "700" : "500"}>Camera</Text>
-                      </Radio>
-                    </HStack>
-                  </RadioGroup>
-                  <InputGroup flex={1} minW="150px">
-                    <InputLeftElement pointerEvents="none" color={subText}>
-                      <FaSearch size={13} />
-                    </InputLeftElement>
-                    <Input
-                      placeholder={searchOption === "Location" ? "Search Location" : "Search Camera ID"}
-                      value={searchQuery}
-                      onChange={handleSearchChange}
-                      bg={inputBg}
-                      borderColor={cardBorder}
-                      borderRadius="10px"
-                    />
-                  </InputGroup>
-                </Flex>
-              </Box>
-            </Flex>
-
-            <Button variant="ghost" color={subText} size="sm" onClick={handleClearFilters} _hover={{ bg: rowHover }}>
+          <Flex align="center" gap={4} wrap="wrap">
+            <Text fontSize="12px" fontWeight="700" color={subText} textTransform="uppercase" letterSpacing="0.05em">
+              Search
+            </Text>
+            <RadioGroup onChange={setSearchOption} value={searchOption}>
+              <HStack spacing={4}>
+                <Radio value="Location" size="sm" colorScheme="blue">
+                  <Text fontSize="13px" fontWeight={searchOption === "Location" ? "700" : "500"}>Location</Text>
+                </Radio>
+                <Radio value="camera" size="sm" colorScheme="blue">
+                  <Text fontSize="13px" fontWeight={searchOption === "camera" ? "700" : "500"}>Camera</Text>
+                </Radio>
+              </HStack>
+            </RadioGroup>
+            <InputGroup flex={1} minW="220px" maxW="420px">
+              <InputLeftElement pointerEvents="none" color={subText}>
+                <FaSearch size={13} />
+              </InputLeftElement>
+              <Input
+                placeholder={searchOption === "Location" ? "Search Location" : "Search Camera ID"}
+                value={searchQuery}
+                onChange={handleSearchChange}
+                bg={inputBg}
+                borderColor={cardBorder}
+                borderRadius="10px"
+              />
+            </InputGroup>
+            <Spacer />
+            <ChakraLink
+              fontSize="13px"
+              color={accent}
+              fontWeight="500"
+              textDecoration="underline"
+              onClick={handleClearFilters}
+              whiteSpace="nowrap"
+            >
               Clear Filters
-            </Button>
+            </ChakraLink>
           </Flex>
         </Box>
 
@@ -726,7 +713,6 @@ const Boxes = () => {
                 <Table size="sm">
                   <Thead bg={tableHeadBg} position="sticky" top={0} zIndex={1}>
                     <Tr>
-                      <Th sx={thStyle}>Sr No.</Th>
                       <Th sx={thStyle}>Location</Th>
                       <Th sx={thStyle}>Camera Location Name</Th>
                       <Th sx={thStyle}>Device Id</Th>
@@ -739,7 +725,6 @@ const Boxes = () => {
                     {displayedCameras.length > 0 ? (
                       displayedCameras.map((camera, index) => (
                         <Tr key={`${camera.DeviceId}-${index}`} bg={index % 2 !== 0 ? zebra : "transparent"} _hover={{ bg: rowHover }}>
-                          <Td sx={tdStyle}>{(currentPage - 1) * itemsPerPage + index + 1}</Td>
                           <Td sx={tdStyle}>{camera.district || "N/A"}</Td>
                           <Td sx={tdStyle} title={camera.location || "N/A"}>{camera.location || "N/A"}</Td>
                           <Td sx={tdStyle} fontWeight="600" color={accent}>{camera.DeviceId || "N/A"}</Td>
@@ -776,7 +761,7 @@ const Boxes = () => {
                       ))
                     ) : (
                       <Tr>
-                        <Td colSpan={7} textAlign="center" py={12} color={subText} borderColor={cardBorder}>
+                        <Td colSpan={6} textAlign="center" py={12} color={subText} borderColor={cardBorder}>
                           No records found for the selected filters.
                         </Td>
                       </Tr>

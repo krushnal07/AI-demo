@@ -18,6 +18,7 @@ import {
   Td,
   TableContainer,
   Image,
+  Avatar,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -28,7 +29,7 @@ import {
   useColorModeValue,
   Spinner,
 } from "@chakra-ui/react";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash, FaUser } from "react-icons/fa";
 import Swal from "sweetalert2";
 import moment from "moment";
 import { registerFace, getRegisteredFaces, deleteFace } from "../actions/faceActions";
@@ -51,6 +52,7 @@ const RegisterFace = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+  const fileInputRef = useRef(null);
   const toast = useToast();
 
   const pageHeading = useColorModeValue("gray.800", "white");
@@ -241,7 +243,7 @@ const RegisterFace = () => {
   };
 
   return (
-    <Box maxW="1200px" mx="auto" pt={{ base: "70px", md: "0" }} mb={{ base: "100px", md: "6" }} px={{ base: 3, md: 0 }}>
+    <Box maxW="700px" pt={{ base: "70px", md: "0" }} mb={{ base: "100px", md: "6" }} px={{ base: 3, md: 0 }}>
       <Modal isOpen={isOpen} onClose={onClose} isCentered size="2xl">
         <ModalOverlay bg="blackAlpha.700" />
         <ModalContent bg={cardBg} borderRadius="16px" overflow="hidden">
@@ -252,16 +254,16 @@ const RegisterFace = () => {
         </ModalContent>
       </Modal>
 
-      <Box mb={5}>
-        <Text fontWeight={700} fontSize="28px" color={pageHeading} lineHeight="1.2">
+      <Box mb={4}>
+        <Text fontWeight={700} fontSize="22px" color={pageHeading} lineHeight="1.2">
           Register Face
         </Text>
-        <Text fontSize="14px" color={subText}>
+        <Text fontSize="13px" color={subText}>
           Upload or capture a photo to register a person for facial recognition
         </Text>
       </Box>
 
-      <Box bg={cardBg} border="1px solid" borderColor={cardBorder} borderRadius="16px" boxShadow={softShadow} p={4} mb={5}>
+      <Box bg={cardBg} border="1px solid" borderColor={cardBorder} borderRadius="14px" boxShadow={softShadow} p={4} mb={4}>
         <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
           <Box>
             <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
@@ -291,7 +293,28 @@ const RegisterFace = () => {
           <Box gridColumn={{ md: "1 / -1" }}>
             {captureMode === "upload" ? (
               <Flex direction="column" gap={3}>
-                <Input type="file" accept="image/*" onChange={handleFileChange} bg={inputBg} borderColor={cardBorder} borderRadius="10px" p={1.5} />
+                <HStack spacing={3}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    style={{ display: "none" }}
+                  />
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    variant="outline"
+                    borderColor={cardBorder}
+                    borderRadius="10px"
+                    size="md"
+                    fontWeight="500"
+                  >
+                    Choose File
+                  </Button>
+                  <Text fontSize="13px" color={subText} noOfLines={1}>
+                    {selectedFile ? selectedFile.name : "No file chosen"}
+                  </Text>
+                </HStack>
                 {previewUrl && (
                   <Image src={previewUrl} alt="Preview" maxH="200px" borderRadius="10px" border="1px solid" borderColor={cardBorder} />
                 )}
@@ -357,18 +380,17 @@ const RegisterFace = () => {
                 records.map((record) => (
                   <Tr key={record._id} _hover={{ bg: rowHover }}>
                     <Td sx={tdStyle}>
-                      <Image
+                      <Avatar
                         src={record.image_url}
-                        alt={record.person_name}
-                        boxSize="50px"
-                        objectFit="cover"
-                        borderRadius="8px"
-                        cursor="pointer"
+                        icon={<FaUser fontSize="16px" />}
+                        bg="gray.100"
+                        color="gray.400"
+                        size="sm"
                         mx="auto"
+                        cursor={record.image_url ? "pointer" : "default"}
                         transition="transform 0.2s ease"
-                        _hover={{ transform: "scale(1.08)" }}
-                        onClick={() => handleImageClick(record.image_url)}
-                        fallbackSrc="https://via.placeholder.com/50?text=—"
+                        _hover={record.image_url ? { transform: "scale(1.08)" } : undefined}
+                        onClick={() => record.image_url && handleImageClick(record.image_url)}
                       />
                     </Td>
                     <Td sx={tdStyle}>{record.person_name}</Td>

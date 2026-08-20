@@ -423,6 +423,13 @@ const AnalyticsImage = () => {
   };
   const tdStyle = { py: 2.5, px: 3, textAlign: "center", fontSize: "13px", borderColor: cardBorder };
 
+  const getAnalyticsBadgeStyle = (label) => {
+    if (!label || label === "No Event") {
+      return { bg: "gray.100", color: "gray.600" };
+    }
+    return { bg: "orange.50", color: "orange.500" };
+  };
+
   const colCount =
     6 +
     (showNumberPlateColumn(selectedEvent) ? 1 : 0) +
@@ -631,24 +638,33 @@ const AnalyticsImage = () => {
                           : moment(item.sendtime).subtract(5, "hours").subtract(30, "minutes").format("DD-MM-YYYY HH:mm:ss")}
                       </Td>
                       <Td sx={tdStyle}>
-                        <Image
-                          src={item.imgurl}
-                          alt="Analytics"
-                          boxSize="50px"
-                          objectFit="cover"
-                          borderRadius="8px"
-                          cursor="pointer"
-                          mx="auto"
-                          transition="transform 0.2s ease"
-                          _hover={{ transform: "scale(1.08)" }}
-                          onClick={() => handleImageClick(item.imgurl)}
-                          fallbackSrc="https://via.placeholder.com/50?text=—"
-                        />
+                        {item.imgurl ? (
+                          <Image
+                            src={item.imgurl}
+                            alt="Analytics"
+                            boxSize="36px"
+                            objectFit="cover"
+                            borderRadius="6px"
+                            cursor="pointer"
+                            mx="auto"
+                            transition="transform 0.2s ease"
+                            _hover={{ transform: "scale(1.08)" }}
+                            onClick={() => handleImageClick(item.imgurl)}
+                          />
+                        ) : (
+                          <Text color={subText}>—</Text>
+                        )}
                       </Td>
                       <Td sx={tdStyle}>
-                        <Badge bg={accentTint} color={accent} borderRadius="full" px={2.5} py={0.5} textTransform="none" fontWeight="600">
-                          {currentEventMap[anId] || "No Event"}
-                        </Badge>
+                        {(() => {
+                          const label = currentEventMap[anId] || "No Event";
+                          const badgeStyle = getAnalyticsBadgeStyle(label);
+                          return (
+                            <Badge {...badgeStyle} borderRadius="full" px={2.5} py={0.5} textTransform="none" fontWeight="600">
+                              {label}
+                            </Badge>
+                          );
+                        })()}
                       </Td>
                        {/* <Td sx={tdStyle}>{item.person_name}</Td> */}
                       {showNumberPlateColumn(selectedEvent) && <Td sx={tdStyle}>{item.numberplateid || "N/A"}</Td>}

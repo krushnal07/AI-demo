@@ -10,7 +10,6 @@ import {
   Button,
   Image,
   Link,
-  Avatar,
   Tooltip,
   Modal,
   ModalOverlay,
@@ -31,7 +30,7 @@ import {
   AiOutlineUnorderedList,
   AiOutlineMessage,
 } from "react-icons/ai";
-import { BsRobot } from "react-icons/bs";
+import { BsLightningChargeFill } from "react-icons/bs";
 
 const getUrl = (item) => (typeof item === "string" ? item : item?.url || item?.href || item?.path || "");
 const getLabel = (item, fallback) => (typeof item === "string" ? fallback : item?.name || item?.filename || fallback);
@@ -121,14 +120,15 @@ const Chatbot = () => {
   const cardBorder = useColorModeValue("rgba(226,232,240,0.9)", "whiteAlpha.200");
   const softShadow = useColorModeValue("0 1px 3px rgba(0,0,0,0.06)", "none");
   const userBubbleBg = useColorModeValue("custom.accent", "custom.darkModePrimary");
-  const botBubbleBg = useColorModeValue("gray.100", "gray.700");
+  const botBubbleBg = useColorModeValue("white", "gray.700");
   const botBubbleText = useColorModeValue("gray.800", "whiteAlpha.900");
-  const inputBg = useColorModeValue("gray.50", "gray.700");
+  const inputBg = useColorModeValue("gray.100", "gray.700");
   const inputBorder = useColorModeValue("gray.200", "whiteAlpha.200");
   const historyItemHover = useColorModeValue("gray.100", "whiteAlpha.100");
   const subText = useColorModeValue("gray.500", "gray.400");
   const timestampColor = useColorModeValue("gray.400", "gray.500");
   const headerBg = useColorModeValue("white", "gray.800");
+  const chatAreaBg = useColorModeValue("gray.50", "gray.900");
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -348,30 +348,30 @@ const Chatbot = () => {
   };
 
   return (
-    <Flex h="calc(100vh - 110px)" p={3} gap={3}>
+    <Flex h="calc(100vh - 90px)">
       {/* Left: chat history */}
       <Box
         w="260px"
         display={{ base: "none", md: "flex" }}
         flexDirection="column"
         bg={cardBg}
-        border="1px solid"
+        borderRight="1px solid"
         borderColor={cardBorder}
-        borderRadius="16px"
-        boxShadow={softShadow}
-        p={3}
+        p={4}
       >
-        <Flex justifyContent="space-between" alignItems="center" mb={3} px={1}>
-          <Text fontWeight={700} fontSize="sm" color={pageHeading} letterSpacing="0.02em">
+        <Flex justifyContent="space-between" alignItems="center" mb={3}>
+          <Text fontWeight={700} fontSize="xs" color={pageHeading} letterSpacing="0.04em">
             CHAT HISTORY
           </Text>
           <Button size="xs" variant="ghost" color={subText} onClick={handleClearHistory}>
             Clear
           </Button>
         </Flex>
-        <Box flex="1" overflowY="auto">
+        <Box flex="1" overflowY="auto" display="flex" flexDirection="column">
           {Object.keys(historyGroups).length === 0 && (
-            <EmptyState icon={<AiOutlineMessage />} text="No messages yet" color={subText} />
+            <Flex flex="1" align="center" justify="center">
+              <EmptyState icon={<AiOutlineMessage />} text="No history yet" color={subText} />
+            </Flex>
           )}
           {Object.entries(historyGroups).map(([label, items]) => (
             <Box key={label} mb={4}>
@@ -405,27 +405,36 @@ const Chatbot = () => {
       </Box>
 
       {/* Right: chat thread */}
-      <Box flex="1" display="flex" flexDirection="column" maxW="820px" mx="auto">
+      <Box flex="1" display="flex" flexDirection="column" minW="0">
         <Flex
           justifyContent="space-between"
           alignItems="center"
-          mb={3}
-          px={4}
+          px={5}
           py={3}
           bg={headerBg}
-          border="1px solid"
+          borderBottom="1px solid"
           borderColor={cardBorder}
-          borderRadius="16px"
-          boxShadow={softShadow}
+          flexShrink={0}
         >
           <Flex alignItems="center" gap={3}>
-            <Avatar size="sm" icon={<BsRobot fontSize="18px" />} bg="custom.accent" color="white" />
+            <Flex
+              w="36px"
+              h="36px"
+              align="center"
+              justify="center"
+              borderRadius="10px"
+              bg="custom.accent"
+              color="white"
+              flexShrink={0}
+            >
+              <BsLightningChargeFill fontSize="16px" />
+            </Flex>
             <Box>
-              <Text fontWeight={700} fontSize="lg" color={pageHeading} lineHeight="1.2">
+              <Text fontWeight={700} fontSize="sm" color={pageHeading} lineHeight="1.3">
                 AI Assistant
               </Text>
               <Text fontSize="xs" color={subText}>
-                Arcis Virtual Assistant
+                VMukti Virtual Assistant
               </Text>
             </Box>
           </Flex>
@@ -435,7 +444,7 @@ const Chatbot = () => {
                 icon={<AiOutlineUnorderedList />}
                 aria-label="Data coverage"
                 variant="ghost"
-                fontSize="20px"
+                fontSize="18px"
                 borderRadius="full"
                 onClick={handleDataCoverage}
               />
@@ -445,7 +454,7 @@ const Chatbot = () => {
                 icon={<AiOutlineStar />}
                 aria-label="Saved answers"
                 variant="ghost"
-                fontSize="20px"
+                fontSize="18px"
                 borderRadius="full"
                 onClick={handleOpenSaved}
               />
@@ -455,12 +464,8 @@ const Chatbot = () => {
 
         <Box
           flex="1"
-          bg={cardBg}
-          border="1px solid"
-          borderColor={cardBorder}
-          borderRadius="16px"
-          boxShadow={softShadow}
-          p={4}
+          bg={chatAreaBg}
+          p={5}
           overflowY="auto"
           display="flex"
           flexDirection="column"
@@ -474,20 +479,14 @@ const Chatbot = () => {
               alignItems="flex-end"
               justifyContent={msg.sender === "user" ? "flex-end" : "flex-start"}
             >
-              {msg.sender === "bot" && (
-                <Avatar size="xs" icon={<BsRobot fontSize="12px" />} bg="custom.accent" color="white" flexShrink={0} />
-              )}
-
               <Flex direction="column" alignItems={msg.sender === "user" ? "flex-end" : "flex-start"} maxW="75%">
                 <Box
                   bg={msg.sender === "user" ? userBubbleBg : botBubbleBg}
                   color={msg.sender === "user" ? "white" : botBubbleText}
                   px={4}
                   py={2.5}
-                  boxShadow="sm"
-                  borderRadius="18px"
-                  borderTopRightRadius={msg.sender === "user" ? "4px" : "18px"}
-                  borderTopLeftRadius={msg.sender === "bot" ? "4px" : "18px"}
+                  boxShadow={msg.sender === "bot" ? softShadow : "none"}
+                  borderRadius="16px"
                   whiteSpace="pre-wrap"
                   fontSize="sm"
                   lineHeight="1.5"
@@ -560,15 +559,8 @@ const Chatbot = () => {
           ))}
 
           {isSending && (
-            <Flex gap={2.5} alignItems="flex-end" justifyContent="flex-start">
-              <Avatar size="xs" icon={<BsRobot fontSize="12px" />} bg="custom.accent" color="white" flexShrink={0} />
-              <Box
-                bg={botBubbleBg}
-                px={4}
-                py={3}
-                borderRadius="18px"
-                borderTopLeftRadius="4px"
-              >
+            <Flex justifyContent="flex-start">
+              <Box bg={botBubbleBg} boxShadow={softShadow} px={4} py={3} borderRadius="16px">
                 <TypingDots color={timestampColor} />
               </Box>
             </Flex>
@@ -578,30 +570,31 @@ const Chatbot = () => {
         </Box>
 
         <Flex
-          mt={3}
           gap={2}
           alignItems="flex-end"
-          bg={inputBg}
-          border="1px solid"
-          borderColor={inputBorder}
-          borderRadius="22px"
-          p={2}
-          pl={4}
+          bg={headerBg}
+          borderTop="1px solid"
+          borderColor={cardBorder}
+          px={5}
+          py={3}
+          flexShrink={0}
         >
-          <Textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message…"
-            variant="unstyled"
-            resize="none"
-            rows={1}
-            minH="24px"
-            maxH={`${MAX_INPUT_HEIGHT}px`}
-            py={2}
-            isDisabled={isSending}
-          />
+          <Box flex="1" bg={inputBg} borderRadius="22px" px={4} py={1}>
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message…"
+              variant="unstyled"
+              resize="none"
+              rows={1}
+              minH="24px"
+              maxH={`${MAX_INPUT_HEIGHT}px`}
+              py={2}
+              isDisabled={isSending}
+            />
+          </Box>
           <IconButton
             icon={<AiOutlineSend />}
             aria-label="Send message"
@@ -609,7 +602,7 @@ const Chatbot = () => {
             isDisabled={isSending || !input.trim()}
             bg="custom.accent"
             color="white"
-            borderRadius="full"
+            borderRadius="12px"
             flexShrink={0}
             transition="transform 0.15s ease, opacity 0.15s ease"
             _hover={{ opacity: 0.9, transform: "scale(1.05)" }}
