@@ -74,7 +74,8 @@ import {
   getDistrictNameByAssemblyName,
   getCamerasByDistrict
 } from "../actions/cameraActions";
-import { MdGridView } from "react-icons/md";
+import { MdGridView, MdChevronLeft, MdChevronRight, MdSearch } from "react-icons/md";
+import { TbCamera, TbLayoutGrid, TbList } from "react-icons/tb";
 import { TfiLayoutListThumb } from "react-icons/tfi";
 import { CiCircleRemove, CiMap } from "react-icons/ci";
 import { IoMdNotificationsOutline } from "react-icons/io";
@@ -103,6 +104,7 @@ import { FiInfo } from "react-icons/fi";
 
 const Cameras = () => {
   const toast = useToast();
+  const location = useLocation();
 
   const [userDistricts, setUserDistricts] = useState([]);
   const [isDistrictLoading, setIsDistrictLoading] = useState(true);
@@ -192,6 +194,11 @@ const Cameras = () => {
 
 
   // Chakra UI hooks
+  const cardBg = useColorModeValue("#FFFFFF", "#1C1A1A");
+  const cardBorder = useColorModeValue("#E2E8EF", "#2D3748");
+  const titleColor = useColorModeValue("#1A2E3D", "#FFFFFF");
+  const placeholderColor = useColorModeValue("#1A2E3D80", "#94A3B8");
+  const imageContainerBg = useColorModeValue("#E8EFF7", "#1E293B");
   const radioButtonColor = useColorModeValue("black", "white");
   //const grid_view_icon = useColorModeValue("/images/grid_view_icon_light.png", "/images/grid_view_icon.png");
   //const list_view_icon = useColorModeValue("/images/list_view_icon_light.png", "/images/list_view_icon.png");
@@ -1045,109 +1052,171 @@ const Cameras = () => {
   const text = useColorModeValue('gray.500', 'gray.400');
 
   return (
-    <Box mb={{ base: "20", md: "5" }}>
+    <Box
+      maxW="1440px"
+      w="100%"
+      mx="auto"
+      px={{ base: "12px", sm: "16px", md: "20px", lg: "24px" }}
+      py={{ base: "12px", md: "16px" }}
+      fontFamily="Manrope, sans-serif"
+      mb={{ base: "20", md: "6" }}
+    >
       {/* Mobile Header */}
       <MobileHeader title="Camera" />
-      <Flex direction="column" gap={4} h={"fit-content"}>
-        {/* Header Row */}
-        <Flex justifyContent="space-between" align="center">
-          <Text fontWeight={400} fontSize="26px" color={text}>Cameras</Text>
 
-          {/* View Toggle */}
-          
-        </Flex>
+      {/* ========================================================================= */}
+      {/* 1. CAMERA HEADER & CONTROLS CONTAINER                                     */}
+      {/* ========================================================================= */}
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        flexWrap="wrap"
+        gap="12px"
+        mb="4px"
+      >
+        {/* Title & View Switcher */}
+        <HStack spacing={4} align="center">
+          <Text
+            fontFamily="Manrope, sans-serif"
+            fontWeight="800"
+            fontSize="22px"
+            lineHeight="26.4px"
+            letterSpacing="0px"
+            color={titleColor}
+          >
+            Cameras
+          </Text>
+          <HStack
+            h="34px"
+            p="3px"
+            bg={useColorModeValue("#F1F5F9", "#23262F")}
+            border="1px solid"
+            borderColor={cardBorder}
+            borderRadius="9px"
+            spacing="3px"
+            ml={2}
+          >
+            <Tooltip label="Grid View" hasArrow placement="top">
+              <Box
+                as={RouterLink}
+                to="/cameras"
+                h="26px"
+                px="8px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                borderRadius="6px"
+                bg={
+                  location.pathname.toLowerCase() === "/cameras"
+                    ? cardBg
+                    : "transparent"
+                }
+                boxShadow={
+                  location.pathname.toLowerCase() === "/cameras"
+                    ? "0 1px 3px rgba(0, 0, 0, 0.08)"
+                    : "none"
+                }
+                color={
+                  location.pathname.toLowerCase() === "/cameras"
+                    ? "#3F77A5"
+                    : "#64748B"
+                }
+                _hover={{
+                  textDecoration: "none",
+                  color:
+                    location.pathname.toLowerCase() === "/cameras"
+                      ? "#3F77A5"
+                      : titleColor,
+                }}
+                transition="all 0.18s cubic-bezier(0.4, 0, 0.2, 1)"
+              >
+                <TbLayoutGrid size="17px" />
+              </Box>
+            </Tooltip>
+            <Tooltip label="List View" hasArrow placement="top">
+              <Box
+                as={RouterLink}
+                to="/listview"
+                h="26px"
+                px="8px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                borderRadius="6px"
+                bg={
+                  location.pathname.toLowerCase() === "/listview"
+                    ? cardBg
+                    : "transparent"
+                }
+                boxShadow={
+                  location.pathname.toLowerCase() === "/listview"
+                    ? "0 1px 3px rgba(0, 0, 0, 0.08)"
+                    : "none"
+                }
+                color={
+                  location.pathname.toLowerCase() === "/listview"
+                    ? "#3F77A5"
+                    : "#64748B"
+                }
+                _hover={{
+                  textDecoration: "none",
+                  color:
+                    location.pathname.toLowerCase() === "/listview"
+                      ? "#3F77A5"
+                      : titleColor,
+                }}
+                transition="all 0.18s cubic-bezier(0.4, 0, 0.2, 1)"
+              >
+                <TbList size="18px" />
+              </Box>
+            </Tooltip>
+          </HStack>
+        </HStack>
 
-        {/* Filter Row */}
-        <Grid
-          templateColumns="repeat(7, 1fr)"
-          columnGap={12}
-          rowGap={5}
-          alignItems="center"
-        >
-          {/* Dropdowns */}
+        {/* Right side controls */}
+        <Flex alignItems="center" gap="10px" flexWrap="wrap">
+          {/* Select Location Dropdown */}
+          <Select
+            value={selectedDistrictName}
+            onChange={handleDistrictChange}
+            placeholder={loadingDistricts ? "Loading..." : "Select Location"}
+            isDisabled={loadingDistricts || !userEmail || !!districtError}
+            w={{ base: "100%", sm: "140px" }}
+            h="35px"
+            borderRadius="7px"
+            borderWidth="1px"
+            borderColor={cardBorder}
+            bg={cardBg}
+            fontFamily="Manrope, sans-serif"
+            fontSize="12px"
+            fontWeight="400"
+            lineHeight="100%"
+            letterSpacing="0px"
+            color={titleColor}
+            _focus={{ borderColor: "#3F77A5" }}
+          >
+            {Array.isArray(uniqueDistricts) && uniqueDistricts.map((district) => (
+              <option
+                key={district.districtAssemblycode || district.dist_name}
+                value={district.dist_name}
+                style={{
+                  fontFamily: "Manrope, sans-serif",
+                  fontWeight: "400",
+                  fontSize: "12px",
+                }}
+              >
+                {district.dist_name}
+              </option>
+            ))}
+          </Select>
 
-
-          <Box minW="150px">
-            <Select
-              value={selectedDistrictName} // The value is the district name
-              onChange={handleDistrictChange}
-              placeholder={loadingDistricts ? "Loading..." : "Select location"}
-              isDisabled={loadingDistricts || !userEmail || !!districtError} // Use !!districtError to convert to boolean
-              icon={loadingDistricts ? <Spinner size="xs" /> : undefined}
-              borderRadius="10px"
-              bg={buttonGradientColor}
-              width={"190px"}
-              height={"34px"}
-              fontSize={"12px"}
-            >
-              {/* Ensure uniqueDistricts is an array and map over it */}
-              {Array.isArray(uniqueDistricts) && uniqueDistricts.map((district) => (
-                <option key={district.districtAssemblycode} value={district.dist_name}>
-                  {district.dist_name}
-                </option>
-              ))}
-            </Select>
-            {districtError && <Text color="red.500" fontSize="xs" mt={1}>{districtError}</Text>}
-          </Box>
-          {/* <Box minW="150px">
-            <Select
-              value={selectedAssemblyValue}
-              onChange={handleAssemblyChange}
-              placeholder={
-                !selectedDistrictName
-                  ? "Select District First"
-                  : loadingAssemblies
-                    ? "Loading Assemblies..."
-                    : assemblyError
-                      ? "Error loading assemblies"
-                      : assemblies.length === 0 // Check if assemblies is empty AFTER loading
-                        ? "-- No Assemblies --"
-                        : "Select Assembly"
-              }
-              isDisabled={!selectedDistrictName || loadingAssemblies || !!assemblyError || (assemblies.length === 0 && !loadingAssemblies && selectedDistrictName && !assemblyError)}
-              icon={loadingAssemblies ? <Spinner size="xs" /> : undefined}
-              borderRadius="10px"
-              bg={buttonGradientColor}
-              width={"125px"}
-              height={"34px"}
-              fontSize={"12px"}
-            >
-              {Array.isArray(assemblies) && assemblies.map((assembly) => (
-                <option key={assembly.accode || assembly._id || assembly.name} value={assembly.accName}>
-                  {assembly.accName || assembly.name}
-                  {assembly.accode ? ` (${assembly.accode})` : ''}
-                </option>
-              ))}
-            </Select>
-            {assemblyError && !loadingAssemblies && <Text color="red.500" fontSize="xs" mt={1}>{assemblyError}</Text>}
-          </Box> */}
-
-
-
-          {/* <Link textDecoration="underline" onClick={() => {
-            setSelectedDistrict("");
-            setSelectedAssembly("");
-            setAssemblies([]);
-            console.log("Clear Filters");
-          }} ml={3} width={"125px"}
-            height={"34px"}
-            fontSize={"12px"}>
-            CLEAR FILTER
-          </Link> */}
-
-
-
-
-          {/* 🔍 Search Input */}
-          <InputGroup>
+          {/* Search Camera Input */}
+          <InputGroup w={{ base: "100%", sm: "171px" }} h="34px">
+            <InputLeftElement h="34px" pointerEvents="none" pl="8px">
+              <MdSearch size="16px" color="#94A3B8" />
+            </InputLeftElement>
             <Input
-              placeholder="Search camera"
-              _focus={{
-                borderColor: "purple.400", // or theme.colors.custom.primary
-                boxShadow: `0 0 0 1px purple.400`,
-              }}
-              borderRadius="10px"
-              bg={buttonGradientColor}
+              placeholder="Search Cameras"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
@@ -1155,985 +1224,224 @@ const Cameras = () => {
                   fetchAllCameras(page, itemsPerPage, search);
                 }
               }}
-              width={"190px"}
-              height={"34px"}
-              fontSize={"12px"}
-              color={useColorModeValue("black", "white")}
-              _placeholder={{ color: useColorModeValue("gray.600", "gray.400") }}
-
+              h="34px"
+              pl="30px"
+              pr="10px"
+              py="7px"
+              borderRadius="7px"
+              borderWidth="1px"
+              borderColor={cardBorder}
+              bg={cardBg}
+              fontFamily="Manrope, sans-serif"
+              fontSize="12px"
+              fontWeight="400"
+              lineHeight="100%"
+              letterSpacing="0px"
+              color={titleColor}
+              _placeholder={{
+                color: placeholderColor,
+                fontFamily: "Manrope, sans-serif",
+                fontSize: "12px",
+              }}
+              _focus={{
+                borderColor: "#3F77A5",
+                boxShadow: "0 0 0 1px #3F77A5",
+              }}
             />
-            <InputLeftElement>
-              <IconButton
-                icon={<IoSearchOutline size="20px" />}
-                onClick={() => fetchAllCameras(page, itemsPerPage, search)}
-                variant="ghost"
-                aria-label="Search"
-                _hover={{ bg: "transparent" }}
-                _focus={{ boxShadow: "none" }}
-                _active={{ bg: "transparent" }}
-              />
-            </InputLeftElement>
           </InputGroup>
-
-          {/* Row 2 */}
-
-          <Flex gap={6} gridColumn="span 3">
-            <Text color="blue.400">● Total Cameras ({totalCount})</Text>
-            <Text color="green.400">● Online ({onlineCount})</Text>
-            <Text color="red.400">● Offline ({offlineCount})</Text>
-          </Flex>
-
-
-          {/* CSV / PDF Radio Group */}
-
-        </Grid>
+        </Flex>
       </Flex>
 
-      {/* Tabs for Camera view */}
-      {/* green */}
-      {/* <Flex
-        align="center"
-        bg="green.500"
-        justifyContent="space-between"
-        w="100%"
-        mt={{ base: "12", md: "0" }}
-      > */}
-      {/* Centered Tabs */}
-      {/* <Tabs
-          variant="filled"
-          bg={useColorModeValue(
-            "custom.tabInactiveLightBg",
-            "custom.tabInactiveDarkBg"
-          )}
-          borderRadius="10px"
-          boxShadow="1px 1px 10px 0px rgba(0, 0, 0, 0.13) inset"
-          mx="auto"
-          // minH="35px"
-          h={{ base: "auto", md: "auto" }}
-          w={{ base: "100%", md: "30%" }} // Full width on mobile
-          onChange={(index) =>
-            setCamerasTab(["My Cameras", "Shared Cameras"][index])
-          }
-        >
-          <TabList>
-            <Tab
-              _selected={{
-                bg: selectedTab,
-                color: tabActiveColor,
-                borderRadius: "10px",
-                fontWeight: "bold",
-              }}
-              px={{ base: 0, md: 6 }}
-              py={1.5}
-              borderRadius="full"
-              color={tabInactiveColor}
-              h="full" // Ensure full height for consistency
-              w={{ base: "50%", md: "50%" }} // Full width on mobile
-            >
-              My Cameras
-            </Tab>
-            <Tab
-              _selected={{
-                bg: selectedTab,
-                color: tabActiveColor,
-                borderRadius: "10px",
-                fontWeight: "bold",
-              }}
-              px={{ base: 0, md: 6 }}
-              py={1.5}
-              borderRadius="full"
-              color={tabInactiveColor}
-              w={{ base: "50%", md: "50%" }} // Full width on mobile
-              h="full" // Ensure full height for consistency
-            >
-              Shared Cameras
-            </Tab>
-          </TabList>
-        </Tabs> */}
-
-      {/* Dropdowns */}
-      {/* <Flex gap={4} flexWrap="wrap"> */}
-
-      {/* <Box minW="150px">
-            <Select
-              value={selectedDistrictName} // The value is the district name
-              onChange={handleDistrictChange}
-              placeholder={loadingDistricts ? "Loading..." : "-- Select District --"}
-              isDisabled={loadingDistricts || !userEmail || !!districtError} // Use !!districtError to convert to boolean
-              icon={loadingDistricts ? <Spinner size="xs" /> : undefined}
-              borderRadius="10px"
-            > */}
-      {/* Ensure uniqueDistricts is an array and map over it */}
-      {/* {Array.isArray(uniqueDistricts) && uniqueDistricts.map((district) => ( */}
-      {/* <option key={district.districtAssemblycode} value={district.dist_name}> Use district.name as value */}
-      {/* {district.dist_name}
-                </option> */}
-      {/* ))}
-            </Select>
-            {districtError && <Text color="red.500" fontSize="xs" mt={1}>{districtError}</Text>}
-          </Box> */}
-
-
-      {/* <Box minW="150px">
-            <Select
-              value={selectedAssemblyValue}
-              onChange={handleAssemblyChange}
-              placeholder={
-                !selectedDistrictName
-                  ? "-- Select District First --"
-                  : loadingAssemblies
-                    ? "Loading Assemblies..."
-                    : assemblyError
-                      ? "Error loading assemblies"
-                      : assemblies.length === 0 // Check if assemblies is empty AFTER loading
-                        ? "-- No Assemblies --"
-                        : "-- Select Assembly --"
-              }
-              isDisabled={!selectedDistrictName || loadingAssemblies || !!assemblyError || (assemblies.length === 0 && !loadingAssemblies && selectedDistrictName && !assemblyError)}
-              icon={loadingAssemblies ? <Spinner size="xs" /> : undefined}
-              borderRadius="10px"
-            > */}
-      {/* {Array.isArray(assemblies) && assemblies.map((assembly) => ( */}
-      {/* <option key={assembly.accode || assembly._id || assembly.name} value={assembly.accode}> Ensure accode is the value backend expects */}
-      {/* {assembly.accName || assembly.name} Display name */}
-      {/* {assembly.accode ? ` (${assembly.accode})` : ''}
-                </option>
-              ))}
-            </Select>
-            {assemblyError && !loadingAssemblies && <Text color="red.500" fontSize="xs" mt={1}>{assemblyError}</Text>}
-          </Box>
-
-        </Flex> */}
-
-
-
-      {/* <InputGroup maxW="300px" display={{ base: "none", md: "flex" }}> */}
-      {/* Hides search input on mobile */}
-      {/* <Input
-            placeholder="Search camera, Location, Model no."
-            // border="1px solid #C7C8CE"
-            // _focus={{ borderColor: "#C8D6E5" }}
-            _focus={{
-              borderColor: theme.colors.custom.primary, // Custom purple border color on focus
-              boxShadow: ` 0 0 0 1px ${theme.colors.custom.primary}`, // Custom purple box shadow
-            }}
-            borderRadius={"10px"}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                fetchAllCameras(page, itemsPerPage, search); // Trigger search when pressing Enter
-              }
-            }}
-          />
-          <InputLeftElement>
-            <IconButton
-              icon={<IoSearchOutline size="20px" />}
-              onClick={(e) => fetchAllCameras(page, 6, search)}
-              variant="ghost"
-              aria-label="Search"
-              _hover={{ bg: "transparent" }} // Remove background on hover
-              _focus={{ boxShadow: "none" }} // Remove focus outline
-              _active={{ bg: "transparent" }} // Remove background on active state
-            />
-          </InputLeftElement>
-        </InputGroup> */}
-      {/* Search Bar aligned to the end */}
-      {/* </Flex> */}
-
-      {/* Filter and Camera Status */}
-      {/* blue */}
-      {/*
-<Box w="100%" mt={2} bg="blue.200">
-  // Camera title and Grouping
-  <HStack width="100%">
-    <Text
-      fontSize="xl"
-      fontWeight="bold"
-      display={{ base: "none", md: "flex" }}
-    >
-      {camerasTab === "My Cameras"
-        ? `Camera(${totalCameras})`
-        : `Shared Camera(${totalSharedCameras})`}
-    </Text>
-
-    // Grouping link
-    // <Link color="gray.500" fontSize="sm">Grouping</Link>
-  </HStack>
-
-  // Filter & View Icons
-  {camerasTab === "My Cameras" && (
-    <>
-      <Box mt={2}>
-        // Added margin-top for spacing
-        <InputGroup maxW="full" display={{ base: "flex", md: "none" }}>
-          <InputLeftElement>
-            <IconButton
-              icon={<IoSearchOutline size="20px" />}
-              onClick={(e) => fetchAllCameras(page, 6, search)}
-              variant="ghost"
-              aria-label="Search"
-              _hover={{ bg: "transparent" }}
-              _focus={{ boxShadow: "none" }}
-              _active={{ bg: "transparent" }}
-            />
-          </InputLeftElement>
-          <Input
-            placeholder="Search camera, Location, Model no."
-            _focus={{
-              borderColor: theme.colors.custom.primary,
-              boxShadow: `0 0 0 1px ${theme.colors.custom.primary}`,
-            }}
-            borderRadius={"10px"}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                fetchAllCameras(page, itemsPerPage, search);
-              }
-            }}
-          />
-        </InputGroup>
-      </Box>
-
-      <HStack
-        justify="space-between"
-        width="100%"
-        display={{ base: "flex", md: "flex" }}
-      >
-        // Left Side: Filter and Clear All
-        <HStack
-          mt={{ base: 3, md: 0 }}
-          justify="space-between"
-          width="100%"
-        >
-          <Box>
-            <HStack spacing={2}>
-              <Tag
-                colorScheme="green"
-                variant="outline"
-                bg={
-                  sortStatus === "online"
-                    ? onlineBackgroundColor
-                    : "rgba(59, 94, 198, 0)"
-                }
-                onClick={() => handleSort("online")}
-                cursor={"pointer"}
-              >
-                <Box w={2} h={2} bg="#95DA25" borderRadius="full" mr={1} />
-                Online
-              </Tag>
-
-              <Tag
-                colorScheme="red"
-                variant="outline"
-                bg={
-                  sortStatus === "offline"
-                    ? offlineBackgroundColor
-                    : "rgba(0,0,0,0)"
-                }
-                onClick={() => handleSort("offline")}
-                cursor={"pointer"}
-              >
-                <Box w={2} h={2} bg="#FF6262" borderRadius="full" mr={1} />
-                Offline
-              </Tag>
-
-              {sortStatus === "online" || sortStatus === "offline" ? (
-                <Tag
-                  colorScheme="gray"
-                  variant="outline"
-                  onClick={() => handleSort(null)}
-                  cursor={"pointer"}
-                >
-                  Clear
-                </Tag>
-              ) : null}
-            </HStack>
-          </Box>
-
-          <Flex
-            display={{ base: "flex", md: "none" }}
-            align="center"
-            gap={0}
-            cursor={"pointer"}
-            onClick={() => handleOpenModal("filterOptions")}
+      {/* ========================================================================= */}
+      {/* 2. COUNT CONTAINER                                                        */}
+      {/* ========================================================================= */}
+      <Flex gap="16px" align="center" flexWrap="wrap" mt="6px" mb="4px">
+        {/* Total Cameras */}
+        <HStack spacing="5px">
+          <Box w="7px" h="7px" borderRadius="3.5px" bg="#3F77A5" />
+          <Text
+            fontFamily="Manrope, sans-serif"
+            fontWeight="500"
+            fontSize="12px"
+            lineHeight="18px"
+            letterSpacing="0px"
+            color="#64748B"
           >
-            <IconButton
-              aria-label="View Option"
-              icon={<Icon as={LuLayoutList} boxSize="16px" />}
-              variant="plain"
-              size="sm"
-            />
-            <Text fontSize="16px">View by</Text>
-          </Flex>
+            Total Cameras ({totalCount})
+          </Text>
         </HStack>
 
-        // View Options as Tabs
-        <Tabs
-          variant="unstyled"
-          display={{ base: "none", md: "flex" }}
-          index={isGridView ? 0 : 1}
-          onChange={(index) => handleViewChange(index === 0)}
+        {/* Online */}
+        <HStack
+          spacing="5px"
+          cursor="pointer"
+          onClick={() => setSortStatus(sortStatus === "online" ? null : "online")}
+          opacity={sortStatus && sortStatus !== "online" ? 0.5 : 1}
         >
-          <TabList
-            width="111px"
-            height="28px"
-            border="1px solid #C7C8CE"
-            borderRadius="10px"
-            display="inline-flex"
-            alignItems="center"
-            justifyContent="space-between"
-            overflow="hidden"
-            flexShrink={0}
+          <Box w="7px" h="7px" borderRadius="3.5px" bg="#10B981" />
+          <Text
+            fontFamily="Manrope, sans-serif"
+            fontWeight="500"
+            fontSize="12px"
+            lineHeight="18px"
+            letterSpacing="0px"
+            color="#64748B"
           >
-            <Tooltip
-              hasArrow
-              label="Grid View"
-              placement="bottom"
-              bg="rgba(0, 0, 0)"
-              color="white"
-            >
-              <Tab
-                _selected={{
-                  bg: "custom.primary",
-                  color: "black",
-                }}
-                borderRight="1px solid #C7C8CE"
-                flex="1"
-                height="100%"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                padding="0"
-              >
-                <Icon as={MdGridView} boxSize="20px" aria-label="Grid View" />
-              </Tab>
-            </Tooltip>
+            Online ({onlineCount})
+          </Text>
+        </HStack>
 
-            <Tooltip
-              hasArrow
-              label="List View"
-              placement="bottom"
-              bg="rgba(0, 0, 0)"
-              color="white"
-            >
-              <Tab
-                _selected={{
-                  bg: "custom.primary",
-                  color: "black",
-                }}
-                flex="1"
-                height="100%"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                padding="0"
-              >
-                <Icon
-                  as={TfiLayoutListThumb}
-                  boxSize="20px"
-                  aria-label="List View"
-                />
-              </Tab>
-            </Tooltip>
-          </TabList>
-        </Tabs>
-      </HStack>
-    </>
-  )}
-
-  // Online and Offline Tags
-</Box>
-*/}
-
-
-
-
-
-      {/* card code to display db data */}
-      {/*{
-    camerasTab === "My Cameras" && (
-        <>
-            {/* Camera Grid */}
-      {/*}
-            {isLoading ? (
-                isGridView ? (
-                    // Grid View Skeleton Loader
-                    <SimpleGrid
-                        columns={{ base: 2, md: 3 }}
-                        spacing={6}
-                        mt={{ base: 3, md: 4 }}
-                    >
-                        {[...Array(6)].map((_, index) => (
-                            <Box key={index} borderRadius="8px" overflow="hidden">
-                                <Skeleton height="242px" borderRadius="8px" />
-                                <Box p={2} bg="custom.primary">
-                                    <SkeletonText noOfLines={2} spacing="4" />
-                                </Box>
-                            </Box>
-                        ))}
-                    </SimpleGrid>
-                ) : (
-                    // List View Skeleton Loader
-                    <SimpleGrid
-                        columns={{ base: 1, sm: 2, md: 4 }}
-                        spacing={6}
-                        mt={4}
-                    >
-                        {[...Array(20)].map((_, index) => (
-                            <Flex
-                                key={index}
-                                borderRadius="8px"
-                                overflow="hidden"
-                                bg="custom.primary"
-                            >
-                                <Skeleton
-                                    width="80px"
-                                    height="80px"
-                                    borderRadius="8px"
-                                    mr={4}
-                                />
-                                <Box flex="1">
-                                    <SkeletonText noOfLines={2} spacing="4" />
-                                </Box>
-                            </Flex>
-                        ))}
-                    </SimpleGrid>
-                )
-            ) : cameras.length > 0 ? (
-                isGridView ? (
-                    <SimpleGrid
-                        columns={{ base: 1, sm: 2, md: 2, lg: 3 }}
-                        spacing={6}
-                        mt={{ base: 3, md: 4 }}
-                        w="100%"
-                    >
-                        {cameras.map((camera, index) => {
-                            // Get the image URL from localStorage or fall back to default
-                            const storedData = localStorage.getItem(
-                                `deviceImage_${camera.deviceId}`
-                            );
-                            // const imageUrl = storedData
-                            //   ? JSON.parse(storedData).imageUrl // Parse JSON and extract imageUrl
-                            //   : "https://zeta.arcisai.io/images/icon2.png"; // Fallback to default
-                            // const timestamp = storedData
-                            //   ? JSON.parse(storedData).timestamp
-                            //   : null;
-                            const imageUrl = camera.lastImage
-                                ? camera.lastImage
-                                : "https://zeta.arcisai.io/images/icon2.png";
-                            const timestamp = camera.timestamp ? camera.timestamp : null;
-
-                            return (
-                                <Box
-                                    key={index}
-                                    borderRadius="8px"
-                                    overflow="hidden"
-                                    w={"auto"}
-                                    flexShrink={0}
-                                >
-                                    {/* Image Section */}
-      {/*  <Box
-                                        cursor={"pointer"}
-                                        position="relative"
-                                        w="100%"
-                                        onClick={() =>
-                                            handleCameraClick(camera.deviceId, camera.status)
-                                        }
-                                    >
-                                        <Image
-                                            src={imageUrl} // Use dynamic image URL
-                                            alt="Camera Snapshot"
-                                            width="100%"
-                                            borderRadius="8px 8px 0 0"
-                                            height={["200px", "242px"]} // Responsive height
-                                            objectFit="cover"
-                                        />
-                                        {/* Status Indicator */}
-      {/*<Box
-                                            position="absolute"
-                                            top="2"
-                                            // right="2"
-                                            left={"2"}
-                                            bg={
-                                                camera.status === "online" ? "#95DA25" : "#FF6262"
-                                            }
-                                            borderRadius="full"
-                                            h="13px"
-                                            w="13px"
-                                            aria-label="Active status indicator"
-                                        />
-
-                                        {/* Play button
- <IconButton
-                            aria-label="Play Video"
-                            icon={<IoPlayCircleOutline size="30px" />}
-                            bg="rgba(148, 163, 184, 0.43)"
-                            variant="ghost"
-                            isRound
-                            size="sm"
-                            position="absolute"
-                            top="50%"
-                            left="50%"
-                            transform="translate(-50%, -50%)"
-                          /> */}
-
-      {/* Play Icon */}
-      {/*<IconButton
-                                            bg="rgba(148, 163, 184, 0.43)"
-                                            aria-label="Play Video"
-                                            icon={<IoPlayCircleOutline size="30px" />}
-                                            variant="ghost"
-                                            position="absolute"
-                                            bottom="2"
-                                            right="2"
-                                            isRound
-                                            size="md"
-                                        />
-                                    </Box>
-
-                                    {/* Details Section */}
-      {/*<Box p={2} bg={bgColor}>
-                                        <Flex justify="space-between" align="center">
-                                            {/* Text Container */}
-      {/*<Box>
-                                                <Text
-                                                    fontWeight="bold"
-                                                    fontSize="14px"
-                                                    color={textColor}
-                                                >
-                                                    {camera.dist_name}/{camera.accName}/{camera.ps_id}/{camera.deviceId}/
-
-                                                    {camera.locations && camera.locations.length > 0
-                                                        ? (typeof camera.locations[0] === 'string'
-                                                            ? camera.locations[0]
-                                                            : (camera.locations[0] && camera.locations[0].loc_name)
-                                                        )
-                                                        : 'N/A'}
-
-                                                </Text>
-
-                                                <Text
-                                                    fontSize="12px"
-                                                    color={textColor}
-                                                    opacity={0.4}
-                                                >
-                                                    {/* Snapshot:{" "}
-                              {timestamp ? getTimeAgo(timestamp) : "N/A"} */}
-      {/*</Text>
-                                            </Box>
-
-                                            {/* Menu for More Options */}
-      {/*<Menu>
-                                                <MenuButton
-                                                    as={IconButton}
-                                                    aria-label="More options"
-                                                    icon={<BsThreeDotsVertical />}
-                                                    variant="unstyled"
-                                                    size="md"
-                                                    mr={"-10px"}
-                                                />
-                                                <MenuList
-                                                    fontSize="12px" // Decrease font size
-                                                    p={"15px"} // Adjust padding
-                                                // minWidth="10px" // Set a minimum width for the menu
-                                                // _hover={{ bg: "purple.100" }}
-                                                >
-                                                    <MenuItem
-                                                        _hover={{ bg: "custom.primary" }}
-                                                        onClick={() =>
-                                                            openSettingsModal(
-                                                                "Camera Settings",
-                                                                camera.deviceId,
-                                                                camera.name,
-                                                                camera.productType
-                                                            )
-                                                        }
-                                                    >
-                                                        Camera Setting
-                                                    </MenuItem>
-                                                    <MenuItem
-                                                        _hover={{ bg: "custom.primary" }}
-                                                        onClick={() =>
-                                                            openShareAccessModal(
-                                                                "Share Access",
-                                                                camera.deviceId
-                                                            )
-                                                        }
-                                                    >
-                                                        View Sharing Access
-                                                    </MenuItem>
-                                                    <MenuItem
-                                                        _hover={{ bg: "custom.primary" }}
-                                                        onClick={() =>
-                                                            openModal(
-                                                                "Rename Device",
-                                                                camera._id,
-                                                                camera.name
-                                                            )
-                                                        }
-                                                    >
-                                                        Rename Device
-                                                    </MenuItem>
-                                                    {/* <MenuItem _hover={{ bg: "custom.primary" }}>
-                                Pricing Plan
-                              </MenuItem> */}
-      {/* <MenuItem _hover={{ bg: "custom.primary" }}>
-                        Manage Cloud Recording
-                      </MenuItem>
-                      <MenuItem _hover={{ bg: "custom.primary" }}>
-                        Camera Details
-                      </MenuItem> */}
-      {/*<Divider my={1} w={"90%"} /> {/* Divider added */}
-      {/*<MenuItem
-                                                        _hover={{ bg: "custom.primary" }}
-                                                        onClick={() =>
-                                                            openShareModal(
-                                                                "Share Camera",
-                                                                camera.deviceId
-                                                            )
-                                                        }
-                                                    >
-                                                        Grant Access to Another
-                                                    </MenuItem>
-                                                    {/* <MenuItem _hover={{ bg: "custom.primary" }}>
-                        Edit Access Rights to the Camera
-                      </MenuItem> */}
-      {/*<Divider my={1} color={"#F2E5FF"} w={"90%"} />{" "}
-                                                    {/* Divider added */}
-      {/*<MenuItem
-                                                        _hover={{ bg: "custom.primary" }}
-                                                        color={"red.500"}
-                                                        onClick={() => {
-                                                            openRemoveCamera(
-                                                                "removeUserCamera",
-                                                                camera.deviceId
-                                                            );
-                                                        }}
-                                                    >
-                                                        Remove Camera
-                                                    </MenuItem>
-                                                </MenuList>
-                                            </Menu>
-                                        </Flex>
-                                    </Box>
-                                </Box>
-                            );
-                        })}
-                    </SimpleGrid>
-                ) : (
-                    <SimpleGrid
-                        columns={{ base: 1, sm: 2, md: 4 }}
-                        spacing={6}
-                        mt={4}
-                        w="100%"
-                    >
-                        {cameras.map((camera, index) => {
-                            const storedData = localStorage.getItem(
-                                `deviceImage_${camera.deviceId}`
-                            );
-                            // const { imageUrl, timestamp } = storedData
-                            //   ? JSON.parse(storedData)
-                            //   : {
-                            //     imageUrl:
-                            //       "https://zeta.arcisai.io/images/icon2.png",
-                            //     timestamp: null,
-                            //   };
-                            const imageUrl = camera.lastImage
-                                ? camera.lastImage
-                                : "https://zeta.arcisai.io/images/icon2.png";
-                            const timestamp = camera.timestamp ? camera.timestamp : null;
-
-                            return (
-                                <Box
-                                    key={index}
-                                    borderRadius="8px"
-                                    overflow="hidden"
-                                    bg={bgColor}
-                                    position="relative" // Make Box position relative for absolute positioning
-                                >
-                                    {/* MenuButton positioned in top-right corner without extra space */}
-      {/*<Box
-                                        position="absolute"
-                                        top={1}
-                                        right={0}
-                                        zIndex={1}
-                                        p={0}
-                                    >
-                                        <Menu>
-                                            <MenuButton
-                                                as={IconButton}
-                                                icon={<BsThreeDotsVertical />}
-                                                variant="unstyled"
-                                                size="sm"
-                                                aria-label="Options"
-                                            />
-                                            <Portal>
-                                                <MenuList
-                                                    fontSize="12px" // Decrease font size
-                                                    p={"15px"} // Adjust padding
-                                                // minWidth="10px" // Set a minimum width for the menu
-                                                // _hover={{ bg: "purple.100" }}
-                                                >
-                                                    <MenuItem
-                                                        _hover={{ bg: "custom.primary" }}
-                                                        onClick={() =>
-                                                            openSettingsModal(
-                                                                "Camera Settings",
-                                                                camera.deviceId,
-                                                                camera.name,
-                                                                camera.productType
-                                                            )
-                                                        }
-                                                    >
-                                                        Camera Setting
-                                                    </MenuItem>
-                                                    <MenuItem
-                                                        _hover={{ bg: "custom.primary" }}
-                                                        onClick={() =>
-                                                            openShareAccessModal(
-                                                                "Share Access",
-                                                                camera.deviceId
-                                                            )
-                                                        }
-                                                    >
-                                                        View Sharing Access
-                                                    </MenuItem>
-                                                    <MenuItem
-                                                        _hover={{ bg: "custom.primary" }}
-                                                        onClick={() =>
-                                                            openModal(
-                                                                "Rename Device",
-                                                                camera._id,
-                                                                camera.name
-                                                            )
-                                                        }
-                                                    >
-                                                        Rename Device
-                                                    </MenuItem>
-                                                    {/* <MenuItem _hover={{ bg: "custom.primary" }}>
-                                Pricing Plan
-                              </MenuItem> */}
-      {/* <MenuItem _hover={{ bg: "custom.primary" }}>
-                        Manage Cloud Recording
-                      </MenuItem>
-                      <MenuItem _hover={{ bg: "custom.primary" }}>
-                        Camera Details
-                      </MenuItem> */}
-      {/*<Divider my={1} w={"90%"} /> {/* Divider added */}
-      {/*<MenuItem
-                                                        _hover={{ bg: "custom.primary" }}
-                                                        onClick={() =>
-                                                            openShareModal(
-                                                                "Share Camera",
-                                                                camera.deviceId
-                                                            )
-                                                        }
-                                                    >
-                                                        Grant Access to Another
-                                                    </MenuItem>
-                                                    {/* <MenuItem _hover={{ bg: "custom.primary" }}>
-                        Edit Access Rights to the Camera
-                      </MenuItem> */}
-      {/*<Divider my={1} color={"#F2E5FF"} w={"90%"} />{" "}
-                                                    {/* Divider added */}
-      {/*<MenuItem
-                                                        _hover={{ bg: "custom.primary" }}
-                                                        color={"red.500"}
-                                                        onClick={() => {
-                                                            openRemoveCamera(
-                                                                "removeUserCamera",
-                                                                camera.deviceId
-                                                            );
-                                                        }}
-                                                    >
-                                                        Remove Camera
-                                                    </MenuItem>
-                                                </MenuList>
-                                            </Portal>
-                                        </Menu>
-                                    </Box>
-
-                                    <Flex align="center" p={0}>
-                                        <Box
-                                            position="relative"
-                                            display="inline-block"
-                                            onClick={() =>
-                                                handleCameraClick(camera.deviceId, camera.status)
-                                            }
-                                            cursor={"pointer"}
-                                            borderRight="3px solid"
-                                            borderColor={gridBorderColor}
-                                        >
-                                            <Image
-                                                src={imageUrl}
-                                                alt="Camera Snapshot"
-                                                width="90px"
-                                                height="80px"
-                                                objectFit="cover"
-                                            />
-
-                                            {/* Play button */}
-      {/*<IconButton
-                                                aria-label="Play Video"
-                                                icon={<IoPlayCircleOutline size="30px" />}
-                                                bg="rgba(148, 163, 184, 0.43)"
-                                                variant="ghost"
-                                                isRound
-                                                size="sm"
-                                                position="absolute"
-                                                top="50%"
-                                                left="50%"
-                                                transform="translate(-50%, -50%)"
-                                            />
-
-                                            {/* Status indicator */}
-      {/*<Box
-                                                position="absolute"
-                                                top="1"
-                                                left="1"
-                                                bg={
-                                                    camera.status === "online" ? "#95DA25" : "#FF6262"
-                                                }
-                                                borderRadius="full"
-                                                h="11px"
-                                                w="11px"
-                                                aria-label="Active status indicator"
-                                            />
-                                        </Box>
-                                        <Box ml={4}>
-                                            <Text
-                                                fontWeight="bold"
-                                                fontSize="14px"
-                                                color={textColor}
-                                                mb={6}
-                                            >
-                                                {/* {camera.deviceId}/{camera.dist_name} */}
-      {/*{camera.dist_name}/{camera.accName}/{camera.ps_id}/{camera.deviceId}/
-
-                                                {camera.locations && camera.locations.length > 0
-                                                    ? (typeof camera.locations[0] === 'string'
-                                                        ? camera.locations[0]
-                                                        : (camera.locations[0] && camera.locations[0].loc_name)
-                                                    )
-                                                    : 'N/A'}
-
-
-
-                                            </Text>
-                                            <Text fontSize="12px" color={textColor} opacity={0.4}>
-                                                {/* Snapshot:{" "}
-                            {timestamp ? getTimeAgo(timestamp) : "N/A"} */}
-
-      {/*</Text>
-                                        </Box>
-                                    </Flex>
-                                </Box>
-                            );
-                        })}
-                    </SimpleGrid>
-                )
-            ) : (
-                <><NoCameraFound
-                    title={"Cameras Available"}
-                    description="It looks like you have not activated any Cameras yet"
-                /></>
-            )}
-        </>
-    )
-}
-*/}
-
-      {camerasTab === "My Cameras" && (
-        <SimpleGrid
-          columns={{ base: 1, sm: 2, md: 3 }}
-          spacing={6}
-          mt={{ base: 3, md: 4 }}
-          w="100%"
+        {/* Offline */}
+        <HStack
+          spacing="5px"
+          cursor="pointer"
+          onClick={() => setSortStatus(sortStatus === "offline" ? null : "offline")}
+          opacity={sortStatus && sortStatus !== "offline" ? 0.5 : 1}
         >
-          {/* Assuming 'cameras' is an array of camera objects you're mapping over */}
-          {cameras.map((camera, id) => ( // Replace `[...Array(6)].map((_, id) => (` with `cameras.map((camera, id) => (`
+          <Box w="7px" h="7px" borderRadius="3.5px" bg="#EF4444" />
+          <Text
+            fontFamily="Manrope, sans-serif"
+            fontWeight="500"
+            fontSize="12px"
+            lineHeight="18px"
+            letterSpacing="0px"
+            color="#64748B"
+          >
+            Offline ({offlineCount})
+          </Text>
+        </HStack>
+      </Flex>
+
+      {/* ========================================================================= */}
+      {/* 3. CAMERA STREAM / CARDS CONTAINER                                        */}
+      {/* ========================================================================= */}
+      {isLoading ? (
+        <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing="16px" pt="20px" w="100%">
+          {[...Array(6)].map((_, index) => (
             <Box
-              key={id}
-              borderRadius="8px"
+              key={index}
+              borderRadius="12px"
+              borderWidth="1px"
+              borderColor={cardBorder}
+              bg={cardBg}
               overflow="hidden"
-              w="auto"
-              flexShrink={0}
+              boxShadow="0px 1px 5px 0px rgba(26, 46, 61, 0.07)"
             >
-              {/* Image Section */}
-              <Box
-                cursor="pointer"
-                position="relative"
-                w="100%"
-                h={["100px", "252px"]}
-                borderRadius="12px"
-                overflow="hidden"
-                onClick={() =>
-                  handleCameraClick(camera.deviceId, camera.status)}
-              >
-                <Image
-                  src={camera.lastImage || "https://zeta.arcisai.io/images/icon2.png"}
-                  fallbackSrc="https://zeta.arcisai.io/images/icon2.png"
-                  alt="Camera Snapshot"
-                  position="absolute"
-                  top="0"
-                  left="0"
-                  w="100%"
-                  h="100%"
-                  objectFit="cover"
-                />
-                <Box
-                  cursor={"pointer"}
-                  position="relative"
-                  w="100%"
-                  onClick={() =>
-                    handleCameraClick(camera.deviceId, camera.status)
-                  }
-                ></Box>
-
-                {/* Status Indicator */}
-                <Box
-                  position="absolute"
-                  top="2"
-                  left="2"
-                  bg={camera.status === "online" ? "#95DA25" : "#FF6262"}
-                  borderRadius="full"
-                  h="13px"
-                  w="13px"
-                  aria-label="Active status indicator"
-                />
-
-                {/* Play Icon */}
-                <IconButton
-                  bg="rgba(148, 163, 184, 0.43)"
-                  aria-label="Play Video"
-                  icon={<IoPlayCircleOutline size="30px" />}
-                  variant="ghost"
-                  position="absolute"
-                  bottom="2"
-                  left="2"
-                  isRound
-                  size="md"
-                />
+              <Skeleton height="156px" />
+              <Box p="10px 14px">
+                <SkeletonText noOfLines={1} spacing="2" />
               </Box>
+            </Box>
+          ))}
+        </SimpleGrid>
+      ) : cameras.length > 0 ? (
+        <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing="16px" pt="20px" w="100%">
+          {cameras.map((camera, id) => {
+            const isOnline = camera.status === "online";
 
-              {/* Details Section */}
-              <Box p={2} bg={cardDetailsColor} mt="5px" borderRadius={"12px"}>
-                <Flex justify="space-between" align="center">
-                  <Box>
-                    <Text fontWeight="bold" fontSize="14px">
-                      {camera.dist_name}/{camera.deviceId}/
+            return (
+              <Box
+                key={camera.deviceId || id}
+                borderRadius="12px"
+                borderWidth="1px"
+                borderColor={cardBorder}
+                bg={cardBg}
+                boxShadow="0px 1px 5px 0px rgba(26, 46, 61, 0.07)"
+                overflow="hidden"
+                display="flex"
+                flexDirection="column"
+                transition="transform 0.15s ease, box-shadow 0.15s ease"
+                _hover={{
+                  boxShadow: "0px 4px 12px rgba(26, 46, 61, 0.12)",
+                  transform: "translateY(-2px)",
+                }}
+              >
+                {/* 1. Camera icon / preview container (h: 156px) */}
+                <Box
+                  h="156px"
+                  w="100%"
+                  position="relative"
+                  cursor="pointer"
+                  bg={imageContainerBg}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  onClick={() => handleCameraClick(camera.deviceId, camera.status)}
+                  overflow="hidden"
+                >
+                  {camera.lastImage ? (
+                    <Image
+                      src={camera.lastImage}
+                      fallbackSrc="https://zeta.arcisai.io/images/icon2.png"
+                      alt="Camera Snapshot"
+                      w="100%"
+                      h="100%"
+                      objectFit="cover"
+                    />
+                  ) : (
+                    <Flex direction="column" align="center" justify="center" gap={1}>
+                      <Box as={TbCamera} size="48px" color="#3F77A5" />
+                    </Flex>
+                  )}
+
+                  {/* Status Dot */}
+                  <Box
+                    position="absolute"
+                    top="10px"
+                    left="10px"
+                    w="7px"
+                    h="7px"
+                    borderRadius="3.5px"
+                    bg={isOnline ? "#10B981" : "#EF4444"}
+                    boxShadow="0 0 0 2px white"
+                    zIndex="2"
+                  />
+
+                  {/* Play Button */}
+                  <IconButton
+                    aria-label="Play Video"
+                    icon={<IoPlayCircleOutline size="18px" />}
+                    position="absolute"
+                    bottom="8px"
+                    right="8px"
+                    w="28px"
+                    h="28px"
+                    minW="28px"
+                    borderRadius="7px"
+                    bg="#16222E8C"
+                    _hover={{ bg: "#16222ECC" }}
+                    color="white"
+                    size="sm"
+                    zIndex="2"
+                  />
+                </Box>
+
+                {/* 2. Details Section */}
+                <Box
+                  p="10px 14px"
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  borderTop="1px solid"
+                  borderColor={cardBorder}
+                >
+                  <Box flex="1" pr={2} overflow="hidden">
+                    <Text
+                      fontFamily="Manrope, sans-serif"
+                      fontWeight="700"
+                      fontSize="13px"
+                      color={titleColor}
+                      noOfLines={1}
+                      title={`${camera.dist_name || ''}/${camera.deviceId || ''}/${camera.locations && camera.locations.length > 0 ? (typeof camera.locations[0] === 'string' ? camera.locations[0] : camera.locations[0].loc_name) : ''}`}
+                    >
+                      {camera.dist_name ? `${camera.dist_name}/` : ''}{camera.deviceId}/
                       {camera.locations && camera.locations.length > 0
                         ? (typeof camera.locations[0] === 'string'
                           ? camera.locations[0]
                           : (camera.locations[0] && camera.locations[0].loc_name)
                         )
-                        : 'N/A'}
+                        : (camera.operatorName || 'N/A')}
                     </Text>
-                    {/* <Text fontSize="12px" color="white" opacity={0.4}>
-                Snapshot: 2 mins ago
-              </Text> */}
                   </Box>
 
                   {/* Menu */}
@@ -2143,12 +1451,16 @@ const Cameras = () => {
                       aria-label="More options"
                       icon={<BsThreeDotsVertical />}
                       variant="unstyled"
-                      size="md"
-                      mr="-10px"
+                      size="sm"
+                      minW="24px"
+                      h="24px"
+                      color="#64748B"
+                      _hover={{ color: titleColor }}
                     />
-                    <MenuList fontSize="12px" p="15px">
+                    <MenuList fontSize="12px" p="8px" borderRadius="10px" borderColor={cardBorder} bg={cardBg}>
                       <MenuItem
-                        _hover={{ bg: "custom.primary" }}
+                        _hover={{ bg: "#3F77A515", color: "#3F77A5" }}
+                        borderRadius="6px"
                         onClick={() =>
                           openSettingsModal(
                             "Camera Settings",
@@ -2161,18 +1473,8 @@ const Cameras = () => {
                         Camera Setting
                       </MenuItem>
                       <MenuItem
-                        _hover={{ bg: "custom.primary" }}
-                        onClick={() =>
-                          openShareAccessModal(
-                            "Share Access",
-                            camera.deviceId
-                          )
-                        }
-                      >
-                        {/* View Sharing Access */}
-                      </MenuItem>
-                      <MenuItem
-                        _hover={{ bg: "custom.primary" }}
+                        _hover={{ bg: "#3F77A515", color: "#3F77A5" }}
+                        borderRadius="6px"
                         onClick={() =>
                           openModal(
                             "Rename Device",
@@ -2183,21 +1485,10 @@ const Cameras = () => {
                       >
                         Rename Device
                       </MenuItem>
-                      <Divider my={1} w="90%" />
+                      <Divider my={1} borderColor={cardBorder} />
                       <MenuItem
-                        _hover={{ bg: "custom.primary" }}
-                        onClick={() =>
-                          openShareModal(
-                            "Share Camera",
-                            camera.deviceId
-                          )
-                        }
-                      >
-                        {/* Grant Access to Another */}
-                      </MenuItem>
-                      {/* <Divider my={1} color="#F2E5FF" w="90%" /> */}
-                      <MenuItem
-                        _hover={{ bg: "custom.primary" }}
+                        _hover={{ bg: "red.50", color: "red.600" }}
+                        borderRadius="6px"
                         color="red.500"
                         onClick={() => {
                           openRemoveCamera(
@@ -2210,178 +1501,85 @@ const Cameras = () => {
                       </MenuItem>
                     </MenuList>
                   </Menu>
-                </Flex>
+                </Box>
               </Box>
-            </Box>
-          ))}
+            );
+          })}
         </SimpleGrid>
+      ) : (
+        <Box py={10}>
+          <NoCameraFound
+            title="No Cameras Found"
+            description="It looks like you have not activated any cameras or no cameras match your filters."
+          />
+        </Box>
       )}
 
-
-      {camerasTab === "Shared Cameras" ? (
-        sharedCameras.length > 0 ? (
-          <>
-            <SimpleGrid
-              columns={{ base: 1, sm: 2, md: 2, lg: 3 }}
-              spacing={6}
-              mt={4}
-              w="100%"
-            >
-              {sharedCameras.map((camera, index) => (
-                <Box
-                  key={index}
-                  // mt={10}
-                  // ml={["5", "10"]} // Responsive margin-left for different screen sizes
-                  borderRadius="8px"
-                  overflow="hidden"
-                  // w={["100%", "340px"]} // Responsive width
-                  w={"auto"} // Responsive width
-                  flexShrink={0}
-                // h={"100vh"}
-                >
-                  {/* Image Section */}
-                  <Box
-                    position="relative"
-                    w="100%"
-                    onClick={() =>
-                      handleCameraClick(camera.deviceId, camera.status)
-                    }
-                  >
-                    <Image
-                      src="/images/CameraCard.png" // Replace with actual image source
-                      alt="Camera Snapshot"
-                      width="100%"
-                      borderRadius="8px 8px 0 0"
-                      height={["200px", "242px"]} // Responsive height
-                      objectFit="cover"
-                    />
-                    {/* Status Indicator */}
-                    <Box
-                      position="absolute"
-                      top="2"
-                      right="2" // Changed 'left' to 'right'
-                      bg={camera.status === "online" ? "#95DA25" : "#FF6262"}
-                      borderRadius="full"
-                      h="13px"
-                      w="13px"
-                      aria-label="Active status indicator"
-                    />
-
-                    {/* Play Icon */}
-                    <IconButton
-                      aria-label="Play Video"
-                      icon={
-                        <Image
-                          src="./images/playIcon.svg" // Path to your play icon image in public folder
-                          alt="Play Icon"
-                          boxSize="35px" // Adjust size as needed
-                        />
-                      }
-                      variant="ghost"
-                      position="absolute"
-                      bottom="2"
-                      right="2"
-                      isRound
-                      size="md"
-                    />
-                  </Box>
-                  <Box
-                    cursor={"pointer"}
-                    position="relative"
-                    w="100%"
-                    onClick={() =>
-                      handleCameraClick(camera.deviceId, camera.status)
-                    }
-                  ></Box>
-
-                  {/* Details Section */}
-                  <Box p={2} bg={bgColor}>
-                    <Flex justify="space-between" align="center">
-                      {/* Text Container */}
-                      <Box>
-                        <Text
-                          fontWeight="bold"
-                          fontSize="14px"
-                          color={textColor}
-                        >
-                          {camera.dist_name}/{camera.accName}/{camera.ps_id}/{camera.deviceId}/
-
-                          {camera.locations && camera.locations.length > 0 ? camera.locations[0].loc_name : 'N/A'}
-                        </Text>
-                        <Text fontSize="12px" color="gray.600">
-                          {camera.snapshot}
-                        </Text>
-                      </Box>
-
-                      {/* Menu for More Options */}
-                      <Menu>
-                        <MenuButton
-                          as={IconButton}
-                          aria-label="More options"
-                          icon={<BsThreeDotsVertical />}
-                          variant="unstyled"
-                          size="sm"
-                        />
-                        <MenuList fontSize="12px" p={"15px"}>
-                          {/* <MenuItem _hover={{ bg: "custom.primary" }} onClick={() => openSettingsModal('Camera Settings', camera.deviceId, camera.name)}>
-                          Camera Setting
-                        </MenuItem>
-                        <MenuItem _hover={{ bg: "custom.primary" }} onClick={() => openModal('Rename Device', camera._id, camera.name)}>
-                          Rename Device
-                        </MenuItem>
-                        <MenuItem _hover={{ bg: "custom.primary" }}>
-                          Pricing Plan
-                        </MenuItem>
-
-                        <Divider my={1} w={"90%"} />
-                        <MenuItem _hover={{ bg: "custom.primary" }} onClick={() => openShareModal('Share Camera', camera.deviceId)}>
-                          Grant Access to Another
-                        </MenuItem>
-                        <Divider my={1} color={"#F2E5FF"} w={"90%"} />{" "} */}
-                          <MenuItem
-                            _hover={{ bg: "custom.primary" }}
-                            color={"red.500"}
-                            onClick={() => {
-                              openRemoveSharedCameraModal(
-                                "removeSharedAccess",
-                                camera.deviceId
-                              );
-                            }}
-                          >
-                            Remove Camera
-                          </MenuItem>
-                        </MenuList>
-                      </Menu>
-                    </Flex>
-                  </Box>
-                </Box>
-              ))}
-            </SimpleGrid>
-          </>
-        ) : (
-          <NoCameraFound
-            title="Shared Camera Available"
-            description="It looks like you haven't beem granted access to any camera Yet."
-          />
-        )
-      ) : null}
-
-      {/* Pagination */}
-      <Flex justify="center" mt={6}>
-        {page}/{totalPages}
-      </Flex>
-      <Flex justify="center" mt={2}>
+      {/* ========================================================================= */}
+      {/* 4. PAGINATION CONTAINER                                                   */}
+      {/* ========================================================================= */}
+      <Flex
+        minH="44px"
+        pt="20px"
+        justifyContent="center"
+        alignItems="center"
+        gap="12px"
+        w="100%"
+        fontFamily="Manrope, sans-serif"
+      >
+        {/* Previous Button */}
         <Button
-          onClick={handlePreviousPage}
-          disabled={page === 1} // Disable if it's the first page
-          mr={1}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          isDisabled={page === 1 || totalPages <= 1}
+          h="32px"
+          px="12px"
+          gap="6px"
+          borderRadius="8px"
+          borderWidth="1px"
+          borderColor={cardBorder}
+          bg={cardBg}
+          color="#3F77A5"
+          fontFamily="Manrope, sans-serif"
+          fontWeight="700"
+          fontSize="12px"
+          leftIcon={<MdChevronLeft size="18px" color="#3F77A5" />}
+          _hover={{ bg: "#3F77A510", borderColor: "#3F77A5" }}
+          _disabled={{ opacity: 0.45, cursor: "not-allowed" }}
         >
           Previous
         </Button>
+
+        {/* Page Indicator (1 / n) */}
+        <Text
+          fontFamily="Manrope, sans-serif"
+          fontWeight="600"
+          fontSize="13px"
+          lineHeight="19.5px"
+          letterSpacing="0px"
+          color="#64748B"
+          px="4px"
+        >
+          {totalPages > 0 ? `${page} / ${totalPages}` : "1 / 1"}
+        </Text>
+
+        {/* Next Button */}
         <Button
-          onClick={handleNextPage}
-          disabled={page === totalPages} // Disable if it's the last page
-          ml={1}
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          isDisabled={page === totalPages || totalPages <= 1}
+          h="32px"
+          px="12px"
+          gap="6px"
+          borderRadius="8px"
+          borderWidth="1px"
+          borderColor={cardBorder}
+          bg={cardBg}
+          color="#3F77A5"
+          fontFamily="Manrope, sans-serif"
+          fontWeight="700"
+          fontSize="12px"
+          rightIcon={<MdChevronRight size="18px" color="#3F77A5" />}
+          _hover={{ bg: "#3F77A510", borderColor: "#3F77A5" }}
+          _disabled={{ opacity: 0.45, cursor: "not-allowed" }}
         >
           Next
         </Button>

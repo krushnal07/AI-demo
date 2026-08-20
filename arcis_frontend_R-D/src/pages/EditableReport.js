@@ -31,17 +31,17 @@ import {
   Radio,
   Box,
   Link as ChakraLink,
-  Spacer,
   useColorModeValue,
   IconButton,
   InputGroup,
   InputLeftElement,
-  TableContainer,
   Tooltip,
 } from "@chakra-ui/react";
-import { FaEdit, FaPlus, FaTrash, FaSearch } from "react-icons/fa";
+import { FaPlus, FaSearch } from "react-icons/fa";
+import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import Swal from "sweetalert2";
 import { addDevice } from "../actions/cameraActions";
+import MobileHeader from "../components/MobileHeader";
 
 const RTMP_URL_REGEX = /^rtmp:\/\/([^:/]+)(?::(\d+))?\/([^/]+)\/(.+)$/i;
 const parseRtmpUrlClient = (url) => {
@@ -597,36 +597,59 @@ const Boxes = () => {
     setCurrentPage(1);
   };
 
-  // --- Professional theme tokens (match dashboard/events pages) ---
-  const pageHeading = useColorModeValue("gray.800", "white");
-  const subText = useColorModeValue("gray.500", "gray.400");
-  const cardBg = useColorModeValue("#FFFFFF", "gray.800");
-  const cardBorder = useColorModeValue("rgba(226,232,240,0.9)", "whiteAlpha.200");
+  // --- Design System Color Tokens Matching Analytics Image / Listview ---
+  const titleColor = useColorModeValue("#1A2E3D", "#FFFFFF");
+  const pageHeading = titleColor;
+  const subtextColor = useColorModeValue("#64748B", "#94A3B8");
+  const subText = subtextColor;
+  const cardBg = useColorModeValue("#FFFFFF", "#1C222D");
+  const cardBorder = useColorModeValue("#E2E8F0", "rgba(255, 255, 255, 0.08)");
   const softShadow = useColorModeValue("0 1px 3px rgba(0,0,0,0.06)", "dark-lg");
   const inputBg = useColorModeValue("white", "gray.700");
+  const placeholderColor = useColorModeValue("#94A3B8", "#64748B");
   const accent = useColorModeValue("#3F77A5", "#63B3ED");
   const accentTint = useColorModeValue("#EBF3FA", "whiteAlpha.200");
-  const tableHeadBg = useColorModeValue("#F1F5F9", "gray.700");
-  const rowHover = useColorModeValue("gray.50", "whiteAlpha.100");
-  const zebra = useColorModeValue("gray.50", "whiteAlpha.50");
-  const optionBg = useColorModeValue("white", "gray.700");
-  const bg = useColorModeValue("white", "gray.800");
+  const tableHeaderBg = useColorModeValue("#F0F5FA", "#202734");
+  const tableHeaderColor = useColorModeValue("#4A607A", "#94A3B8");
+  const tableBorderColor = useColorModeValue("#F1F5F9", "rgba(255, 255, 255, 0.06)");
+  const rowAltBg = useColorModeValue("#F8FAFC", "#161C26");
+  const tableRowHoverBg = useColorModeValue("#EDF4FA80", "rgba(255, 255, 255, 0.04)");
+  const tableTextColor = useColorModeValue("#4A5568", "#CBD5E1");
+  const actionBtnBg = useColorModeValue("#3F77A512", "#3F77A522");
+  const deleteBtnBg = useColorModeValue("#FEF2F2", "rgba(239, 68, 68, 0.1)");
+  const deleteBtnBorder = useColorModeValue("#FEE2E2", "rgba(239, 68, 68, 0.2)");
+  const deleteBtnColor = useColorModeValue("#EF4444", "#F87171");
 
   const thStyle = {
-    py: 3,
-    px: 3,
-    textAlign: "center",
-    textTransform: "none",
-    fontSize: "12px",
+    py: "14px",
+    px: "18px",
+    fontFamily: "Manrope, sans-serif",
     fontWeight: "700",
-    color: pageHeading,
-    letterSpacing: "0.02em",
+    fontSize: "13px",
+    color: tableHeaderColor,
+    textTransform: "none",
+    letterSpacing: "0px",
     whiteSpace: "nowrap",
   };
-  const tdStyle = { py: 2.5, px: 3, textAlign: "center", fontSize: "13px", borderColor: cardBorder };
+  const tdStyle = {
+    py: "14px",
+    px: "18px",
+    fontFamily: "Manrope, sans-serif",
+    fontSize: "13px",
+    color: tableTextColor,
+    borderColor: tableBorderColor,
+  };
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif" }}>
+    <Box
+      maxW="1440px"
+      w="100%"
+      mx="auto"
+      px={{ base: "12px", sm: "16px", md: "20px", lg: "24px" }}
+      py={{ base: "12px", md: "16px" }}
+      fontFamily="'Manrope', sans-serif"
+      mb={{ base: "20", md: "6" }}
+    >
       <style>
         {`
           .swal2-container {
@@ -634,48 +657,96 @@ const Boxes = () => {
           }
         `}
       </style>
-      <ChakraBox borderRadius="lg" h={"fit-content"} flexDirection="column" gap={5} display="flex">
-        {/* Header */}
-        <Flex justify="space-between" align={{ base: "flex-start", md: "center" }} direction={{ base: "column", md: "row" }} gap={3}>
-          <Box>
-            <Text fontWeight={700} fontSize="28px" color={pageHeading} lineHeight="1.2">
-              VMS Master
-            </Text>
-            <Text fontSize="13px" color={subText}>
-              Camera management and configuration
-            </Text>
-          </Box>
-          <Button
-            onClick={handleOpenAddModal}
-            leftIcon={<FaPlus size={13} />}
-            bg={accent}
-            color="white"
-            _hover={{ opacity: 0.9 }}
-            borderRadius="10px"
-            size="md"
-          >
-            Add New Camera
-          </Button>
-        </Flex>
+      <MobileHeader title="VMS Master" />
 
+      {/* Header */}
+      <Flex
+        justify="space-between"
+        align={{ base: "flex-start", sm: "center" }}
+        direction={{ base: "column", sm: "row" }}
+        gap={3}
+        mb={4}
+      >
+        <Box>
+          <Text
+            fontFamily="'Manrope', sans-serif"
+            fontWeight={800}
+            fontSize={{ base: "20px", md: "22px" }}
+            lineHeight="1.2"
+            color={pageHeading}
+          >
+            VMS Master
+          </Text>
+          <Text
+            fontFamily="'Manrope', sans-serif"
+            fontSize="13px"
+            color={subText}
+            mt="2px"
+          >
+            Camera management and configuration
+          </Text>
+        </Box>
+        <Button
+          onClick={handleOpenAddModal}
+          leftIcon={<FaPlus size={12} />}
+          bg={accent}
+          color="white"
+          _hover={{ opacity: 0.9 }}
+          borderRadius="10px"
+          size="sm"
+          fontWeight="600"
+        >
+          Add New Camera
+        </Button>
+      </Flex>
+
+      {/* Big Container enclosing Filter, Table, and Pagination */}
+      <Box
+        bg={cardBg}
+        border="1px solid"
+        borderColor={cardBorder}
+        borderRadius="16px"
+        boxShadow={softShadow}
+        p={{ base: 4, md: 6 }}
+        mb={{ base: 6, md: 8 }}
+      >
         {/* Filter bar */}
-        <Box bg={cardBg} border="1px solid" borderColor={cardBorder} borderRadius="16px" boxShadow={softShadow} p={4}>
-          <Flex align="center" gap={4} wrap="wrap">
-            <Text fontSize="12px" fontWeight="700" color={subText} textTransform="uppercase" letterSpacing="0.05em">
-              Search
+        <Flex
+          align={{ base: "flex-start", md: "center" }}
+          direction={{ base: "column", md: "row" }}
+          justify="space-between"
+          gap={4}
+          mb={6}
+          wrap="wrap"
+        >
+          <Flex align="center" gap={{ base: 3, md: 5 }} flex="1" wrap="wrap" w={{ base: "100%", md: "auto" }}>
+            <Text
+              fontFamily="Manrope, sans-serif"
+              fontSize="11px"
+              fontWeight="700"
+              color={subtextColor}
+              textTransform="uppercase"
+              letterSpacing="0.7px"
+            >
+              SEARCH
             </Text>
             <RadioGroup onChange={setSearchOption} value={searchOption}>
               <HStack spacing={4}>
                 <Radio value="Location" size="sm" colorScheme="blue">
-                  <Text fontSize="13px" fontWeight={searchOption === "Location" ? "700" : "500"}>Location</Text>
+                  <Text fontSize="13px" fontWeight={searchOption === "Location" ? "700" : "500"} color={titleColor} fontFamily="Manrope, sans-serif">
+                    Location
+                  </Text>
                 </Radio>
                 <Radio value="camera" size="sm" colorScheme="blue">
-                  <Text fontSize="13px" fontWeight={searchOption === "camera" ? "700" : "500"}>Camera</Text>
+                  <Text fontSize="13px" fontWeight={searchOption === "camera" ? "700" : "500"} color={titleColor} fontFamily="Manrope, sans-serif">
+                    Camera
+                  </Text>
                 </Radio>
               </HStack>
             </RadioGroup>
-            <InputGroup flex={1} minW="220px" maxW="420px">
-              <InputLeftElement pointerEvents="none" color={subText}>
+
+            <InputGroup flex="1" minW={{ base: "100%", sm: "240px", md: "320px" }} maxW={{ base: "100%", md: "520px" }} h="38px">
+              <InputLeftElement pointerEvents="none" h="38px" color={subtextColor}>
                 <FaSearch size={13} />
               </InputLeftElement>
               <Input
@@ -684,95 +755,160 @@ const Boxes = () => {
                 onChange={handleSearchChange}
                 bg={inputBg}
                 borderColor={cardBorder}
-                borderRadius="10px"
+                borderRadius="8px"
+                h="38px"
+                fontSize="12px"
+                fontFamily="Manrope, sans-serif"
+                color={titleColor}
+                _placeholder={{ color: placeholderColor, fontSize: "12px", fontFamily: "Manrope, sans-serif" }}
+                _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
               />
             </InputGroup>
-            <Spacer />
-            <ChakraLink
-              fontSize="13px"
-              color={accent}
-              fontWeight="500"
-              textDecoration="underline"
-              onClick={handleClearFilters}
-              whiteSpace="nowrap"
-            >
-              Clear Filters
-            </ChakraLink>
           </Flex>
-        </Box>
+
+          <ChakraLink
+            fontSize="13px"
+            color={accent}
+            fontWeight="600"
+            textDecoration="underline"
+            onClick={handleClearFilters}
+            whiteSpace="nowrap"
+            fontFamily="Manrope, sans-serif"
+            _hover={{ color: "#315f85" }}
+          >
+            Clear Filters
+          </ChakraLink>
+        </Flex>
 
         {loading ? (
           <Flex justifyContent="center" alignItems="center" height="200px" flexDirection="column" gap={3}>
             <Spinner size="xl" color={accent} thickness="3px" />
-            <Text color={subText}>Loading camera records…</Text>
+            <Text color={subtextColor} fontFamily="Manrope, sans-serif">Loading camera records…</Text>
           </Flex>
         ) : (
           <>
-            <Box bg={cardBg} border="1px solid" borderColor={cardBorder} borderRadius="16px" boxShadow={softShadow} overflow="hidden">
-              <TableContainer overflowX="auto">
-                <Table size="sm">
-                  <Thead bg={tableHeadBg} position="sticky" top={0} zIndex={1}>
-                    <Tr>
+            {/* Table View matching Listview & Analytics Image Layout & Typography */}
+            <Box
+              borderRadius="10px"
+              overflow="hidden"
+              border="1px solid"
+              borderColor={tableBorderColor}
+            >
+              <Box overflowX="auto">
+                <Table variant="simple" size="md">
+                  <Thead
+                    position="sticky"
+                    top={0}
+                    zIndex={2}
+                    bg={tableHeaderBg}
+                  >
+                    <Tr borderBottom="1px solid" borderColor={tableBorderColor}>
                       <Th sx={thStyle}>Location</Th>
                       <Th sx={thStyle}>Camera Location Name</Th>
                       <Th sx={thStyle}>Device Id</Th>
                       <Th sx={thStyle}>Operator Name</Th>
                       <Th sx={thStyle}>Operator Mobile No.</Th>
-                      <Th sx={thStyle}>Actions</Th>
+                      <Th sx={thStyle} textAlign="center">Actions</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
                     {displayedCameras.length > 0 ? (
-                      displayedCameras.map((camera, index) => (
-                        <Tr key={`${camera.DeviceId}-${index}`} bg={index % 2 !== 0 ? zebra : "transparent"} _hover={{ bg: rowHover }}>
-                          <Td sx={tdStyle}>{camera.district || "N/A"}</Td>
-                          <Td sx={tdStyle} title={camera.location || "N/A"}>{camera.location || "N/A"}</Td>
-                          <Td sx={tdStyle} fontWeight="600" color={accent}>{camera.DeviceId || "N/A"}</Td>
-                          <Td sx={tdStyle}>{camera.operatorName || "N/A"}</Td>
-                          <Td sx={tdStyle}>{camera.operatorMobile || "N/A"}</Td>
-                          <Td sx={tdStyle}>
-                            <HStack spacing={2} justify="center">
-                              <Tooltip label="Edit" hasArrow>
-                                <IconButton
-                                  aria-label="Edit"
-                                  icon={<FaEdit />}
-                                  size="sm"
-                                  variant="outline"
-                                  borderColor={cardBorder}
-                                  color={accent}
-                                  _hover={{ bg: accentTint }}
-                                  onClick={() => handleOpenEditModal(camera)}
-                                />
-                              </Tooltip>
-                              <Tooltip label="Delete" hasArrow>
-                                <IconButton
-                                  aria-label="Delete"
-                                  icon={<FaTrash />}
-                                  size="sm"
-                                  variant="outline"
-                                  colorScheme="red"
-                                  _hover={{ bg: "red.500", color: "white" }}
-                                  onClick={() => handleDelete(camera.DeviceId)}
-                                />
-                              </Tooltip>
-                            </HStack>
-                          </Td>
-                        </Tr>
-                      ))
+                      displayedCameras.map((camera, index) => {
+                        const isEvenRow = index % 2 === 1;
+                        return (
+                          <Tr
+                            key={`${camera.DeviceId}-${index}`}
+                            bg={isEvenRow ? rowAltBg : cardBg}
+                            borderBottom="1px solid"
+                            borderColor={tableBorderColor}
+                            _hover={{ bg: tableRowHoverBg }}
+                            transition="background 0.15s ease"
+                          >
+                            <Td sx={tdStyle} fontWeight="600" color={titleColor}>
+                              {camera.district || "N/A"}
+                            </Td>
+                            <Td sx={tdStyle} title={camera.location || "N/A"}>
+                              {camera.location || "N/A"}
+                            </Td>
+                            <Td sx={tdStyle} fontWeight="700" color="#3F77A5">
+                              {camera.DeviceId || "N/A"}
+                            </Td>
+                            <Td sx={tdStyle}>
+                              {camera.operatorName || "N/A"}
+                            </Td>
+                            <Td sx={tdStyle}>
+                              {camera.operatorMobile || "N/A"}
+                            </Td>
+                            <Td sx={tdStyle} textAlign="center">
+                              <HStack spacing={2} justify="center">
+                                <Tooltip label="Edit" hasArrow>
+                                  <IconButton
+                                    aria-label="Edit"
+                                    icon={<FiEdit2 size="13px" />}
+                                    size="sm"
+                                    h="30px"
+                                    w="30px"
+                                    minW="30px"
+                                    borderRadius="7px"
+                                    borderWidth="1px"
+                                    borderColor={cardBorder}
+                                    bg={actionBtnBg}
+                                    color="#3F77A5"
+                                    _hover={{
+                                      bg: "#3F77A5",
+                                      color: "#FFFFFF",
+                                      borderColor: "#3F77A5",
+                                      transform: "translateY(-1px)",
+                                      boxShadow: "0 2px 6px rgba(63, 119, 165, 0.35)",
+                                    }}
+                                    transition="all 0.15s ease"
+                                    onClick={() => handleOpenEditModal(camera)}
+                                  />
+                                </Tooltip>
+                                <Tooltip label="Delete" hasArrow>
+                                  <IconButton
+                                    aria-label="Delete"
+                                    icon={<FiTrash2 size="13px" />}
+                                    size="sm"
+                                    h="30px"
+                                    w="30px"
+                                    minW="30px"
+                                    borderRadius="7px"
+                                    borderWidth="1px"
+                                    borderColor={deleteBtnBorder}
+                                    bg={deleteBtnBg}
+                                    color={deleteBtnColor}
+                                    _hover={{
+                                      bg: "#EF4444",
+                                      color: "#FFFFFF",
+                                      borderColor: "#EF4444",
+                                      transform: "translateY(-1px)",
+                                      boxShadow: "0 2px 6px rgba(239, 68, 68, 0.35)",
+                                    }}
+                                    transition="all 0.15s ease"
+                                    onClick={() => handleDelete(camera.DeviceId)}
+                                  />
+                                </Tooltip>
+                              </HStack>
+                            </Td>
+                          </Tr>
+                        );
+                      })
                     ) : (
                       <Tr>
-                        <Td colSpan={6} textAlign="center" py={12} color={subText} borderColor={cardBorder}>
+                        <Td colSpan={6} textAlign="center" py={12} color={subtextColor} borderColor={tableBorderColor} fontFamily="Manrope, sans-serif">
                           No records found for the selected filters.
                         </Td>
                       </Tr>
                     )}
                   </Tbody>
                 </Table>
-              </TableContainer>
+              </Box>
             </Box>
 
+            {/* Pagination inside container */}
             {totalItemsAfterFilters > 0 && (
-              <Flex justifyContent="center" mt={2} alignItems="center" gap={1} wrap="wrap">
+              <Flex justifyContent="center" mt={6} alignItems="center" gap={1} wrap="wrap">
                 <Button
                   onClick={() => handlePageChange(currentPage - 1)}
                   isDisabled={currentPage === 1}
@@ -780,6 +916,7 @@ const Boxes = () => {
                   size="sm"
                   variant="outline"
                   borderColor={cardBorder}
+                  fontFamily="Manrope, sans-serif"
                 >
                   Prev
                 </Button>
@@ -808,7 +945,7 @@ const Boxes = () => {
 
                   return pageNumbers.map((page, idx) =>
                     page === "..." ? (
-                      <Text key={`ellipsis-${idx}`} mx={2} alignSelf="center">
+                      <Text key={`ellipsis-${idx}`} mx={2} alignSelf="center" color={subtextColor} fontFamily="Manrope, sans-serif">
                         ...
                       </Text>
                     ) : (
@@ -822,7 +959,8 @@ const Boxes = () => {
                         bg={currentPage === page ? accent : "transparent"}
                         color={currentPage === page ? "white" : "inherit"}
                         borderColor={cardBorder}
-                        _hover={currentPage === page ? { bg: accent } : { bg: rowHover }}
+                        fontFamily="Manrope, sans-serif"
+                        _hover={currentPage === page ? { bg: accent } : { bg: tableRowHoverBg }}
                       >
                         {page}
                       </Button>
@@ -837,6 +975,7 @@ const Boxes = () => {
                   size="sm"
                   variant="outline"
                   borderColor={cardBorder}
+                  fontFamily="Manrope, sans-serif"
                 >
                   Next
                 </Button>
@@ -844,12 +983,12 @@ const Boxes = () => {
             )}
           </>
         )}
-      </ChakraBox>
+      </Box>
 
       {editingCamera && (
         <Modal isOpen={isModalOpen} onClose={onClose} isCentered size="xl" scrollBehavior="inside">
           <ModalOverlay bg="blackAlpha.600" />
-          <ModalContent borderRadius="16px" bg={cardBg}>
+          <ModalContent borderRadius="16px" bg={cardBg} fontFamily="'Manrope', sans-serif">
             <ModalHeader fontSize="18px" fontWeight="700" color={pageHeading} borderBottom="1px solid" borderColor={cardBorder}>
               {modalMode === "edit" ? "Edit camera Details" : "Add New camera"}
             </ModalHeader>
@@ -933,9 +1072,9 @@ const Boxes = () => {
                         left="0"
                         right="0"
                         zIndex="9999"
-                        bg={bg}
+                        bg={cardBg}
                         border="1px solid"
-                        borderColor="gray.200"
+                        borderColor={cardBorder}
                         borderRadius="md"
                         boxShadow="lg"
                         maxH="200px"
@@ -1024,7 +1163,7 @@ const Boxes = () => {
           </ModalContent>
         </Modal>
       )}
-    </div>
+    </Box>
   );
 };
 

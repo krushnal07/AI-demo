@@ -123,7 +123,6 @@ const Chatbot = () => {
   const botBubbleBg = useColorModeValue("white", "gray.700");
   const botBubbleText = useColorModeValue("gray.800", "whiteAlpha.900");
   const inputBg = useColorModeValue("gray.100", "gray.700");
-  const inputBorder = useColorModeValue("gray.200", "whiteAlpha.200");
   const historyItemHover = useColorModeValue("gray.100", "whiteAlpha.100");
   const subText = useColorModeValue("gray.500", "gray.400");
   const timestampColor = useColorModeValue("gray.400", "gray.500");
@@ -348,17 +347,35 @@ const Chatbot = () => {
   };
 
   return (
-    <Flex h="calc(100vh - 90px)">
-      {/* Left: chat history */}
-      <Box
-        w="260px"
-        display={{ base: "none", md: "flex" }}
-        flexDirection="column"
+    <Box
+      w="100%"
+      h={{ base: "calc(100vh - 56px)", md: "calc(100vh - 56px)" }}
+      m={0}
+      p={0}
+      fontFamily="'Manrope', sans-serif"
+      overflow="hidden"
+      bg={cardBg}
+    >
+      <Flex
+        h="100%"
+        w="100%"
         bg={cardBg}
-        borderRight="1px solid"
-        borderColor={cardBorder}
-        p={4}
+        borderRadius="0"
+        border="none"
+        overflow="hidden"
       >
+        {/* Left: chat history panel */}
+        <Box
+          w={{ base: "240px", lg: "270px" }}
+          display={{ base: "none", md: "flex" }}
+          flexDirection="column"
+          bg={cardBg}
+          borderRight="1px solid"
+          borderColor={cardBorder}
+          borderRadius="0"
+          p={4}
+          h="100%"
+        >
         <Flex justifyContent="space-between" alignItems="center" mb={3}>
           <Text fontWeight={700} fontSize="xs" color={pageHeading} letterSpacing="0.04em">
             CHAT HISTORY
@@ -385,7 +402,7 @@ const Chatbot = () => {
                     cursor="pointer"
                     px={2.5}
                     py={2}
-                    borderRadius="10px"
+                    borderRadius="6px"
                     fontSize="sm"
                     color={pageHeading}
                     noOfLines={2}
@@ -405,15 +422,16 @@ const Chatbot = () => {
       </Box>
 
       {/* Right: chat thread */}
-      <Box flex="1" display="flex" flexDirection="column" minW="0">
+      <Box flex="1" display="flex" flexDirection="column" minW="0" h="100%" borderRadius="0">
         <Flex
           justifyContent="space-between"
           alignItems="center"
-          px={5}
-          py={3}
+          px={{ base: 4, md: 6 }}
+          py={3.5}
           bg={headerBg}
           borderBottom="1px solid"
           borderColor={cardBorder}
+          borderRadius="0"
           flexShrink={0}
         >
           <Flex alignItems="center" gap={3}>
@@ -422,7 +440,7 @@ const Chatbot = () => {
               h="36px"
               align="center"
               justify="center"
-              borderRadius="10px"
+              borderRadius="8px"
               bg="custom.accent"
               color="white"
               flexShrink={0}
@@ -465,7 +483,7 @@ const Chatbot = () => {
         <Box
           flex="1"
           bg={chatAreaBg}
-          p={5}
+          p={{ base: 3, md: 5 }}
           overflowY="auto"
           display="flex"
           flexDirection="column"
@@ -479,14 +497,14 @@ const Chatbot = () => {
               alignItems="flex-end"
               justifyContent={msg.sender === "user" ? "flex-end" : "flex-start"}
             >
-              <Flex direction="column" alignItems={msg.sender === "user" ? "flex-end" : "flex-start"} maxW="75%">
+              <Flex direction="column" alignItems={msg.sender === "user" ? "flex-end" : "flex-start"} maxW={{ base: "88%", md: "75%" }}>
                 <Box
                   bg={msg.sender === "user" ? userBubbleBg : botBubbleBg}
                   color={msg.sender === "user" ? "white" : botBubbleText}
                   px={4}
                   py={2.5}
                   boxShadow={msg.sender === "bot" ? softShadow : "none"}
-                  borderRadius="16px"
+                  borderRadius="14px"
                   whiteSpace="pre-wrap"
                   fontSize="sm"
                   lineHeight="1.5"
@@ -560,7 +578,7 @@ const Chatbot = () => {
 
           {isSending && (
             <Flex justifyContent="flex-start">
-              <Box bg={botBubbleBg} boxShadow={softShadow} px={4} py={3} borderRadius="16px">
+              <Box bg={botBubbleBg} boxShadow={softShadow} px={4} py={3} borderRadius="14px">
                 <TypingDots color={timestampColor} />
               </Box>
             </Flex>
@@ -575,8 +593,9 @@ const Chatbot = () => {
           bg={headerBg}
           borderTop="1px solid"
           borderColor={cardBorder}
-          px={5}
-          py={3}
+          px={{ base: 3, md: 6 }}
+          py={3.5}
+          borderRadius="0"
           flexShrink={0}
         >
           <Box flex="1" bg={inputBg} borderRadius="22px" px={4} py={1}>
@@ -593,6 +612,7 @@ const Chatbot = () => {
               maxH={`${MAX_INPUT_HEIGHT}px`}
               py={2}
               isDisabled={isSending}
+              fontFamily="'Manrope', sans-serif"
             />
           </Box>
           <IconButton
@@ -602,7 +622,7 @@ const Chatbot = () => {
             isDisabled={isSending || !input.trim()}
             bg="custom.accent"
             color="white"
-            borderRadius="12px"
+            borderRadius="10px"
             flexShrink={0}
             transition="transform 0.15s ease, opacity 0.15s ease"
             _hover={{ opacity: 0.9, transform: "scale(1.05)" }}
@@ -613,7 +633,7 @@ const Chatbot = () => {
 
       <Modal isOpen={isSavedOpen} onClose={() => setIsSavedOpen(false)} isCentered size="lg" scrollBehavior="inside">
         <ModalOverlay />
-        <ModalContent borderRadius="16px">
+        <ModalContent borderRadius="16px" fontFamily="'Manrope', sans-serif">
           <ModalHeader>Saved Answers</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
@@ -656,7 +676,8 @@ const Chatbot = () => {
           </ModalBody>
         </ModalContent>
       </Modal>
-    </Flex>
+      </Flex>
+    </Box>
   );
 };
 

@@ -193,11 +193,16 @@ const PlayerControls = ({
   const labelType = useBreakpointValue({ base: "shortLabel", md: "label" });
   // const direction = useBreakpointValue({ base: "column", sm: "row" });
 
-  const tabActiveColor = useColorModeValue("#1A1A1A", "#FFFFFF");
-  const tabInactiveColor = useColorModeValue("#65758B", "#94A3B8");
-  const bgColor = useColorModeValue("#C8D6E5", "#54637A");
-  const textColor = useColorModeValue("#1A1A1A", "#FFFFFF");
-  const selectedTab = useColorModeValue("#C8D6E5", "#54637A");
+  const tabActiveColor = "#FFFFFF";
+  const tabInactiveColor = useColorModeValue("#64748B", "#94A3B8");
+  const bgColor = "#3F77A5";
+  const textColor = useColorModeValue("#1A2E3D", "#FFFFFF");
+  const selectedTab = "#3F77A5";
+  const controlsBg = useColorModeValue("#F8FAFC", "#161C26");
+  const controlsBorder = useColorModeValue("#E2E8EF", "rgba(255, 255, 255, 0.08)");
+  const menuBg = useColorModeValue("#FFFFFF", "#1C222D");
+  const menuBorder = useColorModeValue("#E2E8EF", "rgba(255, 255, 255, 0.08)");
+  const menuHoverBg = useColorModeValue("#F1F5F9", "#252D3A");
 
   const [totalData, setTotalData] = useState(0);
 
@@ -212,79 +217,83 @@ const PlayerControls = ({
           .dateInput {
             background-color: unset;
             width: 93px;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
+            font-size: 13px;
+            color: inherit;
+            cursor: pointer;
           }
 
           .react-datepicker__day--selected {
-            background-color: ${bgColor} !important; /* Green background */
-            color: ${textColor} !important; /* White text */
-            border-radius: 20%; /* Circular design */
+            background-color: ${bgColor} !important;
+            color: #ffffff !important;
+            border-radius: 6px;
           }
         `}
       </style>
 
       <Box
-        // p={3}
-        borderRadius="lg"
-        // boxShadow="md"
+        borderRadius="10px"
         width="100%"
         mx="auto"
-        pt={2}
-        color={useColorModeValue(
-          "theme.colors.custom.lightModeText",
-          "theme.colors.custom.darkModeText"
-        )}
-      // bg={useColorModeValue("gray.100", "custom.darkModeBg")}
+        mt="12px"
+        p="10px 14px"
+        bg={controlsBg}
+        borderWidth="1px"
+        borderColor={controlsBorder}
+        fontFamily="'Manrope', sans-serif"
+        color={textColor}
       >
         <Flex
           direction={{ base: "column", md: "row" }}
           alignItems={{ base: "flex-start", md: "center" }}
           justifyContent="space-between"
           flexWrap="wrap"
+          gap={{ base: 3, md: 2 }}
         >
           {/* First Part (Tabs and Date Navigation) */}
-          <Box width={{ base: "100%", md: "auto" }} mb={{ base: 2, md: 0 }}>
-            <Flex alignItems="center">
+          <Box width={{ base: "100%", md: "auto" }}>
+            <Flex alignItems="center" gap="10px" flexWrap="wrap">
               <Tabs
-                variant="filled"
-                borderRadius="10px"
-                boxShadow="1px 1px 10px 0px rgba(0, 0, 0, 0.13) inset"
-                w={{ base: "50%", md: "auto" }}
+                variant="unstyled"
                 size="sm"
-              // mr={2}
               >
-                <TabList>
+                <TabList bg={useColorModeValue("#E8EFF7", "rgba(255,255,255,0.06)")} p="3px" borderRadius="8px">
                   <Tab
                     _selected={{
-                      bg: selectedTab, // Active background color
-                      color: tabActiveColor, // Active text color
-                      borderRadius: "10px",
-                      fontWeight: "bold",
+                      bg: selectedTab,
+                      color: tabActiveColor,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
                     }}
-                    px={{ base: 1, md: 6 }} // Padding adjustment for mobile and desktop
-                    // py={2}
-                    borderRadius="full"
-                    w={{ base: "50%", md: "auto" }} // Full width on mobile
+                    px="14px"
+                    py="4px"
+                    borderRadius="6px"
                     textAlign="center"
                     color={tabInactiveColor}
-                    fontSize={{ base: "sm", md: "sm" }}
+                    fontFamily="'Manrope', sans-serif"
+                    fontWeight="700"
+                    fontSize="12px"
                     onClick={() => toggle("cloud")}
                   >
                     Cloud
                   </Tab>
                 </TabList>
               </Tabs>
-              <HStack spacing={"0"}>
-                <Tooltip label="Previous Day" aria-label="Previous Day Tooltip">
+              <HStack spacing="4px" align="center" bg={useColorModeValue("#FFFFFF", "#1C222D")} px="8px" py="3px" borderRadius="8px" borderWidth="1px" borderColor={controlsBorder}>
+                <Tooltip label="Previous Day" aria-label="Previous Day Tooltip" hasArrow>
                   <IconButton
                     icon={<ChevronLeftIcon />}
                     aria-label="Previous Day"
                     variant="unstyled"
-                    size="sm"
+                    size="xs"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    color={tabInactiveColor}
+                    _hover={{ color: "#3F77A5" }}
                     onClick={handlePreviousDay}
                   />
                 </Tooltip>
-                {/* <Text fontSize="sm" fontWeight="semibold">
-                {selectedDate} */}
                 <DatePicker
                   selected={selectedDate}
                   onChange={handleDateChange}
@@ -294,24 +303,31 @@ const PlayerControls = ({
                   ref={datePickerRef}
                   open={calendarOpen}
                   onClickOutside={() => setCalendarOpen(false)}
-                  maxDate={new Date()} // This prevents selecting any future date
+                  maxDate={new Date()}
                 />
-
-                {/* <SlCalender onClick={toggleCalendar} /> */}
                 <IconButton
-                  icon={<SlCalender />}
+                  icon={<SlCalender size="13px" />}
                   aria-label="Select Date"
-                  variant="transparent"
-                  size="sm"
+                  variant="unstyled"
+                  size="xs"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  color={tabInactiveColor}
+                  _hover={{ color: "#3F77A5" }}
                   onClick={toggleCalendar}
                 />
-                {/* </Text> */}
-                <Tooltip label="Next Day" aria-label="Next Day Tooltip">
+                <Tooltip label="Next Day" aria-label="Next Day Tooltip" hasArrow>
                   <IconButton
                     icon={<ChevronRightIcon />}
                     aria-label="Next Day"
                     variant="unstyled"
-                    size="sm"
+                    size="xs"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    color={tabInactiveColor}
+                    _hover={{ color: "#3F77A5" }}
                     onClick={handleNextDay}
                   />
                 </Tooltip>
@@ -325,114 +341,60 @@ const PlayerControls = ({
             justifyContent={{ base: "space-between", md: "flex-start" }}
             gap={{ base: 2, md: 4 }}
             w={{ base: "100%", md: "auto" }}
-            mb={{ base: 2, md: 0 }}
           >
             <HStack
-              spacing={{ base: 2, md: 3 }}
-              gap={1}
-              mx={{ base: 2, md: 4 }}
+              spacing={3}
               justifyContent={{ base: "space-between", md: "flex-start" }}
               w={{ base: "100%", md: "auto" }}
             >
-              {/* Play/Pause and Navigation */}
-              {/* <Tooltip
-                label="Rewind 5 seconds"
-                aria-label="Rewind 5 seconds Tooltip"
-              >
-                <IconButton
-                  icon={<RiForward5Line size="25px" />}
-                  aria-label="Backward 5 seconds"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => console.log("Rewind 5 seconds")}
-                />
-              </Tooltip> */}
               <Tooltip
                 label={isPlaying ? "Pause" : "Play"}
                 aria-label="Play/Pause Tooltip"
+                hasArrow
               >
                 <IconButton
                   icon={
                     isPlaying ? (
-                      <FaPause size={"16px"} />
+                      <FaPause size="13px" />
                     ) : (
-                      <FaPlay size={"16px"} />
+                      <FaPlay size="13px" style={{ marginLeft: "2px" }} />
                     )
                   }
                   aria-label="Play/Pause"
-                  variant="outline"
                   size="sm"
+                  h="32px"
+                  w="32px"
+                  minW="32px"
+                  borderRadius="8px"
+                  bg={isPlaying ? "red.500" : "#3F77A5"}
+                  color="white"
+                  _hover={{ bg: isPlaying ? "red.600" : "#2B5273" }}
                   onClick={handlePlayPause}
-                  borderRadius="50%"
-                  bg={useColorModeValue(
-                    "custom.primary",
-                    "custom.darkModePrimary"
-                  )}
-                  display={{ base: "flex", md: "flex" }}
                 />
               </Tooltip>
-              {/* <Tooltip
-                label="Forward 5 seconds"
-                aria-label="Forward 5 seconds Tooltip"
-              >
-                <IconButton
-                  icon={<RiForward5Line size="25px" />}
-                  aria-label="Forward 5 seconds"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => console.log("Forward 5 seconds")}
-                />
-              </Tooltip> */}
-              {/* </HStack> */}
 
-              {/* <HStack
-              spacing={{ base: 2, md: 3 }}
-              justifyContent={{ base: "flex-start", md: "flex-start" }}
-              w={{ base: "100%", md: "auto" }}
-            > */}
-              {/* <Menu>
-                <MenuButton
-                  as={Button}
-                  size="sm"
-                  fontSize="12px"
-                  bg={useColorModeValue(
-                    "custom.primary",
-                    "custom.darkModePrimary"
-                  )}
-                >
-                  1x ▼
-                </MenuButton>
-                <MenuList>
-                  <MenuItem onClick={() => console.log("Set speed to 0.5x")}>
-                    0.5x
-                  </MenuItem>
-                  <MenuItem onClick={() => console.log("Set speed to 1x")}>
-                    1x
-                  </MenuItem>
-                  <MenuItem onClick={() => console.log("Set speed to 1.5x")}>
-                    1.5x
-                  </MenuItem>
-                  <MenuItem onClick={() => console.log("Set speed to 2x")}>
-                    2x
-                  </MenuItem>
-                </MenuList>
-              </Menu> */}
-              <Box display={"flex"} gap={2}>
+              <Box display="flex" alignItems="center" gap={2} bg={useColorModeValue("#FFFFFF", "#1C222D")} px="8px" py="4px" borderRadius="8px" borderWidth="1px" borderColor={controlsBorder}>
                 <Tooltip
                   label={isMuted ? "Unmute" : "Mute"}
                   aria-label="Mute Tooltip"
+                  hasArrow
                 >
                   <IconButton
                     icon={
                       isMuted ? (
-                        <FaVolumeMute size="16px" />
+                        <FaVolumeMute size="14px" />
                       ) : (
-                        <FaVolumeUp size="16px" />
+                        <FaVolumeUp size="14px" />
                       )
                     }
                     aria-label="Volume"
-                    variant="ghost"
-                    size="sm"
+                    variant="unstyled"
+                    size="xs"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    color={tabInactiveColor}
+                    _hover={{ color: "#3F77A5" }}
                     onClick={toggleMute}
                   />
                 </Tooltip>
@@ -442,234 +404,80 @@ const PlayerControls = ({
                   max={100}
                   step={1}
                   size="sm"
-                  width="80px"
-                  color="custom.primary"
+                  width="70px"
                   onChange={handleVolumeChange}
-                  display={"block"}
                 >
-                  <SliderTrack
-                    bg={useColorModeValue(
-                      "custom.primary",
-                      "custom.darkModePrimary"
-                    )}
-                  >
-                    <SliderFilledTrack
-                      bg={useColorModeValue(
-                        "custom.primary",
-                        "custom.darkModePrimary"
-                      )}
-                    />
+                  <SliderTrack bg={useColorModeValue("#E2E8EF", "rgba(255,255,255,0.12)")}>
+                    <SliderFilledTrack bg="#3F77A5" />
                   </SliderTrack>
-                  <Tooltip
-                    label={isMuted ? "0" : `${volume}`}
-                    aria-label="Volume tooltip"
-                    placement="top"
-                    hasArrow
-                  >
-                    <SliderThumb
-                      boxSize={3}
-                      bg={useColorModeValue(
-                        "custom.primary",
-                        "custom.darkModePrimary"
-                      )}
-                    />
-                  </Tooltip>
+                  <SliderThumb boxSize={3} bg="#3F77A5" />
                 </Slider>
               </Box>
-
-              {/* Recodring button for Mobile View */}
-              <Tooltip
-                label={isRecording ? "Stop Recording" : "Start Recording"}
-                aria-label="Recording Tooltip"
-              >
-                <Button
-                  onClick={onRecording}
-                  size="sm"
-                  variant="outline"
-                  colorScheme={isRecording ? "green" : "red"}
-                  // display="flex"
-                  alignItems="center"
-                  gap={2}
-                  display={{ base: "flex", md: "none" }}
-                >
-                  <Text fontSize="sm">Rec</Text>
-                  {isRecording ? (
-                    <FaSquare size="10px" />
-                  ) : (
-                    <FaCircle size="10px" />
-                  )}
-                </Button>
-              </Tooltip>
-
-              {/* Go Live Button For Mobile View */}
-              {/* <Tooltip label="Go Live" aria-label="Go Live Tooltip">
-                <Button
-                  variant={"outline"}
-                  size="sm"
-                  colorScheme="red"
-                  gap={1}
-                  display={{ base: "flex", md: "none" }}
-                  onClick={handleGoLive}
-                >
-                  <FaCircle size="10px" mr={3} />
-                  <Text fontSize="sm">Go Live</Text>
-                </Button>
-              </Tooltip> */}
             </HStack>
           </Flex>
 
-          {/* Third Part  Other Controls */}
-
+          {/* Third Part: Zoom & Options Controls */}
           <Flex
             alignItems="center"
             justifyContent={{ base: "space-between", md: "flex-end" }}
             w={{ base: "100%", md: "auto" }}
-            gap={{ base: 2, md: 4 }}
+            gap={2}
           >
-            <HStack
-              spacing={3}
-              mt={{ base: 0, md: 0 }}
-              justifyContent={{ base: "space-between", md: "flex-start" }}
-              w={{ base: "100%", md: "auto" }}
-            >
-              {/* <Tooltip
-                label={isPlaying ? "Pause" : "Play"}
-                aria-label="Play/Pause Tooltip"
-              >
+            <HStack spacing={2}>
+              <Tooltip label="Zoom In" aria-label="Zoom In Tooltip" hasArrow>
                 <IconButton
-                  icon={isPlaying ? <FaPause /> : <FaPlay />}
-                  aria-label="Play/Pause"
+                  icon={<FiZoomIn size="16px" />}
+                  aria-label="Zoom In"
                   variant="outline"
                   size="sm"
-                  onClick={handlePlayPause}
-                  borderRadius="50%"
-                  bg={useColorModeValue(
-                    "custom.primary",
-                    "custom.darkModePrimary"
-                  )}
-                  display={{ base: "none", md: "none" }}
-                />
-              </Tooltip> */}
-
-              {/* <Tooltip label="TalkBack" aria-label="TalkBack Tooltip">
-                <AudioRecorder
-                  key={device.deviceId}
-                  deviceId={device.deviceId}
-                />
-              </Tooltip>
-
-              <Tooltip label="Fullscreen" aria-label="Fullscreen Tooltip">
-                <IconButton
-                  icon={<BsArrowsFullscreen size="16px" />}
-                  aria-label="Fullscreen"
-                  variant="ghost"
-                  size="sm"
-                  onClick={onFullscreen}
-                />
-              </Tooltip> */}
-
-              {/* <Tooltip label="Screenshot" aria-label="Screenshot Tooltip">
-                <IconButton
-                  icon={<TbCapture size="22px" />}
-                  aria-label="Screenshot"
-                  variant="ghost"
-                  size="sm"
-                  onClick={onScreenshot}
-                />
-              </Tooltip> */}
-
-              {/*
-              <Tooltip label="PTZ Controls" aria-label="PTZ Controls Tooltip">
-                <IconButton
-                  icon={<MdControlCamera size="22px" />}
-                  aria-label="Ptz Controls"
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleCameraPTZ}
-                />
-              </Tooltip>
-              */}
-
-              <Tooltip label="Fullscreen" aria-label="Fullscreen Tooltip">
-                <IconButton
-                  icon={<BsArrowsFullscreen size="16px" />}
-                  aria-label="Fullscreen"
-                  variant="ghost"
-                  size="sm"
-                  onClick={onFullscreen}
-                />
-              </Tooltip>
-
-              <Tooltip label="Zoom In" aria-label="Zoom In Tooltip">
-                <IconButton
-                  icon={<FiZoomIn size="22px" />}
-                  aria-label="Ptz Controls"
-                  variant="ghost"
-                  size="sm"
+                  h="32px"
+                  w="32px"
+                  minW="32px"
+                  borderRadius="8px"
+                  borderColor={controlsBorder}
+                  bg={useColorModeValue("#FFFFFF", "#1C222D")}
+                  color={textColor}
+                  _hover={{ bg: "#3F77A512", borderColor: "#3F77A5", color: "#3F77A5" }}
                   onClick={zoomIn}
-                  fontWeight={"1000"}
                 />
               </Tooltip>
 
-              <Tooltip label="Zoom Out" aria-label="Zoom Out Tooltip">
+              <Tooltip label="Zoom Out" aria-label="Zoom Out Tooltip" hasArrow>
                 <IconButton
-                  icon={<FiZoomOut size="22px" />}
-                  aria-label="Ptz Controls"
-                  variant="ghost"
+                  icon={<FiZoomOut size="16px" />}
+                  aria-label="Zoom Out"
+                  variant="outline"
                   size="sm"
+                  h="32px"
+                  w="32px"
+                  minW="32px"
+                  borderRadius="8px"
+                  borderColor={controlsBorder}
+                  bg={useColorModeValue("#FFFFFF", "#1C222D")}
+                  color={textColor}
+                  _hover={{ bg: "#3F77A512", borderColor: "#3F77A5", color: "#3F77A5" }}
                   onClick={zoomOut}
                 />
               </Tooltip>
 
-              {/* <Tooltip
-                label="Image Segmentation"
-                aria-label="PTZ Controls Tooltip"
-              >
+              <Tooltip label="Fullscreen" aria-label="Fullscreen Tooltip" hasArrow>
                 <IconButton
-                  icon={<LuBrainCog size="22px" />}
-                  aria-label="Image Segmentation"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSegmentation}
-                />
-              </Tooltip> */}
-
-              {/* <Tooltip
-                label={isRecording ? "Stop Recording" : "Start Recording"}
-                aria-label="Recording Tooltip"
-              >
-                <Button
-                  onClick={onRecording}
-                  size="sm"
+                  icon={<BsArrowsFullscreen size="14px" />}
+                  aria-label="Fullscreen"
                   variant="outline"
-                  colorScheme={isRecording ? "green" : "red"}
-                  // display="flex"
-                  alignItems="center"
-                  gap={2}
-                  display={{ base: "none", md: "flex" }}
-                >
-                  <Text fontSize="sm">Rec</Text>
-                  {isRecording ? (
-                    <FaSquare size="10px" />
-                  ) : (
-                    <FaCircle size="10px" />
-                  )}
-                </Button>
-              </Tooltip> */}
-
-              {/* <Tooltip label="Go Live" aria-label="Go Live Tooltip">
-                <Button
-                  variant={"outline"}
                   size="sm"
-                  colorScheme="red"
-                  gap={1}
-                  display={{ base: "none", md: "flex" }}
-                  onClick={handleGoLive}
-                >
-                  <FaCircle size="10px" mr={3} />
-                  <Text fontSize="sm">Go Live</Text>
-                </Button>
-              </Tooltip> */}
+                  h="32px"
+                  w="32px"
+                  minW="32px"
+                  borderRadius="8px"
+                  borderColor={controlsBorder}
+                  bg={useColorModeValue("#FFFFFF", "#1C222D")}
+                  color={textColor}
+                  _hover={{ bg: "#3F77A512", borderColor: "#3F77A5", color: "#3F77A5" }}
+                  onClick={onFullscreen}
+                />
+              </Tooltip>
+
               <Tooltip
                 label="More Options"
                 aria-label="More Options Tooltip"
@@ -678,39 +486,47 @@ const PlayerControls = ({
                 <Menu>
                   <MenuButton
                     as={IconButton}
-                    icon={<FaEllipsisV size="16px" />}
+                    icon={<FaEllipsisV size="14px" />}
                     aria-label="More Options"
-                    variant="unstyled"
+                    variant="outline"
                     size="sm"
-                  // _hover={{ bg: "gray.100" }}
-                  // _active={{ bg: "gray.200" }}
+                    h="32px"
+                    w="32px"
+                    minW="32px"
+                    borderRadius="8px"
+                    borderColor={controlsBorder}
+                    bg={useColorModeValue("#FFFFFF", "#1C222D")}
+                    color={textColor}
+                    _hover={{ bg: "#3F77A512", borderColor: "#3F77A5", color: "#3F77A5" }}
                   />
-                  <MenuList minW="200px" p="2">
-                    {/* Disabled Item - Styled to look more subtle */}
+                  <MenuList minW="200px" p="6px" bg={menuBg} borderColor={menuBorder} boxShadow="0 4px 14px rgba(0,0,0,0.15)">
                     <MenuItem
                       isDisabled
-                      _disabled={{ opacity: 0.6, cursor: "default" }}
+                      _disabled={{ opacity: 0.7, cursor: "default" }}
+                      bg={menuBg}
+                      fontFamily="'Manrope', sans-serif"
                     >
-                      <Flex align="center" gap="2" flexWrap={"wrap"}>
-                        <Text fontSize="sm">Data Consumed:</Text>
-                        <Text fontSize="sm" fontWeight="bold" color="red.500">
-                          ({totalData})
+                      <Flex align="center" gap="6px" flexWrap="wrap">
+                        <Text fontSize="12px" color={tabInactiveColor}>Data Consumed:</Text>
+                        <Text fontSize="12px" fontWeight="700" color="#EF4444">
+                          {totalData}
                         </Text>
                       </Flex>
                     </MenuItem>
 
-                    <MenuDivider />
+                    <MenuDivider borderColor={menuBorder} />
 
-                    {/* Actionable Items */}
-
-                    <MenuItem onClick={handleSegmentation}>
-                      <IconButton
-                        icon={<LuBrainCog size="22px" />}
-                        aria-label="Image Segmentation"
-                        variant="ghost"
-                        size="sm"
-                      />
-                      <Text ml={2}>Image Segmentation</Text>
+                    <MenuItem
+                      onClick={handleSegmentation}
+                      bg={menuBg}
+                      _hover={{ bg: menuHoverBg }}
+                      borderRadius="6px"
+                      fontFamily="'Manrope', sans-serif"
+                      fontSize="13px"
+                      color={textColor}
+                    >
+                      <LuBrainCog size="18px" style={{ marginRight: "8px", color: "#3F77A5" }} />
+                      Image Segmentation
                     </MenuItem>
                   </MenuList>
                 </Menu>
@@ -718,14 +534,15 @@ const PlayerControls = ({
             </HStack>
           </Flex>
         </Flex>
-        {/* Timeline Section - Moved out of the Flex container to take full width */}
+
+        {/* Timeline Section taking full width */}
         <Box mt={2}>
           <AzureTimeline
             date={selectedDate}
             deviceid={device.deviceId}
             onUrlChange={updateUrl}
             onTotalDataChange={handleTotalDataChange}
-          ></AzureTimeline>
+          />
         </Box>
       </Box>
     </>

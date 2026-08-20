@@ -3,70 +3,28 @@ import React, { useEffect, useState, useRef } from "react";
 import ReactApexChart from "react-apexcharts";
 import {
   Box,
-  Button,
-  Grid,
-  Text,
-  VStack,
-  useColorModeValue,
   Flex,
-  Heading,
+  Text,
+  Grid,
   SimpleGrid,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem
+  useColorModeValue,
 } from "@chakra-ui/react";
-import { ChevronDownIcon } from "@chakra-ui/icons";
 import CustomCard from "../components/CustomCard";
 import {
-  BsCameraVideoFill,
-  BsPlayCircleFill,
-  BsWifiOff,
-  BsHddNetwork
-} from "react-icons/bs";
-import DistrictBarChart from "../components/CameraStatusChart";
+  TbCamera,
+  TbWifi,
+  TbWifiOff,
+  TbActivity,
+} from "react-icons/tb";
+import { BsWifiOff, BsPlayCircleFill } from "react-icons/bs";
 
 import {
   getUserCameraStats,
   getdistrictwiseAccess,
-  getDistrictCameraStats,
   getAllDistrictStatsForUser,
-  getAssemblyCameraStats,
   getYourCameras,
 } from "../actions/cameraActions";
 import MobileHeader from "../components/MobileHeader";
-
-/* ✅ UPDATED FOR ONLINE / INACTIVE */
-const getRadialChartOptions = (online, inactive, centerTextColor) => ({
-  chart: {
-    type: "radialBar",
-    sparkline: { enabled: true }
-  },
-  plotOptions: {
-    radialBar: {
-      dataLabels: {
-        total: {
-          show: true,
-          fontSize: "11px",
-          formatter: () => `${online}/${inactive}`,
-          color: centerTextColor
-        }
-      },
-      track: {
-        background: "#EDF2F7",
-        strokeWidth: "95%"
-      }
-    }
-  },
-  labels: ["Online", "Inactive"], // Changed label back to Online
-  colors: [
-    online > 0 ? "#65A30D" : "transparent", // Green for Online
-    inactive > 0 ? "#EF4444" : "transparent"   // Red for Inactive
-  ],
-  stroke: {
-    lineCap: online > 0 && inactive > 0 ? "round" : "butt"
-  }
-});
 
 const Dash = () => {
   // --- States ---
@@ -78,31 +36,25 @@ const Dash = () => {
   const [districts, setDistricts] = useState([]);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [allDistrictStats, setAllDistrictStats] = useState([]);
-  const [assemblyChartData, setAssemblyChartData] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [rotationIndex, setRotationIndex] = useState(0);
   const [offlineList, setOfflineList] = useState([]); // offline cameras (location + id)
   const [onlineList, setOnlineList] = useState([]); // online cameras (location + id)
   const [camView, setCamView] = useState("offline"); // "offline" | "online"
 
   // --- Theme Colors ---
-  const cardBorderColor = useColorModeValue("gray.200", "whiteAlpha.400");
-  const chartBg = useColorModeValue("#FFFFFF", "gray.800");
-  const chartBorder = useColorModeValue("rgba(226,232,240,0.9)", "whiteAlpha.200");
-  const textColor = useColorModeValue("gray.500", "gray.400");
-  const headingColor = useColorModeValue("gray.800", "white");
-  const chartCenterTextColor = useColorModeValue("#1A202C", "#F7FAFC");
-  const cardBg = useColorModeValue("white", "gray.800");
-  const subTextColor = useColorModeValue("gray.600", "gray.300");
-  const pillBg = useColorModeValue("white", "gray.800");
-  const pillBorder = useColorModeValue("rgba(226,232,240,0.9)", "whiteAlpha.200");
-  const rowHoverBg = useColorModeValue("gray.50", "whiteAlpha.100");
+  const cardBg = useColorModeValue("#FFFFFF", "#1C1A1A");
+  const borderColor = useColorModeValue("#E2E8EF", "rgba(255, 255, 255, 0.08)");
+  const headingColor = useColorModeValue("#1A2E3D", "#FFFFFF");
+  const subtextColor = useColorModeValue("#64748B", "#94A3B8");
   const axisColor = useColorModeValue("#64748B", "#94A3B8");
-  const gridColor = useColorModeValue("#E2E8F0", "#2D3748");
+  const gridColor = useColorModeValue("#E2E8EF", "rgba(255, 255, 255, 0.06)");
+  const itemBorderColor = useColorModeValue("#E2E8EF", "rgba(255, 255, 255, 0.06)");
+  const itemBg = useColorModeValue("#F0F5FA", "rgba(255, 255, 255, 0.04)");
+  const itemHoverBg = useColorModeValue("#E7EFF7", "rgba(255, 255, 255, 0.07)");
+  const liveBadgeBg = useColorModeValue("rgba(16, 185, 129, 0.1)", "rgba(16, 185, 129, 0.15)");
   const chartTheme = useColorModeValue("light", "dark");
   const isFetching = useRef(false);
 
-  // Percentage of total cameras (guards divide-by-zero)
+  // Percentage calculation (safe divide-by-zero)
   const pct = (n) => (totalCameras > 0 ? Math.round((n / totalCameras) * 100) : 0);
 
   // --- Data Fetching ---
@@ -116,36 +68,43 @@ const Dash = () => {
         const res = await getUserCameraStats(email);
         if (res?.success && res.cameraStats) {
           const s = res.cameraStats;
-          if (typeof s.totalCameras === 'number') setTotalCameras(s.totalCameras);
-          if (typeof s.onlineCameras === 'number') setOnlineCameras(s.onlineCameras);
-          if (typeof s.offlineCameras === 'number') setOfflineCameras(s.offlineCameras);
-          if (typeof s.isLiveCount === 'number') setIsLiveCountValue(s.isLiveCount);
+          if (typeof s.totalCameras === "number") setTotalCameras(s.totalCameras);
+          if (typeof s.onlineCameras === "number") setOnlineCameras(s.onlineCameras);
+          if (typeof s.offlineCameras === "number") setOfflineCameras(s.offlineCameras);
+          if (typeof s.isLiveCount === "number") setIsLiveCountValue(s.isLiveCount);
         }
       }
 
       const distRes = await getAllDistrictStatsForUser(email);
       if (distRes?.success && Array.isArray(distRes.data) && distRes.data.length > 0) {
-        setAllDistrictStats(distRes.data.filter(d => (d.onlineCamera || 0) > 0 || (d.offlineCamera || 0) > 0));
+        setAllDistrictStats(
+          distRes.data.filter(
+            (d) => (d.onlineCamera || 0) > 0 || (d.offlineCamera || 0) > 0
+          )
+        );
       }
 
       if (districts.length === 0) {
         const menuRes = await getdistrictwiseAccess(email);
-        if (menuRes?.success && menuRes.matchedDistricts) setDistricts(menuRes.matchedDistricts);
+        if (menuRes?.success && menuRes.matchedDistricts)
+          setDistricts(menuRes.matchedDistricts);
       }
 
-      // Online / Offline camera lists (location + device id) for the side panel
+      // Online / Offline camera lists for the side panel
       const camList = await getYourCameras(email);
       if (Array.isArray(camList)) {
         const toRow = (c) => {
           const loc = c.locations?.[0];
           return {
             deviceId: c.deviceId || "N/A",
-            location: (typeof loc === "string" ? loc : loc?.loc_name) || c.name || "N/A",
+            location:
+              (typeof loc === "string" ? loc : loc?.loc_name) ||
+              c.name ||
+              "N/A",
             district: c.dist_name || "",
             assembly: c.accName || "",
           };
         };
-        // Mirror the server's definition: online === stream.status === true.
         const isOnline = (c) => c.status === true || c.status === "online";
         const byLoc = (a, b) => a.location.localeCompare(b.location);
 
@@ -165,267 +124,443 @@ const Dash = () => {
     return () => clearInterval(pollingInterval);
   }, [selectedDistrict]);
 
-  useEffect(() => {
-    let interval;
-    if (allDistrictStats.length > 0) {
-      interval = setInterval(() => {
-        setRotationIndex(prev => (prev + 1) % allDistrictStats.length);
-      }, 20000);
-    }
-    return () => clearInterval(interval);
-  }, [allDistrictStats]);
-
-  const handleDistrictSelect = async district => {
-    setSelectedDistrict(district);
-    const email = localStorage.getItem("email");
-
-    if (!district) {
-      setAssemblyChartData([]);
-      fetchData(); 
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      // NOTE: Do NOT update the top cards here. The four top cards always show the
-      // overall (all-region) totals. Selecting a district only updates the
-      // assembly gauge charts below.
-      const asmRes = await getAssemblyCameraStats(email, district.dist_name);
-      if (asmRes?.success && asmRes.assemblies) {
-        setAssemblyChartData(asmRes.assemblies.filter(a => a.onlineCamera + a.offlineCamera > 0));
-      }
-    } catch (e) {
-      console.error("District fetch failed - retaining counts");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Sidebar calculation
-  const currentSidebarData = allDistrictStats.length > 0 ? allDistrictStats[rotationIndex] : null;
-
-  const displayDistName = currentSidebarData
-    ? currentSidebarData.districtName
-    : selectedDistrict ? selectedDistrict.dist_name : "All Districts";
-
-  const displayTotal = currentSidebarData
-    ? currentSidebarData.totalCameras || (currentSidebarData.onlineCamera + currentSidebarData.offlineCamera)
-    : totalCameras;
-
-  const displayOnline = currentSidebarData ? currentSidebarData.onlineCamera : onlineCameras;
-  const displayConnected = currentSidebarData ? currentSidebarData.isLiveCount : isLiveCountValue;
-  const displayInactive = displayTotal - displayConnected;
+  const activeList = camView === "online" ? onlineList : offlineList;
 
   return (
-    <Box maxW="1600px" mx="auto" pt={{ base: "70px", md: "0" }} mb={{ base: "100px", md: "5" }} px={{ base: 2, md: 0 }}>
+    <Box
+      w="100%"
+      maxW="1440px"
+      mx="auto"
+      px={{ base: 4, sm: 6 }}
+      py={{ base: 4, md: 6 }}
+      fontFamily="'Manrope', sans-serif"
+    >
       <MobileHeader title="Dashboard" />
 
-      {/* Top Cards */}
-      <Box mt={{ base: 4, md: 0 }} mb={5}>
-        <Flex justify="space-between" align={{ base: "flex-start", md: "center" }} mb={4} direction={{ base: "column", md: "row" }} gap={2}>
-          <Box>
-            <Text fontWeight={700} fontSize="28px" color={headingColor} lineHeight="1.2"> VMS Dashboard</Text>
-            <Text fontSize="14px" color={textColor}>Real-time  camera monitoring </Text>
-          </Box>
-          <Flex align="center" gap={2} bg={pillBg} px={3} py={1.5} borderRadius="full" border="1px solid" borderColor={pillBorder}>
-            <Box as="span" boxSize="8px" borderRadius="full" bg="#22C55E" boxShadow="0 0 0 3px rgba(34,197,94,0.2)" />
-            <Text fontSize="12px" fontWeight="600" color={textColor}>Live · auto-refresh 20s</Text>
-          </Flex>
-        </Flex>
+      {/* 1. VMS DASHBOARD CONTAINER (Header Row) */}
+      <Flex
+        justify="space-between"
+        align={{ base: "flex-start", sm: "center" }}
+        direction={{ base: "column", sm: "row" }}
+        gap="10px"
+        mb="20px"
+      >
+        {/* Titles */}
+        <Box>
+          <Text
+            fontFamily="'Manrope', sans-serif"
+            fontWeight="800"
+            fontSize="22px"
+            lineHeight="26.4px"
+            letterSpacing="0px"
+            color={headingColor}
+          >
+            VMS Dashboard
+          </Text>
+          <Text
+            fontFamily="'Manrope', sans-serif"
+            fontWeight="400"
+            fontSize="13px"
+            lineHeight="19.5px"
+            letterSpacing="0px"
+            color={subtextColor}
+            mt="2px"
+          >
+            Real-time camera monitoring
+          </Text>
+        </Box>
 
-        <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={4}>
-          <CustomCard title="Total Cameras" value={totalCameras} color="#1C4ED8" IconComponent={BsCameraVideoFill} layout="vertical" subtitle="All regions" />
-          <CustomCard title="Online Cameras" value={onlineCameras} color="#16A34A" IconComponent={BsPlayCircleFill} layout="vertical" subtitle={`${pct(onlineCameras)}% of total`} />
-          <CustomCard title="Offline Cameras" value={offlineCameras} color="#EF4444" IconComponent={BsWifiOff} layout="vertical" subtitle={`${pct(offlineCameras)}% of total`} />
-          <CustomCard title="Connected Cameras" value={isLiveCountValue} color="#8B5CF6" IconComponent={BsHddNetwork} layout="vertical" subtitle={`${pct(isLiveCountValue)}% of total`} />
-        </Grid>
-      </Box>
-
-      {/* Main Content */}
-      <Grid templateColumns={{ base: "1fr", lg: "60% 1fr" }} gap={4} alignItems="stretch">
-        <Box
-          bg={chartBg}
-          p={{ base: 4, md: 6 }}
-          borderRadius="16px"
-          border="1px solid"
-          borderColor={chartBorder}
-          boxShadow={useColorModeValue("0 1px 3px rgba(0,0,0,0.06)", "dark-lg")}
+        {/* Live Badge */}
+        <Flex
+          align="center"
+          gap="6px"
+          px="10px"
+          py="3px"
+          borderRadius="999px"
+          bg={liveBadgeBg}
+          userSelect="none"
         >
-          <Flex justify="space-between" align="center" mb={5} wrap="wrap" gap={2}>
-            <Box>
-              <Text fontSize="lg" fontWeight="700" color={headingColor}> Camera Status</Text>
-              <Text fontSize="13px" color={textColor}>Total, online and offline cameras </Text>
-            </Box>
-          </Flex>
-          <Box width="100%" height={{ base: "260px", md: "300px" }}>
+          <Box
+            as="span"
+            boxSize="6px"
+            borderRadius="full"
+            bg="#10B981"
+            boxShadow="0 0 0 2px rgba(16, 185, 129, 0.25)"
+          />
+          <Text
+            fontFamily="'Manrope', sans-serif"
+            fontWeight="700"
+            fontSize="11px"
+            lineHeight="16.5px"
+            letterSpacing="0.33px"
+            color="#10B981"
+            whiteSpace="nowrap"
+          >
+            Live · auto-refresh 20s
+          </Text>
+        </Flex>
+      </Flex>
+
+      {/* 2. KPI CONTAINER (4 Cards Grid) */}
+      <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing="16px" mb="24px">
+        <CustomCard
+          title="TOTAL CAMERAS"
+          value={totalCameras}
+          color="#3F77A5"
+          iconBg="#3F77A516"
+          subtextColor="#3F77A5"
+          IconComponent={TbCamera}
+          subtitle="All regions"
+        />
+        <CustomCard
+          title="ONLINE CAMERAS"
+          value={onlineCameras}
+          color="#10B981"
+          iconBg="#10B98116"
+          subtextColor="#10B981"
+          IconComponent={TbWifi}
+          subtitle={`${pct(onlineCameras)}% of total`}
+        />
+        <CustomCard
+          title="OFFLINE CAMERAS"
+          value={offlineCameras}
+          color="#DB7B3A"
+          iconBg="#EF444416"
+          subtextColor="#DB7B3A"
+          IconComponent={TbWifiOff}
+          subtitle={`${pct(offlineCameras)}% of total`}
+        />
+        <CustomCard
+          title="CONNECTED CAMERAS"
+          value={isLiveCountValue}
+          color="#F59E0B"
+          iconBg="#F59E0B16"
+          subtextColor="#F59E0B"
+          IconComponent={TbActivity}
+          subtitle={`${pct(isLiveCountValue)}% of total`}
+        />
+      </SimpleGrid>
+
+      {/* 3. ANALYTICS CONTAINER (2 Column Grid) */}
+      <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap="24px" alignItems="stretch">
+        {/* CARD 1: CAMERA STATUS (Horizontal Bar Chart) */}
+        <Box
+          bg={cardBg}
+          p="20px"
+          borderRadius="14px"
+          borderWidth="1px"
+          borderStyle="solid"
+          borderColor={borderColor}
+          boxShadow="0px 1px 6px 0px rgba(26, 46, 61, 0.07)"
+          display="flex"
+          flexDirection="column"
+        >
+          <Box mb="6px">
+            <Text
+              fontFamily="'Manrope', sans-serif"
+              fontWeight="700"
+              fontSize="15px"
+              lineHeight="22.5px"
+              letterSpacing="0px"
+              color={headingColor}
+            >
+              Camera Status
+            </Text>
+            <Text
+              fontFamily="'Manrope', sans-serif"
+              fontWeight="400"
+              fontSize="12px"
+              lineHeight="18px"
+              letterSpacing="0px"
+              color={subtextColor}
+              mt="2px"
+            >
+              Total, online and offline cameras
+            </Text>
+          </Box>
+
+          <Box width="100%" height="240px">
             <ReactApexChart
               type="bar"
               height="100%"
-              series={[{ name: "Cameras", data: [totalCameras, onlineCameras, offlineCameras] }]}
+              series={[
+                {
+                  name: "Cameras",
+                  data: [totalCameras, onlineCameras, offlineCameras],
+                },
+              ]}
               options={{
-                chart: { type: "bar", toolbar: { show: false }, background: "transparent", fontFamily: "inherit", animations: { easing: "easeinout", speed: 600 } },
+                chart: {
+                  type: "bar",
+                  toolbar: { show: false },
+                  background: "transparent",
+                  fontFamily: "'Manrope', sans-serif",
+                  animations: { easing: "easeinout", speed: 500 },
+                  parentHeightOffset: 0,
+                },
                 theme: { mode: chartTheme },
                 plotOptions: {
                   bar: {
                     horizontal: true,
                     distributed: true,
-                    borderRadius: 8,
+                    borderRadius: 6,
                     borderRadiusApplication: "end",
-                    barHeight: "55%",
+                    barHeight: "45%",
                     dataLabels: { position: "center" },
                   },
                 },
-                colors: ["#1C4ED8", "#16A34A", "#EF4444"],
+                colors: ["#3F77A5", "#10B981", "#DB7B3A"],
                 dataLabels: {
-                  enabled: true,
-                  style: { fontSize: "13px", fontWeight: 800, colors: ["#fff"] },
-                  formatter: (v) => (v ?? 0).toLocaleString("en-IN"),
+                  enabled: false,
                 },
                 xaxis: {
                   categories: ["Total", "Online", "Offline"],
-                  labels: { style: { colors: axisColor, fontSize: "11px" }, formatter: (v) => Math.round(v) },
+                  min: 0,
+                  max: Math.max(totalCameras, 4),
+                  tickAmount: Math.min(Math.max(totalCameras, 2), 6),
+                  forceNiceScale: true,
+                  decimalsInFloat: 0,
+                  labels: {
+                    style: {
+                      colors: "#64748B",
+                      fontSize: "11px",
+                      fontFamily: "'Manrope', sans-serif",
+                    },
+                    formatter: (v) => {
+                      const num = typeof v === "number" ? v : parseFloat(v);
+                      if (!isNaN(num) && Number.isInteger(num)) {
+                        return num.toString();
+                      }
+                      return "";
+                    },
+                  },
                   axisBorder: { show: false },
                   axisTicks: { show: false },
                 },
-                yaxis: { labels: { style: { colors: axisColor, fontSize: "13px", fontWeight: 700 } } },
-                grid: { borderColor: gridColor, strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+                yaxis: {
+                  labels: {
+                    style: {
+                      colors: ["#64748B", "#64748B", "#64748B"],
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      fontFamily: "'Manrope', sans-serif",
+                    },
+                  },
+                },
+                grid: {
+                  padding: {
+                    top: -16,
+                    bottom: 0,
+                    left: 8,
+                    right: 12,
+                  },
+                  borderColor: gridColor,
+                  strokeDashArray: 3,
+                  xaxis: { lines: { show: true } },
+                  yaxis: { lines: { show: false } },
+                },
                 legend: {
                   show: true,
                   position: "bottom",
-                  markers: { radius: 12 },
+                  horizontalAlign: "center",
+                  markers: { radius: 3, width: 10, height: 10 },
                   fontSize: "12px",
                   fontWeight: 600,
-                  labels: { colors: axisColor },
-                  itemMargin: { horizontal: 12 },
+                  fontFamily: "'Manrope', sans-serif",
+                  labels: { colors: "#64748B" },
+                  itemMargin: { horizontal: 10, vertical: 4 },
                 },
-                tooltip: { theme: chartTheme, y: { formatter: (v) => (v ?? 0).toLocaleString("en-IN") } },
+                tooltip: {
+                  theme: chartTheme,
+                  y: { formatter: (v) => (v ?? 0).toLocaleString("en-IN") },
+                },
               }}
             />
           </Box>
         </Box>
 
-        {/* Offline cameras list */}
+        {/* CARD 2: OFFLINE / ONLINE CAMERAS LIST */}
         <Box
-          bg={chartBg}
-          borderRadius="16px"
-          border="1px solid"
-          borderColor={chartBorder}
-          boxShadow={useColorModeValue("0 1px 3px rgba(0,0,0,0.06)", "dark-lg")}
+          bg={cardBg}
+          p="20px"
+          borderRadius="14px"
+          borderWidth="1px"
+          borderStyle="solid"
+          borderColor={borderColor}
+          boxShadow="0px 1px 6px 0px rgba(26, 46, 61, 0.07)"
           display="flex"
           flexDirection="column"
-          overflow="hidden"
         >
-          <Flex align="center" justify="space-between" p={4} borderBottom="1px solid" borderColor={chartBorder} gap={2} wrap="wrap">
-            <Flex align="center" gap={2}>
-              <Box color={camView === "online" ? "#16A34A" : "#EF4444"} as={camView === "online" ? BsPlayCircleFill : BsWifiOff} boxSize="18px" />
-              <Text fontSize="md" fontWeight="700" color={headingColor}>
-                {camView === "online" ? "Online Cameras" : "Offline Cameras"}
-              </Text>
-            </Flex>
+          {/* Header Row with Toggle Badges */}
+          <Flex justify="space-between" align="center" mb="14px" wrap="wrap" gap="8px">
+            <Text
+              fontFamily="'Manrope', sans-serif"
+              fontWeight="700"
+              fontSize="15px"
+              lineHeight="22.5px"
+              letterSpacing="0px"
+              color={headingColor}
+            >
+              {camView === "online" ? "Online Cameras" : "Offline Cameras"}
+            </Text>
 
-            {/* Online / Offline toggle */}
-            <Flex bg={rowHoverBg} borderRadius="full" p="3px" gap="3px">
-              <Box as="button" onClick={() => setCamView("offline")} px={3} py={1} borderRadius="full"
-                fontSize="11px" fontWeight="700" transition="all 0.15s"
-                bg={camView === "offline" ? "#EF4444" : "transparent"}
-                color={camView === "offline" ? "white" : textColor}>
+            {/* Offline & Online toggle badges */}
+            <Flex align="center" gap="6px">
+              {/* Offline Badge Button */}
+              <Box
+                as="button"
+                onClick={() => setCamView("offline")}
+                px="10px"
+                py="3px"
+                borderRadius="999px"
+                cursor="pointer"
+                transition="all 0.15s ease"
+                bg={camView === "offline" ? "rgba(239, 68, 68, 0.1)" : "transparent"}
+                border="1px solid"
+                borderColor={camView === "offline" ? "#DB7B3A" : "transparent"}
+                color="#DB7B3A"
+                fontFamily="'Manrope', sans-serif"
+                fontWeight="700"
+                fontSize="11px"
+                lineHeight="16.5px"
+                letterSpacing="0.33px"
+                _hover={{ bg: "rgba(239, 68, 68, 0.15)" }}
+              >
                 Offline {offlineList.length}
               </Box>
-              <Box as="button" onClick={() => setCamView("online")} px={3} py={1} borderRadius="full"
-                fontSize="11px" fontWeight="700" transition="all 0.15s"
-                bg={camView === "online" ? "#16A34A" : "transparent"}
-                color={camView === "online" ? "white" : textColor}>
+
+              {/* Online Badge Button */}
+              <Box
+                as="button"
+                onClick={() => setCamView("online")}
+                px="10px"
+                py="3px"
+                borderRadius="999px"
+                cursor="pointer"
+                transition="all 0.15s ease"
+                bg={camView === "online" ? "rgba(16, 185, 129, 0.1)" : "transparent"}
+                border="1px solid"
+                borderColor={camView === "online" ? "#10B981" : "transparent"}
+                color="#10B981"
+                fontFamily="'Manrope', sans-serif"
+                fontWeight="700"
+                fontSize="11px"
+                lineHeight="16.5px"
+                letterSpacing="0.33px"
+                _hover={{ bg: "rgba(16, 185, 129, 0.15)" }}
+              >
                 Online {onlineList.length}
               </Box>
             </Flex>
           </Flex>
 
-          <Box overflowY="auto" maxH={{ base: "260px", md: "300px" }} px={2} py={2} flex="1"
-            css={{ "&::-webkit-scrollbar": { width: "6px" }, "&::-webkit-scrollbar-thumb": { background: "rgba(150,150,150,0.4)", borderRadius: "3px" } }}>
-            {(camView === "online" ? onlineList : offlineList).length === 0 ? (
-              <Flex direction="column" align="center" justify="center" h="100%" py={8} gap={2} color={textColor}>
-                <Box as={camView === "online" ? BsWifiOff : BsPlayCircleFill} boxSize="26px" color={camView === "online" ? "#EF4444" : "#16A34A"} />
-                <Text fontSize="sm">{camView === "online" ? "No cameras online" : "All cameras are online"}</Text>
+          {/* Locations List (Scrollable if more than 5 cameras) */}
+          <Box
+            maxH="346px"
+            overflowY="auto"
+            display="flex"
+            flexDirection="column"
+            gap="8px"
+            pr="4px"
+            css={{
+              "&::-webkit-scrollbar": { width: "4px" },
+              "&::-webkit-scrollbar-thumb": {
+                background: "rgba(100, 116, 139, 0.3)",
+                borderRadius: "4px",
+              },
+            }}
+          >
+            {activeList.length === 0 ? (
+              <Flex
+                direction="column"
+                align="center"
+                justify="center"
+                h="180px"
+                gap={2}
+                color={subtextColor}
+              >
+                <Box
+                  as={camView === "online" ? BsWifiOff : BsPlayCircleFill}
+                  boxSize="24px"
+                  color={camView === "online" ? "#DB7B3A" : "#10B981"}
+                />
+                <Text fontSize="13px" fontWeight="500">
+                  {camView === "online"
+                    ? "No online cameras found"
+                    : "No offline cameras found"}
+                </Text>
               </Flex>
             ) : (
-              (camView === "online" ? onlineList : offlineList).map((cam, i) => (
+              activeList.map((cam, i) => (
                 <Flex
                   key={`${cam.deviceId}-${i}`}
-                  align="center"
+                  minH="58px"
+                  px="14px"
+                  py="10px"
+                  borderRadius="9px"
+                  borderWidth="1px"
+                  borderStyle="solid"
+                  borderColor={itemBorderColor}
+                  bg={itemBg}
                   justify="space-between"
-                  gap={2}
-                  px={3}
-                  py={2.5}
-                  borderRadius="10px"
-                  _hover={{ bg: rowHoverBg }}
+                  align="center"
+                  transition="background 0.15s ease"
+                  _hover={{
+                    bg: itemHoverBg,
+                  }}
                 >
-                  <Box minW={0}>
-                    <Text fontSize="13px" fontWeight="600" color={headingColor} isTruncated title={cam.location}>
+                  {/* Left Column: Location & Device ID */}
+                  <Box minW="0" pr={2}>
+                    <Text
+                      fontFamily="'Manrope', sans-serif"
+                      fontWeight="600"
+                      fontSize="13px"
+                      lineHeight="19.5px"
+                      letterSpacing="0px"
+                      color={headingColor}
+                      isTruncated
+                      title={cam.location}
+                    >
                       {cam.location}
                     </Text>
-                    <Text fontSize="11px" color={textColor} isTruncated title={cam.deviceId}>
+                    <Text
+                      fontFamily="'Manrope', sans-serif"
+                      fontWeight="400"
+                      fontSize="11px"
+                      lineHeight="16.5px"
+                      letterSpacing="0px"
+                      color={subtextColor}
+                      isTruncated
+                      title={cam.deviceId}
+                    >
                       {cam.deviceId}
                     </Text>
                   </Box>
-                  <Box boxSize="8px" borderRadius="full" bg={camView === "online" ? "#16A34A" : "#EF4444"} flexShrink={0} />
+
+                  {/* Right Column: Status Dot & Badge */}
+                  <Flex align="center" gap="5px" flexShrink={0}>
+                    <Box
+                      boxSize="8px"
+                      borderRadius="4px"
+                      bg={camView === "online" ? "#10B981" : "#DB7B3A"}
+                    />
+                    <Text
+                      fontFamily="'Manrope', sans-serif"
+                      fontWeight="700"
+                      fontSize="10px"
+                      lineHeight="15px"
+                      letterSpacing="0px"
+                      color={camView === "online" ? "#10B981" : "#DB7B3A"}
+                    >
+                      {camView === "online" ? "ONLINE" : "OFFLINE"}
+                    </Text>
+                  </Flex>
                 </Flex>
               ))
             )}
           </Box>
         </Box>
       </Grid>
-
-      {/* Assembly Section */}
-      {/* <Box borderWidth="1px" borderRadius="md" p={3} mb={2} bg={cardBg} shadow="sm">
-        <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
-          <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color={textColor}>All Assembly Status</Text>
-          <Menu>
-            <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="sm" variant="outline" minW="140px">
-              {selectedDistrict ? selectedDistrict.dist_name : "Select District"}
-            </MenuButton>
-            <MenuList maxH="300px" overflowY="auto" bg={cardBg} borderColor={cardBorderColor} zIndex="dropdown">
-              <MenuItem onClick={() => handleDistrictSelect(null)}>All Districts</MenuItem>
-              {districts.map((d, i) => (
-                <MenuItem key={i} onClick={() => handleDistrictSelect(d)}>{d.dist_name}</MenuItem>
-              ))}
-            </MenuList>
-          </Menu>
-        </Flex>
-      </Box> */}
-
-      {/* <Box bg={chartBg} p={2} borderRadius="16px">
-        {selectedDistrict && (
-          <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 5 }} spacing={2}>
-            {assemblyChartData.map((asm, index) => {
-              const asmTotal = asm.onlineCamera + asm.offlineCamera;
-              const asmOnline = asm.onlineCamera || 0;
-              const asmConnected = asm.isLiveCount || 0;
-              const asmInactive = asmTotal - asmConnected;
-
-              return (
-                <VStack key={index} bg={cardBg} p={2} borderRadius="20px" shadow="sm" border="1px solid" borderColor="gray.100" color={subTextColor}>
-                  <Text fontWeight="800" fontSize="xs" textAlign="center" mb={-2}>{asm.assemblyName}</Text>
-                  <Box w="100%" h="180px">
-                    <ReactApexChart
-                      options={getRadialChartOptions(
-                        asmOnline, // Using Online data
-                        asmInactive, // Using Calculated Inactive data
-                        chartCenterTextColor
-                      )}
-                      series={[
-                        asmTotal === 0 ? 0 : Math.round((asmOnline / asmTotal) * 100),
-                        asmTotal === 0 ? 0 : Math.round((asmInactive / asmTotal) * 100)
-                      ]}
-                      type="radialBar"
-                      height="100%"
-                    />
-                  </Box>
-                </VStack>
-              );
-            })}
-          </SimpleGrid>
-        )}
-      </Box> */}
     </Box>
   );
 };

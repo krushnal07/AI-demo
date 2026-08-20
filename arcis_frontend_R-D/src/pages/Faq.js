@@ -1,7 +1,6 @@
 import {
   Box,
   Flex,
-  Heading,
   Text,
   Input,
   InputGroup,
@@ -20,6 +19,7 @@ import {
 } from "@chakra-ui/react";
 import React, { useMemo, useState } from "react";
 import { MdSearch, MdHelpOutline } from "react-icons/md";
+import MobileHeader from "../components/MobileHeader";
 
 // --- FAQ content -------------------------------------------------------------
 // Each category groups related questions. Answers support plain strings and
@@ -277,94 +277,118 @@ function Faq() {
   };
 
   return (
-    <Box maxW="900px" mx="auto" px={{ base: 3, md: 4 }} py={{ base: 4, md: 6 }} color={pageText}>
+    <Box
+      maxW="1440px"
+      w="100%"
+      mx="auto"
+      px={{ base: "12px", sm: "16px", md: "20px", lg: "24px" }}
+      py={{ base: "12px", md: "16px" }}
+      fontFamily="'Manrope', sans-serif"
+      mb={{ base: "20", md: "6" }}
+      color={pageText}
+    >
+      <MobileHeader title="FAQ" />
+
       {/* Header */}
-      <Box mb={5}>
-        <Heading fontSize={{ base: "22px", md: "24px" }} fontWeight="700">
+      <Box mb={5} textAlign={{ base: "left", md: "center" }}>
+        <Text
+          fontFamily="'Manrope', sans-serif"
+          fontWeight={800}
+          fontSize={{ base: "20px", md: "22px" }}
+          lineHeight="1.2"
+          color={pageText}
+        >
           Frequently Asked Questions
-        </Heading>
-        <Text fontSize="14px" color={subText} mt={1}>
+        </Text>
+        <Text
+          fontFamily="'Manrope', sans-serif"
+          fontSize="13px"
+          color={subText}
+          mt="4px"
+        >
           Answers to common questions about using the VMukti VMS platform.
         </Text>
       </Box>
 
-      {/* Search */}
-      <Flex justify="center" mb={7}>
-        <InputGroup maxW="480px">
-          <InputLeftElement pointerEvents="none" color={subText}>
-            <MdSearch />
-          </InputLeftElement>
-          <Input
-            placeholder="Search questions…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            bg={searchBg}
-            borderColor={cardBorder}
-            borderRadius="10px"
-            boxShadow={cardShadow}
-          />
-        </InputGroup>
-      </Flex>
-
-      {/* Categories */}
-      {filteredData.length === 0 ? (
-        <Flex direction="column" align="center" justify="center" py={16} gap={2}>
-          <Icon as={MdHelpOutline} boxSize="40px" color={subText} />
-          <Text color={subText}>No questions match “{search}”.</Text>
+      <Box maxW="1000px" mx="auto">
+        {/* Search */}
+        <Flex justify="center" mb={7}>
+          <InputGroup maxW="480px">
+            <InputLeftElement pointerEvents="none" color={subText}>
+              <MdSearch />
+            </InputLeftElement>
+            <Input
+              placeholder="Search questions…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              bg={searchBg}
+              borderColor={cardBorder}
+              borderRadius="10px"
+              boxShadow={cardShadow}
+            />
+          </InputGroup>
         </Flex>
-      ) : (
-        <VStack align="stretch" spacing={7}>
-          {filteredData.map((cat) => (
-            <Box key={cat.category}>
-              <HStack spacing={2} mb={3}>
-                <Text fontSize="15px" lineHeight="1">
-                  {cat.icon}
-                </Text>
-                <Text fontSize="15px" fontWeight="700" whiteSpace="nowrap">
-                  {cat.category}
-                </Text>
-                <Box flex="1" h="1px" bg={dividerColor} ml={2} />
-              </HStack>
 
-              <Accordion allowMultiple defaultIndex={search ? cat.items.map((_, i) => i) : []}>
-                <VStack align="stretch" spacing={2}>
-                  {cat.items.map((it, idx) => (
-                    <AccordionItem
-                      key={idx}
-                      border="1px solid"
-                      borderColor={cardBorder}
-                      borderRadius="10px"
-                      bg={cardBg}
-                      boxShadow={cardShadow}
-                      overflow="hidden"
-                    >
-                      <AccordionButton
-                        py={3}
-                        px={4}
-                        _hover={{ bg: hoverBg }}
-                        _expanded={{ bg: hoverBg }}
+        {/* Categories */}
+        {filteredData.length === 0 ? (
+          <Flex direction="column" align="center" justify="center" py={16} gap={2}>
+            <Icon as={MdHelpOutline} boxSize="40px" color={subText} />
+            <Text color={subText}>No questions match “{search}”.</Text>
+          </Flex>
+        ) : (
+          <VStack align="stretch" spacing={7}>
+            {filteredData.map((cat) => (
+              <Box key={cat.category}>
+                <HStack spacing={2} mb={3}>
+                  <Text fontSize="15px" lineHeight="1">
+                    {cat.icon}
+                  </Text>
+                  <Text fontSize="15px" fontWeight="700" whiteSpace="nowrap">
+                    {cat.category}
+                  </Text>
+                  <Box flex="1" h="1px" bg={dividerColor} ml={2} />
+                </HStack>
+
+                <Accordion allowMultiple defaultIndex={search ? cat.items.map((_, i) => i) : []}>
+                  <VStack align="stretch" spacing={2}>
+                    {cat.items.map((it, idx) => (
+                      <AccordionItem
+                        key={idx}
+                        border="1px solid"
+                        borderColor={cardBorder}
                         borderRadius="10px"
+                        bg={cardBg}
+                        boxShadow={cardShadow}
+                        overflow="hidden"
                       >
-                        <Box flex="1" textAlign="left" fontSize="14px" fontWeight="600">
-                          {it.q}
-                        </Box>
-                        <AccordionIcon />
-                      </AccordionButton>
-                      <AccordionPanel px={4} pb={4} pt={0}>
-                        {renderAnswer(it.a)}
-                      </AccordionPanel>
-                    </AccordionItem>
-                  ))}
-                </VStack>
-              </Accordion>
-            </Box>
-          ))}
-        </VStack>
-      )}
+                        <AccordionButton
+                          py={3}
+                          px={4}
+                          _hover={{ bg: hoverBg }}
+                          _expanded={{ bg: hoverBg }}
+                          borderRadius="10px"
+                        >
+                          <Box flex="1" textAlign="left" fontSize="14px" fontWeight="600">
+                            {it.q}
+                          </Box>
+                          <AccordionIcon />
+                        </AccordionButton>
+                        <AccordionPanel px={4} pb={4} pt={0}>
+                          {renderAnswer(it.a)}
+                        </AccordionPanel>
+                      </AccordionItem>
+                    ))}
+                  </VStack>
+                </Accordion>
+              </Box>
+            ))}
+          </VStack>
+        )}
 
-      <Text fontSize="12px" color={subText} textAlign="center" mt={10}>
-        Showing {totalQuestions} answers · Still stuck? Contact your administrator or support team.
-      </Text>
+        <Text fontSize="12px" color={subText} textAlign="center" mt={10}>
+          Showing {totalQuestions} answers · Still stuck? Contact your administrator or support team.
+        </Text>
+      </Box>
     </Box>
   );
 }

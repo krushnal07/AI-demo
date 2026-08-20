@@ -8,8 +8,8 @@ const config = {
 const theme = extendTheme({
   config,
   fonts: {
-    heading: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
-    body: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"',
+    heading: "'Manrope', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    body: "'Manrope', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   },
   colors: {
     custom: {
@@ -17,7 +17,7 @@ const theme = extendTheme({
       darkModePrimary: '#54637A',  // You can use this for backgrounds, borders, etc.
       lightModeText: '#1A1A1A',
       darkModeText: '#FFFFFF',
-      darModeBg: '#231F1F',
+      darModeBg: '#E8EFF7',
       // secondary: '#C8D6E5', // A lighter color for backgrounds or highlights
       accent: '#5F4BB6',    // A bold color for buttons or accents
       bottomNavText: '#65758B',

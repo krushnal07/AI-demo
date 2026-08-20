@@ -215,29 +215,8 @@ const Login = () => {
       w="100%"
       alignItems="center"
       justify="center"
+      bg="#E8EFF7"
     >
-
-      {colorMode === "light" ? (
-        <Image
-          src="/images/background_img_light.png"
-          position="absolute"
-          top="0"
-          left="0"
-          w="100%"
-          h="100%"
-          objectFit="cover"
-          zIndex={0}
-        />
-      ) : (<Image
-        src="/images/background_img.png"
-        position="absolute"
-        top="0"
-        left="0"
-        w="100%"
-        h="100%"
-        objectFit="cover"
-        zIndex={0}
-      />)}
 
       {/* VMukti logo — top-left corner (both light & dark mode) */}
       <Image

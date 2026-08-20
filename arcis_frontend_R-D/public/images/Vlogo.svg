@@ -1,0 +1,8 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer Chevron / Left Arm & Bottom Vertex -->
+  <path d="M 10 22 L 48 22 L 34 40 L 26 30 L 19 30 L 54 78 L 84 41 L 74 41 L 54 66 L 22 24 L 10 22 Z" fill="#FFFFFF" />
+  <!-- Center Diagonal Parallel Stripe -->
+  <path d="M 54 22 L 73 22 L 48 56 L 39 56 Z" fill="#FFFFFF" />
+  <!-- Upper Right Vector Triangle (End of V) in #DB7B3A -->
+  <path d="M 78 22 L 96 22 L 87 36 Z" fill="#DB7B3A" />
+</svg>

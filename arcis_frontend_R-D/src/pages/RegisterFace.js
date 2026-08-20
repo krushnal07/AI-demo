@@ -9,6 +9,7 @@ import {
   RadioGroup,
   Radio,
   HStack,
+  VStack,
   Grid,
   Table,
   Thead,
@@ -16,9 +17,7 @@ import {
   Tr,
   Th,
   Td,
-  TableContainer,
   Image,
-  Avatar,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -28,11 +27,14 @@ import {
   useToast,
   useColorModeValue,
   Spinner,
+  Tooltip,
 } from "@chakra-ui/react";
-import { FaTrash, FaUser } from "react-icons/fa";
+import { FaUser } from "react-icons/fa";
+import { FiUpload, FiTrash2 } from "react-icons/fi";
 import Swal from "sweetalert2";
 import moment from "moment";
 import { registerFace, getRegisteredFaces, deleteFace } from "../actions/faceActions";
+import MobileHeader from "../components/MobileHeader";
 
 const RegisterFace = () => {
   const [name, setName] = useState("");
@@ -55,28 +57,47 @@ const RegisterFace = () => {
   const fileInputRef = useRef(null);
   const toast = useToast();
 
-  const pageHeading = useColorModeValue("gray.800", "white");
-  const subText = useColorModeValue("gray.500", "gray.400");
-  const cardBg = useColorModeValue("#FFFFFF", "gray.800");
-  const cardBorder = useColorModeValue("rgba(226,232,240,0.9)", "whiteAlpha.200");
-  const softShadow = useColorModeValue("0 1px 3px rgba(0,0,0,0.06)", "dark-lg");
+  // --- Design System Theme Tokens ---
+  const titleColor = useColorModeValue("#1A2E3D", "#FFFFFF");
+  const pageHeading = titleColor;
+  const subtextColor = useColorModeValue("#64748B", "#94A3B8");
+  const subText = subtextColor;
+  const cardBg = useColorModeValue("#FFFFFF", "#1C222D");
+  const cardBorder = useColorModeValue("#E2E8EF", "rgba(255, 255, 255, 0.08)");
+  const softShadow = "0px 1px 6px 0px rgba(26, 46, 61, 0.07)";
   const inputBg = useColorModeValue("white", "gray.700");
+  const placeholderColor = useColorModeValue("#94A3B8", "#64748B");
   const accent = useColorModeValue("#3F77A5", "#63B3ED");
-  const tableHeadBg = useColorModeValue("#F1F5F9", "gray.700");
-  const rowHover = useColorModeValue("gray.50", "whiteAlpha.100");
+  const tableHeaderBg = useColorModeValue("#F0F5FA", "#202734");
+  const tableHeaderColor = useColorModeValue("#4A607A", "#94A3B8");
+  const tableBorderColor = useColorModeValue("#F1F5F9", "rgba(255, 255, 255, 0.06)");
+  const rowHover = useColorModeValue("#EDF4FA80", "rgba(255, 255, 255, 0.04)");
+  const tableTextColor = useColorModeValue("#4A5568", "#CBD5E1");
+  const fileBtnBg = useColorModeValue("#F0F5FA", "#202734");
+  const avatarBg = useColorModeValue("#F0F5FA", "#202734");
+  const deleteBtnBg = useColorModeValue("#FEF2F2", "rgba(239, 68, 68, 0.1)");
+  const deleteBtnBorder = useColorModeValue("#FEE2E2", "rgba(239, 68, 68, 0.2)");
+  const deleteBtnColor = useColorModeValue("#EF4444", "#F87171");
 
   const thStyle = {
-    py: 3,
-    px: 3,
-    textAlign: "center",
-    textTransform: "none",
-    fontSize: "12px",
+    py: "12px",
+    px: "14px",
+    fontFamily: "Manrope, sans-serif",
     fontWeight: "700",
-    color: pageHeading,
-    letterSpacing: "0.02em",
+    fontSize: "12px",
+    color: tableHeaderColor,
+    textTransform: "none",
+    letterSpacing: "0px",
     whiteSpace: "nowrap",
   };
-  const tdStyle = { py: 2.5, px: 3, textAlign: "center", fontSize: "13px", borderColor: cardBorder };
+  const tdStyle = {
+    py: "12px",
+    px: "14px",
+    fontFamily: "Manrope, sans-serif",
+    fontSize: "13px",
+    color: tableTextColor,
+    borderColor: tableBorderColor,
+  };
 
   const fetchRecords = useCallback(async () => {
     setIsLoadingRecords(true);
@@ -243,10 +264,20 @@ const RegisterFace = () => {
   };
 
   return (
-    <Box maxW="700px" pt={{ base: "70px", md: "0" }} mb={{ base: "100px", md: "6" }} px={{ base: 3, md: 0 }}>
+    <Box
+      maxW="1440px"
+      w="100%"
+      mx="auto"
+      px={{ base: "12px", sm: "16px", md: "20px", lg: "24px" }}
+      py={{ base: "12px", md: "16px" }}
+      fontFamily="'Manrope', sans-serif"
+      mb={{ base: "20", md: "6" }}
+    >
+      <MobileHeader title="Register Face" />
+
       <Modal isOpen={isOpen} onClose={onClose} isCentered size="2xl">
         <ModalOverlay bg="blackAlpha.700" />
-        <ModalContent bg={cardBg} borderRadius="16px" overflow="hidden">
+        <ModalContent bg={cardBg} borderRadius="16px" overflow="hidden" fontFamily="'Manrope', sans-serif">
           <ModalCloseButton zIndex={2} />
           <ModalBody display="flex" justifyContent="center" alignItems="center" p={4}>
             <Image src={modalImage} alt="Enlarged view" maxW="100%" maxH="80vh" borderRadius="10px" />
@@ -255,164 +286,339 @@ const RegisterFace = () => {
       </Modal>
 
       <Box mb={4}>
-        <Text fontWeight={700} fontSize="22px" color={pageHeading} lineHeight="1.2">
+        <Text
+          fontFamily="'Manrope', sans-serif"
+          fontWeight={800}
+          fontSize={{ base: "20px", md: "22px" }}
+          lineHeight="1.2"
+          color={pageHeading}
+        >
           Register Face
         </Text>
-        <Text fontSize="13px" color={subText}>
+        <Text
+          fontFamily="'Manrope', sans-serif"
+          fontSize="13px"
+          color={subText}
+          mt="2px"
+        >
           Upload or capture a photo to register a person for facial recognition
         </Text>
       </Box>
 
-      <Box bg={cardBg} border="1px solid" borderColor={cardBorder} borderRadius="14px" boxShadow={softShadow} p={4} mb={4}>
-        <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={4}>
-          <Box>
-            <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
-              Name
-            </Text>
-            <Input value={name} onChange={(e) => setName(e.target.value)} bg={inputBg} borderColor={cardBorder} borderRadius="10px" placeholder="Enter person's name" />
-          </Box>
-          <Box>
-            <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
-              Roll No / Emp ID (optional)
-            </Text>
-            <Input value={rollNoEmpId} onChange={(e) => setRollNoEmpId(e.target.value)} bg={inputBg} borderColor={cardBorder} borderRadius="10px" placeholder="Enter roll no or employee id" />
-          </Box>
+      {/* Container for Card 3 and Card 4 */}
+      <VStack spacing="20px" align="stretch" maxW="580px" w="100%">
+        {/* Card 3: Registration Form */}
+        <Box
+          w="100%"
+          maxW="580px"
+          minH={{ md: "264.5px" }}
+          p="20px"
+          borderRadius="14px"
+          borderWidth="1px"
+          borderColor={cardBorder}
+          borderTop="1px solid"
+          borderTopColor={cardBorder}
+          bg={cardBg}
+          boxShadow={softShadow}
+          fontFamily="'Manrope', sans-serif"
+        >
+          <Grid templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)" }} gap="16px">
+            {/* Name */}
+            <Box>
+              <Text
+                fontFamily="'Manrope', sans-serif"
+                fontSize="11px"
+                fontWeight="700"
+                color={subtextColor}
+                textTransform="uppercase"
+                letterSpacing="0.7px"
+                mb="8px"
+              >
+                NAME
+              </Text>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                bg={inputBg}
+                borderColor={cardBorder}
+                borderRadius="8px"
+                h="38px"
+                fontSize="12px"
+                fontFamily="'Manrope', sans-serif"
+                color={titleColor}
+                placeholder="Enter person's name"
+                _placeholder={{ color: placeholderColor, fontSize: "12px", fontFamily: "'Manrope', sans-serif" }}
+                _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
+              />
+            </Box>
 
-          <Box gridColumn={{ md: "1 / -1" }}>
-            <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
-              Photo Source
-            </Text>
-            <RadioGroup value={captureMode} onChange={handleModeChange}>
-              <HStack spacing={6}>
-                <Radio value="upload">Upload Image</Radio>
-                <Radio value="capture">Capture Photo</Radio>
-              </HStack>
-            </RadioGroup>
-          </Box>
+            {/* Roll No / Emp ID */}
+            <Box>
+              <Text
+                fontFamily="'Manrope', sans-serif"
+                fontSize="11px"
+                fontWeight="700"
+                color={subtextColor}
+                textTransform="uppercase"
+                letterSpacing="0.7px"
+                mb="8px"
+              >
+                ROLL NO / EMP ID (OPTIONAL)
+              </Text>
+              <Input
+                value={rollNoEmpId}
+                onChange={(e) => setRollNoEmpId(e.target.value)}
+                bg={inputBg}
+                borderColor={cardBorder}
+                borderRadius="8px"
+                h="38px"
+                fontSize="12px"
+                fontFamily="'Manrope', sans-serif"
+                color={titleColor}
+                placeholder="Enter roll no or employee id"
+                _placeholder={{ color: placeholderColor, fontSize: "12px", fontFamily: "'Manrope', sans-serif" }}
+                _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
+              />
+            </Box>
 
-          <Box gridColumn={{ md: "1 / -1" }}>
-            {captureMode === "upload" ? (
-              <Flex direction="column" gap={3}>
-                <HStack spacing={3}>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    style={{ display: "none" }}
-                  />
-                  <Button
-                    onClick={() => fileInputRef.current?.click()}
-                    variant="outline"
-                    borderColor={cardBorder}
-                    borderRadius="10px"
-                    size="md"
-                    fontWeight="500"
-                  >
-                    Choose File
-                  </Button>
-                  <Text fontSize="13px" color={subText} noOfLines={1}>
-                    {selectedFile ? selectedFile.name : "No file chosen"}
-                  </Text>
+            {/* Photo Source */}
+            <Box gridColumn={{ sm: "1 / -1" }}>
+              <Text
+                fontFamily="'Manrope', sans-serif"
+                fontSize="11px"
+                fontWeight="700"
+                color={subtextColor}
+                textTransform="uppercase"
+                letterSpacing="0.7px"
+                mb="8px"
+              >
+                PHOTO SOURCE
+              </Text>
+              <RadioGroup value={captureMode} onChange={handleModeChange}>
+                <HStack spacing={6}>
+                  <Radio value="upload" size="sm" colorScheme="blue">
+                    <Text fontSize="13px" fontWeight={captureMode === "upload" ? "700" : "500"} color={titleColor} fontFamily="'Manrope', sans-serif">
+                      Upload Image
+                    </Text>
+                  </Radio>
+                  <Radio value="capture" size="sm" colorScheme="blue">
+                    <Text fontSize="13px" fontWeight={captureMode === "capture" ? "700" : "500"} color={titleColor} fontFamily="'Manrope', sans-serif">
+                      Capture Photo
+                    </Text>
+                  </Radio>
                 </HStack>
-                {previewUrl && (
-                  <Image src={previewUrl} alt="Preview" maxH="200px" borderRadius="10px" border="1px solid" borderColor={cardBorder} />
-                )}
-              </Flex>
-            ) : (
-              <Flex direction="column" gap={3} align="flex-start">
-                <canvas ref={canvasRef} style={{ display: "none" }} />
-                {capturedBlob && previewUrl ? (
-                  <>
-                    <Image src={previewUrl} alt="Captured" maxH="240px" borderRadius="10px" border="1px solid" borderColor={cardBorder} />
-                    <Button onClick={retake} variant="outline" borderColor={cardBorder} size="sm">
-                      Retake
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Box borderRadius="10px" overflow="hidden" border="1px solid" borderColor={cardBorder} maxW="360px">
-                      <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", display: "block" }} />
-                    </Box>
-                    <Button onClick={capturePhoto} isDisabled={!isCameraActive} bg={accent} color="white" size="sm" _hover={{ opacity: 0.9 }}>
-                      Capture
-                    </Button>
-                  </>
-                )}
-              </Flex>
-            )}
-          </Box>
-        </Grid>
+              </RadioGroup>
+            </Box>
 
-        <Flex justify="flex-end" mt={4}>
-          <Button onClick={handleSubmit} isLoading={isSubmitting} loadingText="Registering…" bg={accent} color="white" _hover={{ opacity: 0.9 }} borderRadius="10px">
-            Register
-          </Button>
-        </Flex>
-      </Box>
-
-      <Box bg={cardBg} border="1px solid" borderColor={cardBorder} borderRadius="16px" boxShadow={softShadow} overflow="hidden">
-        <TableContainer overflowX="auto">
-          <Table size="sm">
-            <Thead bg={tableHeadBg}>
-              <Tr>
-                <Th sx={thStyle}>Photo</Th>
-                <Th sx={thStyle}>Name</Th>
-                <Th sx={thStyle}>Roll No / Emp ID</Th>
-                <Th sx={thStyle}>Registered Date</Th>
-                <Th sx={thStyle}>Action</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {isLoadingRecords ? (
-                <Tr>
-                  <Td colSpan={5} textAlign="center" py={10} borderColor={cardBorder}>
-                    <Spinner size="lg" color={accent} thickness="3px" />
-                  </Td>
-                </Tr>
-              ) : records.length === 0 ? (
-                <Tr>
-                  <Td colSpan={5} textAlign="center" py={10} color={subText} borderColor={cardBorder}>
-                    No faces registered yet.
-                  </Td>
-                </Tr>
+            {/* Choose File or Camera View */}
+            <Box gridColumn={{ sm: "1 / -1" }}>
+              {captureMode === "upload" ? (
+                <Flex direction="column" gap={3}>
+                  <HStack spacing={3} wrap="wrap">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      style={{ display: "none" }}
+                    />
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      leftIcon={<FiUpload size={14} />}
+                      variant="outline"
+                      borderColor={cardBorder}
+                      bg={fileBtnBg}
+                      color={titleColor}
+                      borderRadius="8px"
+                      h="36px"
+                      px="14px"
+                      fontSize="13px"
+                      fontWeight="500"
+                      fontFamily="'Manrope', sans-serif"
+                      _hover={{ bg: "#E2E8F0" }}
+                    >
+                      Choose File
+                    </Button>
+                    <Text fontSize="13px" color={subtextColor} fontFamily="'Manrope', sans-serif" noOfLines={1}>
+                      {selectedFile ? selectedFile.name : "No file chosen"}
+                    </Text>
+                  </HStack>
+                  {previewUrl && (
+                    <Image src={previewUrl} alt="Preview" maxH="180px" objectFit="contain" borderRadius="10px" border="1px solid" borderColor={cardBorder} />
+                  )}
+                </Flex>
               ) : (
-                records.map((record) => (
-                  <Tr key={record._id} _hover={{ bg: rowHover }}>
-                    <Td sx={tdStyle}>
-                      <Avatar
-                        src={record.image_url}
-                        icon={<FaUser fontSize="16px" />}
-                        bg="gray.100"
-                        color="gray.400"
-                        size="sm"
-                        mx="auto"
-                        cursor={record.image_url ? "pointer" : "default"}
-                        transition="transform 0.2s ease"
-                        _hover={record.image_url ? { transform: "scale(1.08)" } : undefined}
-                        onClick={() => record.image_url && handleImageClick(record.image_url)}
-                      />
-                    </Td>
-                    <Td sx={tdStyle}>{record.person_name}</Td>
-                    <Td sx={tdStyle}>{record.roll_no_emp_id || "N/A"}</Td>
-                    <Td sx={tdStyle}>{record.created_date ? moment(record.created_date).format("DD-MM-YYYY HH:mm:ss") : "N/A"}</Td>
-                    <Td sx={tdStyle}>
-                      <IconButton
-                        icon={<FaTrash />}
-                        aria-label="Delete"
-                        size="sm"
-                        colorScheme="red"
-                        variant="ghost"
-                        onClick={() => handleDelete(record.person_name)}
-                      />
-                    </Td>
-                  </Tr>
-                ))
+                <Flex direction="column" gap={3} align="flex-start">
+                  <canvas ref={canvasRef} style={{ display: "none" }} />
+                  {capturedBlob && previewUrl ? (
+                    <>
+                      <Image src={previewUrl} alt="Captured" maxH="180px" objectFit="contain" borderRadius="10px" border="1px solid" borderColor={cardBorder} />
+                      <Button onClick={retake} variant="outline" borderColor={cardBorder} size="sm" fontFamily="'Manrope', sans-serif">
+                        Retake
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Box borderRadius="10px" overflow="hidden" border="1px solid" borderColor={cardBorder} maxW="360px">
+                        <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", display: "block" }} />
+                      </Box>
+                      <Button onClick={capturePhoto} isDisabled={!isCameraActive} bg={accent} color="white" size="sm" borderRadius="8px" fontFamily="'Manrope', sans-serif" _hover={{ bg: "#315f85" }}>
+                        Capture
+                      </Button>
+                    </>
+                  )}
+                </Flex>
               )}
-            </Tbody>
-          </Table>
-        </TableContainer>
-      </Box>
+            </Box>
+          </Grid>
+
+          {/* Register Button */}
+          <Flex justify="flex-end" mt={4}>
+            <Button
+              onClick={handleSubmit}
+              isLoading={isSubmitting}
+              loadingText="Registering…"
+              bg={accent}
+              color="white"
+              _hover={{ bg: "#315f85" }}
+              borderRadius="8px"
+              h="38px"
+              px="24px"
+              fontSize="13px"
+              fontWeight="600"
+              fontFamily="'Manrope', sans-serif"
+            >
+              Register
+            </Button>
+          </Flex>
+        </Box>
+
+        {/* Card 4: Registered Faces Table Card */}
+        <Box
+          w="100%"
+          maxW="580px"
+          minH={{ md: "139.5px" }}
+          p="20px"
+          borderRadius="14px"
+          borderWidth="1px"
+          borderColor={cardBorder}
+          borderTop="1px solid"
+          borderTopColor={cardBorder}
+          bg={cardBg}
+          boxShadow={softShadow}
+          fontFamily="'Manrope', sans-serif"
+        >
+          <Box
+            borderRadius="10px"
+            overflow="hidden"
+            border="1px solid"
+            borderColor={tableBorderColor}
+          >
+            <Box overflowX="auto">
+              <Table variant="simple" size="sm">
+                <Thead bg={tableHeaderBg}>
+                  <Tr borderBottom="1px solid" borderColor={tableBorderColor}>
+                    <Th sx={thStyle}>Photo</Th>
+                    <Th sx={thStyle}>Name</Th>
+                    <Th sx={thStyle}>Roll No / Emp ID</Th>
+                    <Th sx={thStyle}>Registered Date</Th>
+                    <Th sx={thStyle} textAlign="center">Action</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {isLoadingRecords ? (
+                    <Tr>
+                      <Td colSpan={5} textAlign="center" py={8} borderColor={tableBorderColor}>
+                        <Spinner size="md" color={accent} thickness="3px" />
+                      </Td>
+                    </Tr>
+                  ) : records.length === 0 ? (
+                    <Tr>
+                      <Td colSpan={5} textAlign="center" py={8} color={subtextColor} borderColor={tableBorderColor} fontFamily="'Manrope', sans-serif" fontSize="13px">
+                        No faces registered yet.
+                      </Td>
+                    </Tr>
+                  ) : (
+                    records.map((record) => (
+                      <Tr key={record._id} borderBottom="1px solid" borderColor={tableBorderColor} _hover={{ bg: rowHover }}>
+                        {/* Photo */}
+                        <Td sx={tdStyle}>
+                          <Box
+                            w="36px"
+                            h="36px"
+                            borderRadius="8px"
+                            bg={avatarBg}
+                            border="1px solid"
+                            borderColor={cardBorder}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            color="#3F77A5"
+                            overflow="hidden"
+                            cursor={record.image_url ? "pointer" : "default"}
+                            onClick={() => record.image_url && handleImageClick(record.image_url)}
+                            _hover={record.image_url ? { transform: "scale(1.05)" } : undefined}
+                            transition="transform 0.15s ease"
+                          >
+                            {record.image_url ? (
+                              <Image src={record.image_url} alt={record.person_name} w="100%" h="100%" objectFit="cover" />
+                            ) : (
+                              <FaUser size={15} />
+                            )}
+                          </Box>
+                        </Td>
+
+                        {/* Name */}
+                        <Td sx={tdStyle} fontWeight="700" color={titleColor}>
+                          {record.person_name}
+                        </Td>
+
+                        {/* Roll No / Emp ID */}
+                        <Td sx={tdStyle}>
+                          {record.roll_no_emp_id || "N/A"}
+                        </Td>
+
+                        {/* Registered Date */}
+                        <Td sx={tdStyle} whiteSpace="nowrap">
+                          {record.created_date ? moment(record.created_date).format("DD-MM-YYYY HH:mm:ss") : "N/A"}
+                        </Td>
+
+                        {/* Action */}
+                        <Td sx={tdStyle} textAlign="center">
+                          <Tooltip label="Delete" hasArrow>
+                            <IconButton
+                              aria-label="Delete"
+                              icon={<FiTrash2 size="13px" />}
+                              size="sm"
+                              w="30px"
+                              h="30px"
+                              minW="30px"
+                              borderRadius="7px"
+                              borderWidth="1px"
+                              borderColor={deleteBtnBorder}
+                              bg={deleteBtnBg}
+                              color={deleteBtnColor}
+                              _hover={{
+                                bg: "#EF4444",
+                                color: "#FFFFFF",
+                                borderColor: "#EF4444",
+                                transform: "translateY(-1px)",
+                                boxShadow: "0 2px 6px rgba(239, 68, 68, 0.35)",
+                              }}
+                              transition="all 0.15s ease"
+                              onClick={() => handleDelete(record.person_name)}
+                            />
+                          </Tooltip>
+                        </Td>
+                      </Tr>
+                    ))
+                  )}
+                </Tbody>
+              </Table>
+            </Box>
+          </Box>
+        </Box>
+      </VStack>
     </Box>
   );
 };

@@ -350,38 +350,72 @@ function CameraGroupBar({
       {/* --- Group selector bar --- */}
       <Flex
         align="center"
-        gap={2}
-        mb={3}
-        px={2}
-        py={2}
-        borderRadius="10px"
-        bg={barBg}
+        gap="10px"
+        minH="44px"
+        pb="12px"
+        w="100%"
+        fontFamily="Manrope, sans-serif"
         overflowX="auto"
+        flexWrap={{ base: "wrap", md: "nowrap" }}
         css={{
-          "&::-webkit-scrollbar": { height: "6px" },
-          "&::-webkit-scrollbar-thumb": { background: "rgba(0,0,0,0.2)", borderRadius: "3px" },
+          "&::-webkit-scrollbar": { height: "4px" },
+          "&::-webkit-scrollbar-thumb": { background: "rgba(63, 119, 165, 0.2)", borderRadius: "3px" },
         }}
       >
-        <Text fontSize="12px" fontWeight="700" color={textCol} pl={1} pr={1} flexShrink={0}>
+        <Text fontSize="12px" fontWeight="600" color="#64748B" flexShrink={0} lineHeight="18px">
           Groups:
         </Text>
 
         {/* All Cameras (default) */}
         <Button
-          size="xs"
+          size="sm"
+          h="30px"
+          px="14px"
+          py="5px"
           flexShrink={0}
-          borderRadius="full"
+          borderRadius="6px"
           onClick={() => onSelectGroup(null)}
-          bg={selectedGroupId === null ? "blue.400" : pillBg}
-          color={selectedGroupId === null ? "white" : textCol}
+          bg={selectedGroupId === null ? "#3F77A515" : "transparent"}
+          color={selectedGroupId === null ? "#3F77A5" : "#64748B"}
           borderWidth="1px"
-          borderColor={selectedGroupId === null ? "blue.400" : pillBorder}
-          _hover={{ bg: selectedGroupId === null ? "blue.500" : cardHover }}
+          borderColor={selectedGroupId === null ? "#3F77A535" : "#E2E8EF"}
+          fontFamily="Manrope, sans-serif"
+          fontWeight={selectedGroupId === null ? "700" : "600"}
+          fontSize="12px"
+          _hover={{ bg: "#3F77A520", borderColor: "#3F77A5" }}
         >
           All Cameras
-          <Badge ml={2} borderRadius="full" fontSize="9px" colorScheme={selectedGroupId === null ? "whiteAlpha" : "gray"}>
+          <Badge
+            ml={2}
+            borderRadius="full"
+            fontSize="10px"
+            bg={selectedGroupId === null ? "#3F77A525" : "gray.200"}
+            color={selectedGroupId === null ? "#3F77A5" : "gray.600"}
+          >
             {allCameras.length}
           </Badge>
+        </Button>
+
+        {/* Create button beside All Cameras */}
+        <Button
+          size="sm"
+          h="30px"
+          px="12px"
+          gap="6px"
+          flexShrink={0}
+          leftIcon={<MdAdd />}
+          borderRadius="8px"
+          borderWidth="1px"
+          borderColor="#E2E8EF"
+          bg={useColorModeValue("#FFFFFF", "#1C1A1A")}
+          color="#3F77A5"
+          fontFamily="Manrope, sans-serif"
+          fontWeight="700"
+          fontSize="12px"
+          _hover={{ bg: "#3F77A510", borderColor: "#3F77A5" }}
+          onClick={openCreate}
+        >
+          Create Group
         </Button>
 
         {/* Group pills */}
@@ -391,27 +425,36 @@ function CameraGroupBar({
             <HStack
               key={g.id}
               spacing={0}
+              h="30px"
               flexShrink={0}
-              borderRadius="full"
+              borderRadius="6px"
               borderWidth="1px"
-              borderColor={active ? "blue.400" : pillBorder}
-              bg={active ? "blue.400" : pillBg}
+              borderColor={active ? "#3F77A535" : "#E2E8EF"}
+              bg={active ? "#3F77A515" : "transparent"}
               overflow="hidden"
             >
               <Button
                 size="xs"
                 variant="unstyled"
                 px={3}
-                h="24px"
+                h="100%"
                 display="inline-flex"
                 alignItems="center"
                 borderRadius="0"
-                color={active ? "white" : textCol}
+                color={active ? "#3F77A5" : "#64748B"}
                 onClick={() => onSelectGroup(g.id)}
-                fontWeight="600"
+                fontFamily="Manrope, sans-serif"
+                fontWeight={active ? "700" : "600"}
+                fontSize="12px"
               >
                 {g.name}
-                <Badge ml={2} borderRadius="full" fontSize="9px" colorScheme={active ? "whiteAlpha" : "gray"}>
+                <Badge
+                  ml={2}
+                  borderRadius="full"
+                  fontSize="10px"
+                  bg={active ? "#3F77A525" : "gray.200"}
+                  color={active ? "#3F77A5" : "gray.600"}
+                >
                   {g.deviceIds?.length || 0}
                 </Badge>
               </Button>
@@ -419,11 +462,11 @@ function CameraGroupBar({
                 <IconButton
                   size="xs"
                   variant="ghost"
-                  h="24px"
-                  minW="22px"
+                  h="100%"
+                  minW="24px"
                   borderRadius="0"
-                  color={active ? "whiteAlpha.900" : subText}
-                  _hover={{ bg: active ? "blue.500" : cardHover }}
+                  color={active ? "#3F77A5" : "#64748B"}
+                  _hover={{ bg: "#3F77A520" }}
                   icon={<MdEdit />}
                   aria-label="Edit group"
                   onClick={(e) => openEdit(g, e)}
@@ -433,11 +476,11 @@ function CameraGroupBar({
                 <IconButton
                   size="xs"
                   variant="ghost"
-                  h="24px"
-                  minW="22px"
+                  h="100%"
+                  minW="24px"
                   borderRadius="0"
-                  color={active ? "whiteAlpha.900" : "red.400"}
-                  _hover={{ bg: active ? "blue.500" : cardHover }}
+                  color={active ? "red.500" : "gray.400"}
+                  _hover={{ bg: "red.50", color: "red.600" }}
                   icon={<MdDeleteOutline />}
                   aria-label="Delete group"
                   onClick={(e) => handleDelete(g.id, e)}
@@ -446,20 +489,6 @@ function CameraGroupBar({
             </HStack>
           );
         })}
-
-        {/* Create button */}
-        <Button
-          size="xs"
-          flexShrink={0}
-          leftIcon={<MdAdd />}
-          borderRadius="full"
-          colorScheme="blue"
-          variant="solid"
-          onClick={openCreate}
-          ml="auto"
-        >
-          Create Group
-        </Button>
       </Flex>
 
       {/* --- Create / Edit modal --- */}

@@ -13,7 +13,10 @@ const MobileHeader = ({ title }) => {
   return (
     <Box display={{ base: "block", md: "none" }}>
       <Box
-        bg={useColorModeValue("white", "#231F1F")}
+        bg={useColorModeValue("white", "#131922")}
+        borderBottom="1px solid"
+        borderColor={useColorModeValue("#E2E8EF", "rgba(255, 255, 255, 0.08)")}
+        boxShadow={useColorModeValue("0 1px 3px rgba(0,0,0,0.05)", "0 2px 8px rgba(0,0,0,0.25)")}
         w="100%"
         position="fixed"
         top="0"

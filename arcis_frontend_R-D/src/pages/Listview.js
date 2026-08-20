@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import axios from "axios";
 import {
-  Box as ChakraBox, // Renamed to avoid conflict with standard Box
+  Box,
   Table,
   Thead,
   Tbody,
@@ -9,13 +9,15 @@ import {
   Th,
   Td,
   HStack,
+  VStack,
   Button,
   Select,
   Input,
+  InputGroup,
+  InputLeftElement,
   Flex,
   Text,
   Spinner,
-  VStack,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -26,52 +28,39 @@ import {
   useDisclosure,
   IconButton,
   Tooltip,
-  Tab,
-  Icon,
-  Grid,
-  RadioGroup,
-  Radio,
-  Box, // Standard Box from Chakra UI
-  Link as ChakraLink,
   Image,
-  useColorMode, // Import useColorMode to access current mode
   useColorModeValue,
-  InputGroup,
-  InputLeftElement,
-  border,
   Collapse,
   SimpleGrid,
-  Center,
+  Badge,
 } from "@chakra-ui/react";
 import * as XLSX from "xlsx";
-import { FaDownload, FaEye, FaChevronDown, FaChevronUp,FaFilePdf  } from "react-icons/fa";
-import Player from "../components/Player";
-import SimpleFLVPlayer from "../components/SimpleFLVPlayer";
-import { Link as RouterLink, useLocation } from "react-router-dom"; // Import useLocation
-import { MdGridView } from "react-icons/md";
-import { TfiLayoutListThumb } from "react-icons/tfi";
-import Frame from "../assets/Frame.png";
+import { FaDownload, FaChevronDown, FaChevronUp, FaFilePdf } from "react-icons/fa";
+import { MdSearch } from "react-icons/md";
+import { TbLayoutGrid, TbList, TbEye, TbPlayerPlay } from "react-icons/tb";
+import { BsVolumeMute, BsVolumeUp } from "react-icons/bs";
+import { Link as RouterLink, useLocation } from "react-router-dom";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import { IoSearchOutline, IoSettingsOutline } from "react-icons/io5";
-import CameraSettingsModal from "../components/Modals/CameraSettingsModal";
-import CameraPTZ from "../components/CameraPTZ";
-// Add these to your existing imports
-import { BsVolumeMute, BsVolumeUp } from "react-icons/bs";
 
-// --- API Fetching Function (Unchanged) ---
+import Player from "../components/Player";
+import SimpleFLVPlayer from "../components/SimpleFLVPlayer";
+import CameraPTZ from "../components/CameraPTZ";
+import CameraSettingsModal from "../components/Modals/CameraSettingsModal";
+import MobileHeader from "../components/MobileHeader";
+import NoCameraFound from "../components/NoCameraFound";
+
+// --- API Fetching Function (Unchanged Business Logic) ---
 const getYourCamerasAPI = async (userEmail) => {
   const API_URL = `${process.env.REACT_APP_URL}/api/camera/getcurrentUserCameras`;
 
-  // ... inside getYourCamerasAPI const ...
-
   const generateStreamUrl = (camera) => {
-    // 1. ADD THIS CHECK FOR SSAN CAMERAS
+    // 1. Check for SSAN Cameras
     if (camera.deviceId && camera.deviceId.startsWith("SSAN")) {
       return `wss://ptz.vmukti.com/live-record/${camera.deviceId}.flv`;
     }
 
-    // 2. Existing logic follows...
+    // 2. Existing logic
     if (camera.plan === "LIVE" && camera.p2purl && camera.token) {
       return `https://${camera.deviceId}.${camera.p2purl}/flv/live_ch0_0.flv?verify=${camera.token}`;
     }
@@ -131,107 +120,7 @@ const getYourCamerasAPI = async (userEmail) => {
 };
 // --- End API Fetching Function ---
 
-// --- Helper Styles (Unchanged) ---
-const headingStyle = {
-  textAlign: "left",
-  fontSize: "25px",
-  fontWeight: "650",
-  marginBottom: "20px",
-};
-const filterLabelStyle = {
-  marginRight: "10px",
-  fontWeight: "bold",
-  fontSize: "16px",
-  whiteSpace: "nowrap",
-};
-const tableHeaderRowStyle = {
-  position: "sticky",
-  top: 0, // Ensure it sticks to the top
-  zIndex: 1,
-  borderRadius: "5px"
-};
-
-const tableHeaderStyle = {
-  padding: "4px 10px", // Match padding with Td for consistency
-  verticalAlign: "middle", // Align header text vertically
-  textAlign: "center", // Center header text horizontally
-  position: "relative", // Crucial: Allows absolute positioning of VerticalLine inside Th
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-
-  // Added for consistent border in the header if you decide to add it back
-  // borderBottom: "1px solid #ddd", 
-};
-
-const tableDataStyle = {
-  padding: "2px 10px", // Adjust padding as needed
-  verticalAlign: "middle", // Crucial for vertical alignment
-  textAlign: "center", // Center text horizontally within the cell
-  whiteSpace: "nowrap", // Prevent text from wrapping, good for fixed-width columns
-  overflow: "hidden",   // Hide overflowing content
-  textOverflow: "ellipsis", // Add ellipsis for overflowing text
-  position: "relative",
-  //  fontSize: "14px", // Keep font size consistent with header if desired
-  // Added for consistent border in the body if you decide to add it back
-  borderBottom: "1px solid #6c8aa5ff",
-};
-const downloadButtonStyle = {
-  backgroundColor: "#c8d6e5",
-  color: "black",
-  border: "none",
-  padding: "8px 12px",
-  cursor: "pointer",
-  fontSize: "14px",
-  display: "flex",
-  alignItems: "center",
-  gap: "5px",
-  borderRadius: "5px",
-};
-
-const tableContainerStyle = {
-  maxHeight: "calc(180vh - 500px)",
-  overflowY: "auto",
-  overflowX: "auto",
-  border: "1px solid #b3b8d6ff",
-  borderRadius: "5px",
-
-};
-const filterContainerStyle = {
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
-};
-const selectStyle = {
-  color: "Black",
-  backgroundColor: "#CDDEEB",
-  width: "180px",
-  minWidth: "150px",
-};
-const inputStyle = {
-  padding: "8px",
-  border: "1px solid #ccc",
-  borderRadius: "4px",
-  fontSize: "14px",
-  color: "Black",
-  backgroundColor: "#9CBAD2",
-  width: "180px",
-};
-// --- End Helper Styles ---
-const VerticalLine = () => (
-  <span
-    style={{
-      position: "absolute",
-      right: "0", // Position to the right edge of the parent Td
-      top: "50%", // Vertically center the line
-      transform: "translateY(-50%)", // Adjust for true centering
-      height: "70%", // Make the line almost as tall as the cell
-      width: "2px",
-      backgroundColor: "#3F77A5", // Use background-color for a simpler line
-    }}
-  ></span>
-);
-const Boxes = () => {
+const Listview = () => {
   const [allFetchedCameras, setAllFetchedCameras] = useState([]);
   const [displayedCameras, setDisplayedCameras] = useState([]);
   const [userEmail, setUserEmail] = useState("");
@@ -239,46 +128,49 @@ const Boxes = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(50);
   const [loading, setLoading] = useState(false);
-  const [camerasTab, setCamerasTab] = useState("My Cameras");
+  const [camerasTab] = useState("My Cameras");
   const [districtsList, setDistrictsList] = useState([]);
   const [selectedDistrictName, setSelectedDistrictName] = useState("");
   const [assembliesList, setAssembliesList] = useState([]);
   const [selectedAssemblyValue, setSelectedAssemblyValue] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const textColor = useColorModeValue("black", "white");
-  const placeholderColor = useColorModeValue("gray.600", "gray.400");
-  const [searchInput, setSearchInput] = useState("");
+  const [selectedLocationType, setSelectedLocationType] = useState("all");
+  const [psOption] = useState("camera");
+
+  const [expandedRows, setExpandedRows] = useState({});
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [selectedCamera, setSelectedCamera] = useState(null);
+  const [isMuted, setIsMuted] = useState(true);
+
   const {
     isOpen: isStreamModalOpen,
     onOpen: onStreamModalOpen,
     onClose: onStreamModalClose,
   } = useDisclosure();
   const playerRef = useRef(null);
-  const [selectedCamera, setSelectedCamera] = useState(null);
-  const [selectedLocationType, setSelectedLocationType] = useState("all");
-  const [psOption, setPsOption] = useState("camera");
-  const [reportFormat, setReportFormat] = useState("csv");
-  const cardBg = useColorModeValue("white", "gray.800");
-  const cardTextColor = useColorModeValue("gray.800", "white");
-  const overlayBg = useColorModeValue("rgba(255,255,255,0.8)", "rgba(0,0,0,0.6)");
+  const location = useLocation();
 
-  // State for Mobile Dropdown (More Info)
-  const [expandedRows, setExpandedRows] = useState({});
+  // --- Design System Color Tokens Matching Reference ---
+  const switcherBg = useColorModeValue("#F1F5F9", "#18202C");
+  const cardBg = useColorModeValue("#FFFFFF", "#1C222D");
+  const cardBorder = useColorModeValue("#E2E8F0", "rgba(255, 255, 255, 0.08)");
+  const titleColor = useColorModeValue("#1A2E3D", "#FFFFFF");
+  const placeholderColor = useColorModeValue("#94A3B8", "#64748B");
+  const subtextColor = useColorModeValue("#64748B", "#94A3B8");
+  const tableHeaderBg = useColorModeValue("#F0F5FA", "#202734");
+  const tableHeaderColor = useColorModeValue("#4A607A", "#94A3B8");
+  const tableBorderColor = useColorModeValue("#F1F5F9", "rgba(255, 255, 255, 0.06)");
+  const rowAltBg = useColorModeValue("#F8FAFC", "#161C26");
+  const tableRowHoverBg = useColorModeValue("#EDF4FA80", "rgba(255, 255, 255, 0.04)");
+  const tableTextColor = useColorModeValue("#4A5568", "#CBD5E1");
+  const modalBg = useColorModeValue("#FFFFFF", "#1C222D");
+  const modalSectionBg = useColorModeValue("#F8FAFC", "#18202C");
+  const actionBtnBg = useColorModeValue("#3F77A512", "#3F77A522");
 
-  // State for CameraSettingsModal
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-
-  const location = useLocation(); // To determine current view (grid/list)
-
-  // Use Chakra's useColorMode hook to get current mode for dynamic icon src
-  const { colorMode } = useColorMode();
-  const [isMuted, setIsMuted] = useState(true); // Default to muted
-
-  // Update handleCloseModal to reset mute status
   const handleCloseModal = () => {
     onStreamModalClose();
     setSelectedCamera(null);
-    setIsMuted(true); // Reset for next time
+    setIsMuted(true);
   };
 
   useEffect(() => {
@@ -286,56 +178,52 @@ const Boxes = () => {
     if (email) setUserEmail(email);
   }, []);
 
-  const fetchAllUserCameras = useCallback(async (isInitial = false) => {
-  if (!userEmail) return;
+  const fetchAllUserCameras = useCallback(
+    async (isInitial = false) => {
+      if (!userEmail) return;
 
-  if (isInitial) setLoading(true);
+      if (isInitial) setLoading(true);
 
-  try {
-    const response = await getYourCamerasAPI(userEmail);
-    if (Array.isArray(response)) {
-      if (isInitial) {
-        // Initial load: Set the full data
-        setAllFetchedCameras(response);
-      } else {
-        // Refresh: ONLY update the status field for each camera
-        setAllFetchedCameras(prevCameras => 
-          prevCameras.map(oldCam => {
-            const updatedCam = response.find(newCam => newCam.DeviceId === oldCam.DeviceId);
-            // We return the old camera object but with the NEW status
-            return updatedCam 
-              ? { ...oldCam, status: updatedCam.status } 
-              : oldCam;
-          })
-        );
+      try {
+        const response = await getYourCamerasAPI(userEmail);
+        if (Array.isArray(response)) {
+          if (isInitial) {
+            setAllFetchedCameras(response);
+          } else {
+            setAllFetchedCameras((prevCameras) =>
+              prevCameras.map((oldCam) => {
+                const updatedCam = response.find(
+                  (newCam) => newCam.DeviceId === oldCam.DeviceId
+                );
+                return updatedCam
+                  ? { ...oldCam, status: updatedCam.status }
+                  : oldCam;
+              })
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Status refresh failed:", err);
+      } finally {
+        if (isInitial) setLoading(false);
       }
-    }
-  } catch (err) {
-    console.error("Status refresh failed:", err);
-  } finally {
-    if (isInitial) setLoading(false);
-  }
-}, [userEmail]);
+    },
+    [userEmail]
+  );
 
   useEffect(() => {
-  // 1. Initial load (with spinner)
-  fetchAllUserCameras(true);
-
-  // 2. Refresh status every 60 seconds (no spinner)
-  const intervalId = setInterval(() => {
-    fetchAllUserCameras(false);
-  }, 60000);
-
-  // 3. Cleanup on leave
-  return () => clearInterval(intervalId);
-}, [fetchAllUserCameras]);
+    fetchAllUserCameras(true);
+    const intervalId = setInterval(() => {
+      fetchAllUserCameras(false);
+    }, 60000);
+    return () => clearInterval(intervalId);
+  }, [fetchAllUserCameras]);
 
   useEffect(() => {
     const districts = [
       ...new Set(allFetchedCameras.map((c) => c.district).filter(Boolean)),
     ];
     setDistrictsList(districts.sort());
-    
   }, [allFetchedCameras]);
 
   useEffect(() => {
@@ -350,172 +238,9 @@ const Boxes = () => {
     } else {
       setAssembliesList([]);
     }
-   
   }, [selectedDistrictName, allFetchedCameras]);
 
-  // MODIFIED: useEffect for filtering
-useEffect(() => {
-  let data = [...allFetchedCameras];
-
-  if (camerasTab === "Live Cameras") {
-    data = data.filter((c) => c.status === true);
-  }
-
-  if (selectedDistrictName) {
-    data = data.filter((c) => c.district === selectedDistrictName);
-  }
-
-  if (selectedAssemblyValue) {
-    data = data.filter((c) => c.assembly === selectedAssemblyValue);
-  }
-
-  if (selectedStatus) {
-    const isOnline = selectedStatus === "online";
-    data = data.filter((c) => c.status === isOnline);
-  }
-
-  if (searchDeviceId) {
-    const term = searchDeviceId.toLowerCase();
-    if (psOption === "ps") {
-      // Searching by Vehicle No (location field)
-      data = data.filter((c) =>
-        String(c.location || "").toLowerCase().includes(term)
-      );
-    } else {
-      // Searching by Camera ID
-      data = data.filter((c) =>
-        String(c.DeviceId || "").toLowerCase().includes(term)
-      );
-    }
-  }
-
-  if (selectedLocationType !== "all") {
-    data = data.filter((c) => c.location_Type === selectedLocationType);
-  }
-
-  const end = currentPage * itemsPerPage;
-  const start = end - itemsPerPage;
-  setDisplayedCameras(data.slice(start, end));
-}, [
-  allFetchedCameras,
-  searchDeviceId,
-  currentPage,
-  itemsPerPage,
-  selectedDistrictName,
-  selectedAssemblyValue,
-  selectedStatus,
-  camerasTab,
-  selectedLocationType,
-  psOption,
-]);
-
-  const createPageResetHandler = (setter) => (e) => {
-    setter(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleViewStream = (camera) => {
-    setSelectedCamera(camera);
-    onStreamModalOpen();
-  };
-
-
-
-  const handleSearchDeviceIdChange = (event) => {
-    setSearchDeviceId(event.target.value);
-    setCurrentPage(1);
-  };
-
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
-
-  const handleDistrictChange = (event) => {
-    setSelectedDistrictName(event.target.value);
-    setSelectedAssemblyValue("")
-    // Reset assembly when district changes
-    setCurrentPage(1);
-  };
-
-  const handleAssemblyChange = (event) => {
-    setSelectedAssemblyValue(event.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleLocationTypeChange = createPageResetHandler(
-    setSelectedLocationType
-  );
-
-  const handleClearFilters = () => {
-    setSelectedDistrictName("");
-    setSelectedAssemblyValue("");
-    setSelectedLocationType("all");
-    setSelectedStatus("");
-    setSearchDeviceId("");
-    setPsOption("camera"); // Reset to default radio option
-    setCurrentPage(1);
-  };
-
-  const getFilteredDataForExportAndCount = useCallback(() => {
-    let data = [...allFetchedCameras];
-
-    // 1. Tab Filter (Live Cameras vs My Cameras)
-    if (camerasTab === "Live Cameras") {
-      data = data.filter((c) => c.status === true);
-    }
-
-    // 2. District Filter
-    if (selectedDistrictName) {
-      data = data.filter((c) => c.district === selectedDistrictName);
-    }
-
-    // 3. Assembly Filter
-    if (selectedAssemblyValue) {
-      data = data.filter((c) => c.assembly === selectedAssemblyValue);
-    }
-
-    // 4. Status Filter (Online/Offline dropdown) - THIS IS THE FIX
-    if (selectedStatus) {
-      const isOnline = selectedStatus === "online";
-      data = data.filter((c) => c.status === isOnline);
-    }
-
-    // 5. Search ID / PS ID Filter
-    if (searchDeviceId) {
-      const term = searchDeviceId.toLowerCase();
-      if (psOption === "ps") {
-        data = data.filter((c) => c.ps_id?.toLowerCase().includes(term));
-      } else {
-        data = data.filter((c) => c.DeviceId?.toLowerCase().includes(term));
-      }
-    }
-
-    // 6. Location Type Filter
-    if (selectedLocationType !== "all") {
-      data = data.filter((c) => c.location_Type === selectedLocationType);
-    }
-
-    return data;
-  }, [
-    allFetchedCameras,
-    camerasTab,
-    selectedDistrictName,
-    selectedAssemblyValue,
-    selectedStatus,
-    searchDeviceId,
-    psOption,
-    selectedLocationType,
-  ]);
-
-  const handleStatusChange = (event) => {
-    setSelectedStatus(event.target.value);
-    setCurrentPage(1);
-  };
-
-  const toggleMoreInfo = (id) => {
-    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
+  // Combined Filtering Logic
   useEffect(() => {
     let data = [...allFetchedCameras];
 
@@ -538,20 +263,12 @@ useEffect(() => {
 
     if (searchDeviceId) {
       const term = searchDeviceId.toLowerCase();
-
-      if (psOption === "ps") {
-        data = data.filter((c) =>
-          String(c.location || "")
-            .toLowerCase()
-            .includes(term)
-        );
-      } else {
-        data = data.filter((c) =>
-          String(c.DeviceId || "")
-            .toLowerCase()
-            .includes(term)
-        );
-      }
+      data = data.filter(
+        (c) =>
+          String(c.DeviceId || "").toLowerCase().includes(term) ||
+          String(c.name || "").toLowerCase().includes(term) ||
+          String(c.location || "").toLowerCase().includes(term)
+      );
     }
 
     if (selectedLocationType !== "all") {
@@ -571,67 +288,116 @@ useEffect(() => {
     selectedStatus,
     camerasTab,
     selectedLocationType,
-    psOption,
   ]);
 
+  const handleViewStream = (camera) => {
+    setSelectedCamera(camera);
+    onStreamModalOpen();
+  };
 
+  const handleSearchDeviceIdChange = (event) => {
+    setSearchDeviceId(event.target.value);
+    setCurrentPage(1);
+  };
 
-  // MODIFIED: Pagination count logic
-  const totalItemsAfterFilters = allFetchedCameras
-    .filter((c) => (camerasTab === "Live Cameras" ? c.status === true : true))
-    .filter(
-      (c) => !selectedDistrictName || c.district === selectedDistrictName
-    )
-    .filter(
-      (c) => !selectedAssemblyValue || c.assembly === selectedAssemblyValue
-    )
-    .filter((c) => {
-      if (!selectedStatus) return true;
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handleDistrictChange = (event) => {
+    setSelectedDistrictName(event.target.value);
+    setSelectedAssemblyValue("");
+    setCurrentPage(1);
+  };
+
+  const handleStatusChange = (event) => {
+    setSelectedStatus(event.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedDistrictName("");
+    setSelectedAssemblyValue("");
+    setSelectedLocationType("all");
+    setSelectedStatus("");
+    setSearchDeviceId("");
+    setCurrentPage(1);
+  };
+
+  const isAnyFilterActive = useMemo(() => {
+    return (
+      Boolean(selectedDistrictName) ||
+      Boolean(selectedAssemblyValue) ||
+      selectedLocationType !== "all" ||
+      Boolean(selectedStatus) ||
+      Boolean(searchDeviceId)
+    );
+  }, [
+    selectedDistrictName,
+    selectedAssemblyValue,
+    selectedLocationType,
+    selectedStatus,
+    searchDeviceId,
+  ]);
+
+  const getFilteredDataForExportAndCount = useCallback(() => {
+    let data = [...allFetchedCameras];
+
+    if (camerasTab === "Live Cameras") {
+      data = data.filter((c) => c.status === true);
+    }
+
+    if (selectedDistrictName) {
+      data = data.filter((c) => c.district === selectedDistrictName);
+    }
+
+    if (selectedAssemblyValue) {
+      data = data.filter((c) => c.assembly === selectedAssemblyValue);
+    }
+
+    if (selectedStatus) {
       const isOnline = selectedStatus === "online";
-      return c.status === isOnline;
-    })
-    .filter((c) => {
-      if (!searchDeviceId) return true;
-     if (psOption === "ps") {
-  // Use String() to handle numbers/nulls safely
-  return String(c.location || "").toLowerCase().includes(searchDeviceId.toLowerCase());
-}
-return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCase());
-    })
-    .filter((c) => {
-      if (selectedLocationType === "all") return true;
-      return c.location_Type === selectedLocationType;
-    }).length;
+      data = data.filter((c) => c.status === isOnline);
+    }
 
+    if (searchDeviceId) {
+      const term = searchDeviceId.toLowerCase();
+      data = data.filter(
+        (c) =>
+          String(c.DeviceId || "").toLowerCase().includes(term) ||
+          String(c.name || "").toLowerCase().includes(term) ||
+          String(c.location || "").toLowerCase().includes(term)
+      );
+    }
 
-  // --- New Theme Variables ---
-  const buttonGradientColor = useColorModeValue(
-    "linear-gradient(93.5deg,#CDDEEB ,  #9CBAD2 94.58%)"
-    , // light mode
-    "linear-gradient(93.5deg, #2A2A2A 0.56%, #030711 50.58%)" // dark mode
-  );
+    if (selectedLocationType !== "all") {
+      data = data.filter((c) => c.location_Type === selectedLocationType);
+    }
 
-  const radioButtonColor = useColorModeValue("#9CBAD2", "#CDDEEB"); // Adjusted for better dark mode visibility
-  const iconColor = useColorModeValue("black", "white"); // Icon color based on mode
-  const gradientBorderColor = useColorModeValue(
-    "linear-gradient(149.18deg, #D6D6D6 0%, #797b7eff 101.62%)", // Light mode border
-    "linear-gradient(149.18deg, #D6D6D6 0%, #040811 101.62%)" // Dark mode border
-  );
+    return data;
+  }, [
+    allFetchedCameras,
+    camerasTab,
+    selectedDistrictName,
+    selectedAssemblyValue,
+    selectedStatus,
+    searchDeviceId,
+    selectedLocationType,
+  ]);
 
-  // Dynamic icon sources for dark/light mode
-  const grid_view_icon_src = useColorModeValue(
-    "/images/grid_view_icon_light.png", // Ensure this path is correct for light mode
-    "/images/grid_view_icon.png" // Ensure this path is correct for dark mode
-  );
-  const list_view_icon_src = useColorModeValue(
-    "/images/list_view_icon_light.png", // Ensure this path is correct for light mode
-    "/images/list_view_icon.png" // Ensure this path is correct for dark mode
-  );
-  // Placeholder for the horizontal line image
-  const right_of_text_image = useColorModeValue(
-    "/images/right_of_text_light.png", // Light mode line image
-    "/images/right_of_text.png" // Dark mode line image
-  );
+  const totalItemsAfterFilters = useMemo(() => {
+    return getFilteredDataForExportAndCount().length;
+  }, [getFilteredDataForExportAndCount]);
+
+  const totalPages = Math.max(1, Math.ceil(totalItemsAfterFilters / itemsPerPage));
+
+  const totalCount = allFetchedCameras.length;
+  const onlineCount = allFetchedCameras.filter((c) => c.status === true).length;
+  const offlineCount = allFetchedCameras.filter((c) => c.status === false).length;
+
+  const toggleMoreInfo = (id) => {
+    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const handlePDFExport = useCallback(() => {
     const filteredData = getFilteredDataForExportAndCount();
@@ -643,33 +409,30 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
 
     const dataToExport = filteredData.map((camera, index) => ({
       "Sr No.": index + 1,
+      Location: camera.district || "N/A",
+      "Camera Location Name": camera.assembly || camera.location || "N/A",
       "Device Id": camera.DeviceId,
-      "District": camera.district || "N/A",
-      "Location": camera.assembly || "N/A",
-      "Driver Name": camera.operatorName || "N/A",
-      "Driver Mobile No.": camera.operatorMobile || "N/A",
-      "Status": camera.status ? "Online" : "Offline",
+      "Operator Name": camera.operatorName || "N/A",
+      "Operator Mobile No.": camera.operatorMobile || "N/A",
+      Status: camera.status ? "Online" : "Offline",
     }));
 
     const doc = new jsPDF();
-
-    // Add title to PDF
     doc.setFontSize(18);
     doc.text("Camera Status Report", 14, 22);
     doc.setFontSize(11);
     doc.setTextColor(100);
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
 
-    // Create the table
     const tableColumn = Object.keys(dataToExport[0]);
-    const tableRows = dataToExport.map(item => Object.values(item));
+    const tableRows = dataToExport.map((item) => Object.values(item));
 
     doc.autoTable({
       head: [tableColumn],
       body: tableRows,
       startY: 35,
-      theme: 'grid',
-      headStyles: { fillGray: [40, 40, 40], textColor: [255, 255, 255] },
+      theme: "grid",
+      headStyles: { fillColor: [63, 119, 165], textColor: [255, 255, 255] },
     });
 
     doc.save(`Camera_Report_${new Date().getTime()}.pdf`);
@@ -685,574 +448,1101 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
 
     const dataToExport = filteredData.map((camera, index) => ({
       "Sr No.": index + 1,
+      Location: camera.district || "N/A",
+      "Camera Location Name": camera.assembly || camera.location || "N/A",
       "Device Id": camera.DeviceId,
-      "District": camera.district || "N/A",
-      "Location": camera.assembly || "N/A",
-      "Driver Name": camera.operatorName || "N/A",
-      "Driver Mobile No.": camera.operatorMobile || "N/A",
-      "Status": camera.status ? "Online" : "Offline",
+      "Operator Name": camera.operatorName || "N/A",
+      "Operator Mobile No.": camera.operatorMobile || "N/A",
+      Status: camera.status ? "Online" : "Offline",
     }));
 
-    // Create Worksheet
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    // Create Workbook
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Cameras");
-
-    // Trigger download (The extension .csv works with XLSX.writeFile)
     XLSX.writeFile(workbook, `Camera_Report_${new Date().getTime()}.xlsx`);
   }, [getFilteredDataForExportAndCount]);
 
-  const handleDownloadReport = useCallback(() => {
-    if (reportFormat === "csv") {
-      handleCSVExport();
-    } else if (reportFormat === "pdf") {
-      handlePDFExport();
-    } else {
-      alert("Please select a report format.");
-    }
-  }, [reportFormat, handleCSVExport, handlePDFExport]);
-
-  const text = useColorModeValue('gray.500', 'gray.400');
-
-  // --- Start Added Helper UI Components for Mobile ---
+  // Mobile Metric Cell Component
   const MobileMetricCell = ({ label, value, colorDot }) => (
     <HStack spacing={2} borderLeft="2px solid" borderColor="blue.100" pl={3} align="center">
-      <Box w="8px" h="8px" borderRadius="full" bg={colorDot} />
-      <VStack align="start" spacing={0}>
-        <Text fontSize="10px" color="gray.500">{label}</Text>
-        <Text fontWeight="600" fontSize="xs" isTruncated maxW="100px">
+      <Box w="7px" h="7px" borderRadius="full" bg={colorDot} flexShrink={0} />
+      <VStack align="start" spacing={0} overflow="hidden">
+        <Text fontSize="10px" color={subtextColor} fontFamily="Manrope, sans-serif">
+          {label}
+        </Text>
+        <Text fontWeight="600" fontSize="xs" color={titleColor} isTruncated maxW="120px" fontFamily="Manrope, sans-serif">
           {value || "N/A"}
         </Text>
       </VStack>
     </HStack>
   );
-  // --- End Added Helper UI Components ---
 
   return (
-    <div style={{ fontFamily: "Arial, sans-serif" }}>
-      <ChakraBox
-        borderRadius="lg"
-        h={"fit-content"}
-        flexDirection="column"
-        gap={4}
-        display="flex"
+    <Box
+      maxW="1440px"
+      w="100%"
+      mx="auto"
+      px={{ base: "12px", sm: "16px", md: "20px", lg: "24px" }}
+      py={{ base: "12px", md: "16px" }}
+      fontFamily="Manrope, sans-serif"
+      mb={{ base: "20", md: "6" }}
+    >
+      {/* Mobile Header */}
+      <MobileHeader title="List View" />
+
+      {/* ========================================================================= */}
+      {/* 1. TOP HEADER ROW (Title, Segmented View Switcher, Export Buttons)         */}
+      {/* ========================================================================= */}
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        flexWrap="wrap"
+        gap="12px"
+        mb="8px"
       >
-        {/* Header Row */}
-        <Flex justifyContent="space-between" align="center">
-          <HStack spacing={4} align="center">
-            <Text fontWeight={400} fontSize="26px" mb={2} color={text}>
-              List View
-            </Text>
-            <HStack h="26px" border="2px solid" borderColor="blue.400" borderRadius="full" spacing={0} ml={2}>
-              <Box as={RouterLink} to="/multiple" h="full" display="flex" alignItems="center" px={2} borderRadius="full" bg={location.pathname === "/multiple" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/multiple" ? "sm" : "none"} color={location.pathname === "/multiple" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
-                <MdGridView size="26px" />
-              </Box>
-              <Box as={RouterLink} to="/listview" h="full" display="flex" alignItems="center" px={2} borderRadius="full" bg={location.pathname === "/listview" ? "gray.300" : "transparent"} boxShadow={location.pathname === "/listview" ? "sm" : "none"} color={location.pathname === "/listview" ? "blue.600" : "gray.600"} _hover={{ textDecoration: "none" }}>
-                <TfiLayoutListThumb size="26px" />
-              </Box>
-            </HStack>
-          </HStack>
-        </Flex>
-
-        {/* Filter Row */}
-
-        <Flex
-          gap={4} flexWrap="wrap" mb={{ base: 2, md: 0 }}
-          alignItems="center"
-        >
-
-          {/* 1. District Select */}
-          <Select
-            placeholder="Select Location"
-            bg={buttonGradientColor}
-            borderRadius={"12px"}//background_img_light.png
-            value={selectedDistrictName}
-            onChange={handleDistrictChange}
-            sx={{
-              "> option": {
-                bg: useColorModeValue("white", "gray.700"),
-                color: useColorModeValue("black", "white"),
-              },
-            }}
-            height={"34px"}
-            fontSize={"12px"}
-            w="auto"
+        {/* Left: Title & Segmented View Switcher */}
+        <HStack spacing={4} align="center">
+          <Text
+            fontFamily="Manrope, sans-serif"
+            fontWeight="800"
+            fontSize={{ base: "20px", md: "22px" }}
+            lineHeight="26.4px"
+            letterSpacing="0px"
+            color={titleColor}
           >
-            {districtsList.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </Select>
+            List View
+          </Text>
 
-
-          {/* 2. Assembly Select */}
-
-          {/* <Select
-            placeholder="Select Assembly"
-            bg={buttonGradientColor}
-            borderRadius={"12px"}
-            value={selectedAssemblyValue}
-            onChange={handleAssemblyChange}
-            sx={{
-              "> option": {
-                bg: useColorModeValue("white", "gray.700"),
-                color: useColorModeValue("black", "white"),
-              },
-            }}
-
-            height={"34px"}
-            fontSize={"12px"}
-            w="auto"
+          {/* Segmented View Switcher */}
+          <HStack
+            h="34px"
+            p="3px"
+            bg={switcherBg}
+            border="1px solid"
+            borderColor={cardBorder}
+            borderRadius="9px"
+            spacing="3px"
+            ml={2}
           >
-            {assembliesList.map((a) => (
-              <option key={a} value={a}>{a}</option>
-            ))}
-          </Select> */}
-
-
-          {/* 3. Status Select */}
-
-          <Select
-            placeholder="Select Status"
-            bg={buttonGradientColor}
-            borderRadius={"12px"}
-            value={selectedStatus}
-            onChange={handleStatusChange}
-            sx={{
-              "> option": {
-                bg: useColorModeValue("white", "gray.700"),
-                color: useColorModeValue("black", "white"),
-              },
-            }}
-            height={"34px"}
-            fontSize={"12px"}
-            w="auto"
-          >
-            <option value="online">Online</option>
-            <option value="offline">Offline</option>
-          </Select>
-
-
-
-          {/* 5. Search Bar */}
-          <RadioGroup onChange={setPsOption} value={psOption}>
-            <HStack>
-              {/* <Radio
-                value="ps"
-                size="md"
-                colorScheme="blue"
-                borderColor="gray.400"
-              >
-                <Text fontSize="13px" fontWeight={psOption === "ps" ? "bold" : "normal"}>Vehicle No</Text>
-              </Radio> */}
-              <Text color="gray.400" fontSize="12px">|</Text>
-              <Radio
-                value="camera"
-                size="md"
-                colorScheme="blue"
-                borderColor="gray.400"
-              >
-                <Text fontSize="13px" fontWeight={psOption === "camera" ? "bold" : "normal"}>Camera ID</Text>
-              </Radio>
-            </HStack>
-          </RadioGroup>
-
-          {/* <InputGroup w="200px" > */}
-            {/* <InputLeftElement pointerEvents="none" height="100%">
-              <IconButton
-                icon={<IoSearchOutline size="16px" />}
-                variant="ghost"
-                aria-label="Search"
-                size="sm"
-                _hover={{ bg: "transparent" }}
-                color="gray.400"
-              />
-            </InputLeftElement> */}
-            <Input
-              placeholder={psOption === "ps" ? "Search Vehicle No" : "Search Camera ID"}
-              border="1px solid #CBD5E0"
-              value={searchDeviceId}
-              onChange={handleSearchDeviceIdChange}
-              size="lg"
-              width={"135px"}
-              height={"34px"}
-              fontSize={"12px"}
-              bg={buttonGradientColor}
-              borderRadius={"12px"}
-              color={textColor}
-              _placeholder={{ color: placeholderColor }}
-            // _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 1px #4299e1" }}
-            />
-          {/* </InputGroup> */}
-
-
-          {/* 6. CSV / PDF Radio Group */}
-             <HStack spacing={2} flexShrink={0}>
-            {/* CSV/Excel Button */}
-            <Button
-              leftIcon={<FaDownload size="12px" />}
-              bg={buttonGradientColor}
-              color={useColorModeValue("black", "white")}
-              _hover={{
-                bg: useColorModeValue(
-                  "linear-gradient(93.5deg, #8EABC5 , #C4D7E7 94.58%)",
-                  "linear-gradient(93.5deg, #1F1F1F 0.56%, #010307 50.58%)"
-                ),
-              }}
-              borderRadius={"12px"}
-              size="sm"
-              height={"34px"}
-              fontSize={"12px"}
-              onClick={handleCSVExport}
-            >
-              XLSX
-            </Button>
-
-            {/* PDF Button */}
-            <Button
-              leftIcon={<FaFilePdf size="12px" />} // Ensure FaFilePdf is imported from react-icons/fa
-              bg={buttonGradientColor}
-              color={useColorModeValue("black", "white")}
-              _hover={{
-                bg: useColorModeValue(
-                  "linear-gradient(93.5deg, #8EABC5 , #C4D7E7 94.58%)",
-                  "linear-gradient(93.5deg, #1F1F1F 0.56%, #010307 50.58%)"
-                ),
-              }}
-              borderRadius={"12px"}
-              size="sm"
-              height={"34px"}
-              fontSize={"12px"}
-              onClick={handlePDFExport}
-            >
-              PDF
-            </Button>
-          </HStack>
-
-          {/* 7. Download Button */}
-          {/* <Button
-            leftIcon={<FaDownload size="10px" />}
-            bg={buttonGradientColor}
-            color={useColorModeValue("black", "white")}
-            _hover={{
-              bg: useColorModeValue(
-                "linear-gradient(93.5deg, #8EABC5 , #C4D7E7 94.58%)",
-                "linear-gradient(93.5deg, #1F1F1F 0.56%, #010307 50.58%)"
-              ),
-            }}
-            borderRadius={"12px"}
-            size="sm"
-            onClick={handleDownloadReport}
-            w="auto"
-            height={"34px"}
-            fontSize={"12px"}
-            flexShrink={0} // Prevents button from getting squashed
-          >
-            Download
-          </Button> */}
-        </Flex>
-
-        <Flex
-          fontSize="12px"
-          fontWeight="bold"
-          flexDirection={{ base: "column", md: "row" }}
-          justifyContent="space-between"
-          alignItems={{ base: "flex-start", md: "center" }}
-          gap={{ base: 3, md: 0 }}
-          mb={2}
-        >
-
-          <Flex gap={3} flexWrap="wrap">
-           
-          </Flex>
-
-
-          {!loading && displayedCameras.length > 0 && (
-            <Flex >
-              <Button
-                onClick={() => handlePageChange(currentPage - 1)}
-                isDisabled={currentPage === 1}
-                mr={1}
-                size="xs"
-                variant="ghost"
-                _hover={{ bg: "#9CBAD2" }}
-                bg={buttonGradientColor}
-                fontSize="12px"
-              >
-                Previous
-              </Button>
-
-              {(() => {
-                const totalPages = Math.ceil(totalItemsAfterFilters / itemsPerPage);
-                const pageNumbers = [];
-                const delta = 1; // Number of pages to show around the current page
-
-                for (let i = 1; i <= totalPages; i++) {
-                  if (
-                    i === 1 ||
-                    i === totalPages ||
-                    (i >= currentPage - delta && i <= currentPage + delta)
-                  ) {
-                    pageNumbers.push(i);
-                  } else if (
-                    (i === currentPage - delta - 1 && i > 1) ||
-                    (i === currentPage + delta + 1 && i < totalPages)
-                  ) {
-                    if (pageNumbers[pageNumbers.length - 1] !== "...") {
-                      pageNumbers.push("...");
-                    }
-                  }
+            <Tooltip label="Grid View" hasArrow placement="top">
+              <Box
+                as={RouterLink}
+                to="/cameras"
+                h="26px"
+                px="8px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                borderRadius="6px"
+                bg={
+                  location.pathname.toLowerCase() === "/cameras"
+                    ? cardBg
+                    : "transparent"
                 }
-
-                return pageNumbers.map((page, idx) =>
-                  page === "..." ? (
-                    <Text key={`ellipsis-${idx}`} mx={2} alignSelf="center">
-                      ...
-                    </Text>
-                  ) : (
-                    <Button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      size="xs"
-                      variant="ghost"
-                      mx={0.5}
-                      minW="24px"
-                      fontSize="12px"
-                      fontWeight={currentPage === page ? "bold" : "normal"}
-                      textDecoration={currentPage === page ? "underline" : "none"}
-                      _hover={{ bg: "#9CBAD2" }}
-                      bg={currentPage === page ? "blue.200" : buttonGradientColor}
-                    >
-                      {page}
-                    </Button>
-                  )
-                );
-              })()}
-
-              <Button
-                onClick={() => handlePageChange(currentPage + 1)}
-                isDisabled={currentPage * itemsPerPage >= totalItemsAfterFilters}
-                ml={1}
-                size="xs"
-                variant="ghost"
-                _hover={{ bg: "#9CBAD2" }}
-                bg={buttonGradientColor}
-                fontSize="12px"
+                boxShadow={
+                  location.pathname.toLowerCase() === "/cameras"
+                    ? "0 1px 3px rgba(0, 0, 0, 0.08)"
+                    : "none"
+                }
+                color={
+                  location.pathname.toLowerCase() === "/cameras"
+                    ? "#3F77A5"
+                    : "#64748B"
+                }
+                _hover={{
+                  textDecoration: "none",
+                  color:
+                    location.pathname.toLowerCase() === "/cameras"
+                      ? "#3F77A5"
+                      : titleColor,
+                }}
+                transition="all 0.18s cubic-bezier(0.4, 0, 0.2, 1)"
               >
-                Next
-              </Button>
-            </Flex>
-          )}
+                <TbLayoutGrid size="17px" />
+              </Box>
+            </Tooltip>
+            <Tooltip label="List View" hasArrow placement="top">
+              <Box
+                as={RouterLink}
+                to="/listview"
+                h="26px"
+                px="8px"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                borderRadius="6px"
+                bg={
+                  location.pathname.toLowerCase() === "/listview"
+                    ? cardBg
+                    : "transparent"
+                }
+                boxShadow={
+                  location.pathname.toLowerCase() === "/listview"
+                    ? "0 1px 3px rgba(0, 0, 0, 0.08)"
+                    : "none"
+                }
+                color={
+                  location.pathname.toLowerCase() === "/listview"
+                    ? "#3F77A5"
+                    : "#64748B"
+                }
+                _hover={{
+                  textDecoration: "none",
+                  color:
+                    location.pathname.toLowerCase() === "/listview"
+                      ? "#3F77A5"
+                      : titleColor,
+                }}
+                transition="all 0.18s cubic-bezier(0.4, 0, 0.2, 1)"
+              >
+                <TbList size="18px" />
+              </Box>
+            </Tooltip>
+          </HStack>
+        </HStack>
+
+        {/* Right Side: XLSX & PDF Export Buttons */}
+        <HStack spacing={2} flexShrink={0}>
+          <Button
+            leftIcon={<FaDownload size="12px" />}
+            h="34px"
+            px="12px"
+            borderRadius="8px"
+            borderWidth="1px"
+            borderColor={cardBorder}
+            bg={cardBg}
+            color="#3F77A5"
+            fontFamily="Manrope, sans-serif"
+            fontWeight="700"
+            fontSize="12px"
+            _hover={{ bg: "#3F77A512", borderColor: "#3F77A5" }}
+            onClick={handleCSVExport}
+          >
+            XLSX
+          </Button>
+
+          <Button
+            leftIcon={<FaFilePdf size="12px" />}
+            h="34px"
+            px="12px"
+            borderRadius="8px"
+            borderWidth="1px"
+            borderColor={cardBorder}
+            bg={cardBg}
+            color="#3F77A5"
+            fontFamily="Manrope, sans-serif"
+            fontWeight="700"
+            fontSize="12px"
+            _hover={{ bg: "#3F77A512", borderColor: "#3F77A5" }}
+            onClick={handlePDFExport}
+          >
+            PDF
+          </Button>
+        </HStack>
+      </Flex>
+
+      {/* ========================================================================= */}
+      {/* 2. STATUS COUNTERS BAR                                                    */}
+      {/* ========================================================================= */}
+      <Flex gap="16px" align="center" flexWrap="wrap" mb="14px">
+        {/* Total Cameras */}
+        <HStack
+          spacing="6px"
+          cursor="pointer"
+          onClick={() => setSelectedStatus("")}
+          opacity={!selectedStatus ? 1 : 0.65}
+          _hover={{ opacity: 1 }}
+          transition="opacity 0.15s"
+        >
+          <Box w="8px" h="8px" borderRadius="full" bg="#3F77A5" />
+          <Text
+            fontFamily="Manrope, sans-serif"
+            fontWeight="600"
+            fontSize="12px"
+            color={subtextColor}
+          >
+            Total Cameras ({totalCount})
+          </Text>
+        </HStack>
+
+        {/* Online */}
+        <HStack
+          spacing="6px"
+          cursor="pointer"
+          onClick={() =>
+            setSelectedStatus(selectedStatus === "online" ? "" : "online")
+          }
+          opacity={selectedStatus === "online" || !selectedStatus ? 1 : 0.5}
+          _hover={{ opacity: 1 }}
+          transition="opacity 0.15s"
+        >
+          <Box w="8px" h="8px" borderRadius="full" bg="#10B981" />
+          <Text
+            fontFamily="Manrope, sans-serif"
+            fontWeight="600"
+            fontSize="12px"
+            color={selectedStatus === "online" ? "#10B981" : subtextColor}
+          >
+            Online ({onlineCount})
+          </Text>
+        </HStack>
+
+        {/* Offline */}
+        <HStack
+          spacing="6px"
+          cursor="pointer"
+          onClick={() =>
+            setSelectedStatus(selectedStatus === "offline" ? "" : "offline")
+          }
+          opacity={selectedStatus === "offline" || !selectedStatus ? 1 : 0.5}
+          _hover={{ opacity: 1 }}
+          transition="opacity 0.15s"
+        >
+          <Box w="8px" h="8px" borderRadius="full" bg="#EF4444" />
+          <Text
+            fontFamily="Manrope, sans-serif"
+            fontWeight="600"
+            fontSize="12px"
+            color={selectedStatus === "offline" ? "#EF4444" : subtextColor}
+          >
+            Offline ({offlineCount})
+          </Text>
+        </HStack>
+      </Flex>
+
+      {/* ========================================================================= */}
+      {/* 3. MAIN WHITE CONTAINER WITH CURVED/ROUNDED BORDERS (Reference Design)     */}
+      {/* ========================================================================= */}
+      <Box
+        bg={cardBg}
+        borderRadius="16px"
+        borderWidth="1px"
+        borderColor={cardBorder}
+        boxShadow="0px 2px 10px rgba(0, 0, 0, 0.04)"
+        p={{ base: "14px", md: "20px" }}
+        overflow="hidden"
+      >
+        {/* --- Top Filter Toolbar inside the Container --- */}
+        <Flex
+          justify="space-between"
+          align={{ base: "stretch", md: "center" }}
+          direction={{ base: "column", md: "row" }}
+          gap="12px"
+          mb="18px"
+          flexWrap="wrap"
+        >
+          {/* Left: SEARCH label + Filters + Search Bar */}
+          <Flex
+            align="center"
+            gap="12px"
+            flexWrap="wrap"
+            flex="1"
+          >
+            {/* Select Location Field */}
+            <Select
+              placeholder="Select Location"
+              value={selectedDistrictName}
+              onChange={handleDistrictChange}
+              w={{ base: "100%", sm: "160px" }}
+              h="36px"
+              borderRadius="8px"
+              borderWidth="1px"
+              borderColor={cardBorder}
+              bg={cardBg}
+              fontFamily="Manrope, sans-serif"
+              fontSize="13px"
+              fontWeight="500"
+              color={titleColor}
+              _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
+            >
+              {districtsList.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </Select>
+
+            {/* Select Status Field */}
+            <Select
+              placeholder="Select Status"
+              value={selectedStatus}
+              onChange={handleStatusChange}
+              w={{ base: "100%", sm: "135px" }}
+              h="36px"
+              borderRadius="8px"
+              borderWidth="1px"
+              borderColor={cardBorder}
+              bg={cardBg}
+              fontFamily="Manrope, sans-serif"
+              fontSize="13px"
+              fontWeight="500"
+              color={titleColor}
+              _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
+            >
+              <option value="online">Online</option>
+              <option value="offline">Offline</option>
+            </Select>
+
+            {/* Search Camera Input with Q / Search icon */}
+            <InputGroup w={{ base: "100%", sm: "240px", md: "320px" }} h="36px">
+              <InputLeftElement h="36px" pointerEvents="none" pl="10px">
+                <MdSearch size="18px" color="#94A3B8" />
+              </InputLeftElement>
+              <Input
+                placeholder="Search Camera ID"
+                value={searchDeviceId}
+                onChange={handleSearchDeviceIdChange}
+                h="36px"
+                pl="34px"
+                pr="12px"
+                borderRadius="8px"
+                borderWidth="1px"
+                borderColor={cardBorder}
+                bg={cardBg}
+                fontFamily="Manrope, sans-serif"
+                fontSize="13px"
+                fontWeight="500"
+                color={titleColor}
+                _placeholder={{ color: placeholderColor }}
+                _focus={{
+                  borderColor: "#3F77A5",
+                  boxShadow: "0 0 0 1px #3F77A5",
+                }}
+              />
+            </InputGroup>
+          </Flex>
+
+          {/* Right: Clear Filters Link Button */}
+          <Flex align="center" justify={{ base: "flex-end", md: "center" }}>
+            <Button
+              variant="unstyled"
+              h="auto"
+              p={0}
+              color="#718096"
+              fontFamily="Manrope, sans-serif"
+              fontSize="13px"
+              fontWeight="600"
+              _hover={{ color: "#3182CE", textDecoration: "underline" }}
+              onClick={handleClearFilters}
+              isDisabled={!isAnyFilterActive}
+              opacity={isAnyFilterActive ? 1 : 0.4}
+              cursor={isAnyFilterActive ? "pointer" : "default"}
+            >
+              Clear Filters
+            </Button>
+          </Flex>
         </Flex>
 
-
+        {/* --- Main Table / Content Section --- */}
         {loading ? (
-          <Flex justifyContent="center" alignItems="center" height="200px">
-            <Spinner size="xl" color="blue.500" />
+          <Flex
+            justifyContent="center"
+            alignItems="center"
+            minH="300px"
+            direction="column"
+            gap={3}
+          >
+            <Spinner size="xl" thickness="3px" color="#3F77A5" />
+            <Text fontSize="13px" color={subtextColor} fontFamily="Manrope, sans-serif">
+              Loading cameras...
+            </Text>
           </Flex>
+        ) : displayedCameras.length === 0 ? (
+          <Box py={8}>
+            <NoCameraFound
+              title="Cameras"
+              description="No cameras match your selected filters. Try changing or clearing filters."
+            />
+          </Box>
         ) : (
           <>
-            {/* --- Mobile Card View (iPhone SE Mode) --- */}
+            {/* Mobile View Cards (< md) */}
             <VStack
               display={{ base: "flex", md: "none" }}
-              spacing={4}
+              spacing={3}
               align="stretch"
-              pb="100px" // <--- Add this line here
             >
               {displayedCameras.map((camera, index) => {
                 const rowId = `${camera.DeviceId}-${index}`;
+                const isOnline = Boolean(camera.status);
                 return (
-                  <Box key={rowId} borderRadius="lg" border="1px solid" borderColor="#b3b8d6ff" overflow="hidden" boxShadow="sm" bg={cardBg}>
-                    <Box p={4}>
-                      <Flex justify="space-between" align="center" mb={4}>
-                        <Text fontWeight="bold" color="blue.600" fontSize="sm">{camera.district || "N/A"}</Text>
-                        <IconButton
-                          icon={<Image src={Frame} alt="frame" boxSize="1.2rem" />}
-                          size="sm" variant="ghost" onClick={() => handleViewStream(camera)}
-                          isDisabled={!camera.streamUrl}
+                  <Box
+                    key={rowId}
+                    borderRadius="10px"
+                    borderWidth="1px"
+                    borderColor={tableBorderColor}
+                    bg={index % 2 === 1 ? rowAltBg : cardBg}
+                    p={4}
+                  >
+                    <Flex justify="space-between" align="center" mb={3}>
+                      <HStack spacing={2} align="center">
+                        <Box
+                          w="8px"
+                          h="8px"
+                          borderRadius="full"
+                          bg={isOnline ? "#10B981" : "#EF4444"}
                         />
-                      </Flex>
+                        <Text
+                          fontWeight="700"
+                          color={titleColor}
+                          fontSize="sm"
+                          fontFamily="Manrope, sans-serif"
+                        >
+                          {camera.district || "N/A"}
+                        </Text>
+                        <Badge
+                          colorScheme={isOnline ? "green" : "red"}
+                          borderRadius="full"
+                          px={2}
+                          fontSize="10px"
+                          textTransform="capitalize"
+                        >
+                          {isOnline ? "Online" : "Offline"}
+                        </Badge>
+                      </HStack>
 
-                      <SimpleGrid columns={2} spacing={3} mb={4}>
-                        <MobileMetricCell label="Assembly" value={camera.assembly} colorDot="blue.500" />
-                        <MobileMetricCell label="Vehicle No" value={camera.location} colorDot="green.400" />
-                        <MobileMetricCell label="Camera ID" value={camera.DeviceId} colorDot="purple.500" />
-                        <MobileMetricCell label="Status" value={camera.status ? "Online" : "Offline"} colorDot={camera.status ? "green.400" : "red.400"} />
-                      </SimpleGrid>
+                      <Tooltip label="View Live Stream" hasArrow placement="top">
+                        <IconButton
+                          aria-label="View Stream"
+                          icon={<TbPlayerPlay size="15px" />}
+                          size="sm"
+                          h="30px"
+                          w="30px"
+                          minW="30px"
+                          borderRadius="7px"
+                          borderWidth="1px"
+                          borderColor={cardBorder}
+                          bg={actionBtnBg}
+                          color="#3F77A5"
+                          onClick={() => handleViewStream(camera)}
+                          isDisabled={!camera.streamUrl}
+                          _hover={{
+                            bg: "#3F77A5",
+                            color: "#FFFFFF",
+                            borderColor: "#3F77A5",
+                          }}
+                          _disabled={{
+                            opacity: 0.35,
+                            cursor: "not-allowed",
+                            bg: "transparent",
+                            borderColor: cardBorder,
+                            color: subtextColor,
+                          }}
+                        />
+                      </Tooltip>
+                    </Flex>
 
-                      <Collapse in={expandedRows[rowId]}>
-                        <Box p={4} borderTop="1px dashed" borderColor="#b3b8d6ff">
-                          <VStack align="stretch" spacing={2}>
-                            <HStack justify="space-between">
-                              <Text fontSize="xs"
-                                color={cardTextColor}
-                              >Driver Name:
-                              </Text>
-                              <Text fontSize="xs" color={cardTextColor}>{camera.operatorName || "N/A"}</Text>
-                            </HStack>
-                            <HStack justify="space-between">
-                              <Text fontSize="xs" color={cardTextColor}>Contact:</Text>
-                              <Text fontSize="xs" color={cardTextColor}>{camera.operatorMobile || "N/A"}</Text>
-                            </HStack>
-                          </VStack>
-                        </Box>
-                      </Collapse>
-                      <Button
-                        w="full" size="xs" variant="outline" colorScheme="blue" borderRadius="lg"
-                        onClick={() => toggleMoreInfo(rowId)}
-                        rightIcon={expandedRows[rowId] ? <FaChevronUp /> : <FaChevronDown />}
-                      // color={overlayBg}
+                    <SimpleGrid columns={2} spacing={3} mb={3}>
+                      <MobileMetricCell
+                        label="Location Name"
+                        value={camera.assembly || camera.location}
+                        colorDot="blue.500"
+                      />
+                      <MobileMetricCell
+                        label="Device Id"
+                        value={camera.DeviceId}
+                        colorDot="purple.500"
+                      />
+                      <MobileMetricCell
+                        label="Operator Name"
+                        value={camera.operatorName}
+                        colorDot="green.400"
+                      />
+                      <MobileMetricCell
+                        label="Operator Mobile"
+                        value={camera.operatorMobile}
+                        colorDot="orange.400"
+                      />
+                    </SimpleGrid>
+
+                    <Collapse in={expandedRows[rowId]}>
+                      <Box
+                        p={3}
+                        mb={3}
+                        borderRadius="8px"
+                        bg={tableHeaderBg}
+                        border="1px dashed"
+                        borderColor={cardBorder}
                       >
-                        More Info
-                      </Button>
-                    </Box>
+                        <VStack align="stretch" spacing={2}>
+                          <HStack justify="space-between">
+                            <Text fontSize="xs" color={subtextColor} fontFamily="Manrope, sans-serif">
+                              Driver Name:
+                            </Text>
+                            <Text fontSize="xs" fontWeight="600" color={titleColor} fontFamily="Manrope, sans-serif">
+                              {camera.operatorName || "N/A"}
+                            </Text>
+                          </HStack>
+                          <HStack justify="space-between">
+                            <Text fontSize="xs" color={subtextColor} fontFamily="Manrope, sans-serif">
+                              Contact:
+                            </Text>
+                            <Text fontSize="xs" fontWeight="600" color={titleColor} fontFamily="Manrope, sans-serif">
+                              {camera.operatorMobile || "N/A"}
+                            </Text>
+                          </HStack>
+                        </VStack>
+                      </Box>
+                    </Collapse>
 
+                    <Button
+                      w="full"
+                      size="xs"
+                      h="28px"
+                      variant="outline"
+                      borderColor={cardBorder}
+                      color={subtextColor}
+                      borderRadius="6px"
+                      fontFamily="Manrope, sans-serif"
+                      fontWeight="600"
+                      onClick={() => toggleMoreInfo(rowId)}
+                      rightIcon={
+                        expandedRows[rowId] ? <FaChevronUp /> : <FaChevronDown />
+                      }
+                      _hover={{ bg: tableHeaderBg, color: titleColor }}
+                    >
+                      {expandedRows[rowId] ? "Less Info" : "More Info"}
+                    </Button>
                   </Box>
                 );
               })}
-              {displayedCameras.length === 0 && <Center p={10}>No Records found.</Center>}
             </VStack>
 
-            {/* --- Existing Desktop Table View (Untouched) --- */}
-            <div style={tableContainerStyle} className="desktop-table">
-              <Box display={{ base: "none", md: "block" }}>
-                <Table variant="simple" size="sm" borderRadius="15">
-                  <Thead>
-                    <Tr style={tableHeaderRowStyle} bg={buttonGradientColor}>
-                      <Th style={tableHeaderStyle}>Sr No.<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>Location<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>operator Name<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>operator Mobile No.<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>Device Id<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>Status<VerticalLine /></Th>
-                      <Th style={tableHeaderStyle}>Preview</Th>
+            {/* Desktop Table View matching Reference Screenshot (md and up) */}
+            <Box
+              display={{ base: "none", md: "block" }}
+              borderRadius="10px"
+              overflow="hidden"
+              border="1px solid"
+              borderColor={tableBorderColor}
+            >
+              <Box overflowX="auto" maxH="calc(100vh - 330px)">
+                <Table variant="simple" size="md">
+                  <Thead
+                    position="sticky"
+                    top={0}
+                    zIndex={2}
+                    bg={tableHeaderBg}
+                  >
+                    <Tr borderBottom="1px solid" borderColor={tableBorderColor}>
+                      <Th
+                        py="14px"
+                        px="18px"
+                        fontFamily="Manrope, sans-serif"
+                        fontWeight="700"
+                        fontSize="13px"
+                        color={tableHeaderColor}
+                        textTransform="none"
+                        letterSpacing="0px"
+                      >
+                        Location
+                      </Th>
+                      {/* <Th
+                        py="14px"
+                        px="18px"
+                        fontFamily="Manrope, sans-serif"
+                        fontWeight="700"
+                        fontSize="13px"
+                        color={tableHeaderColor}
+                        textTransform="none"
+                        letterSpacing="0px"
+                      >
+                        Camera Location Name
+                      </Th> */}
+                      <Th
+                        py="14px"
+                        px="18px"
+                        fontFamily="Manrope, sans-serif"
+                        fontWeight="700"
+                        fontSize="13px"
+                        color={tableHeaderColor}
+                        textTransform="none"
+                        letterSpacing="0px"
+                      >
+                        Device Id
+                      </Th>
+                      <Th
+                        py="14px"
+                        px="18px"
+                        fontFamily="Manrope, sans-serif"
+                        fontWeight="700"
+                        fontSize="13px"
+                        color={tableHeaderColor}
+                        textTransform="none"
+                        letterSpacing="0px"
+                      >
+                        Operator Name
+                      </Th>
+                      <Th
+                        py="14px"
+                        px="18px"
+                        fontFamily="Manrope, sans-serif"
+                        fontWeight="700"
+                        fontSize="13px"
+                        color={tableHeaderColor}
+                        textTransform="none"
+                        letterSpacing="0px"
+                      >
+                        Operator Mobile No.
+                      </Th>
+                      <Th
+                        py="14px"
+                        px="18px"
+                        fontFamily="Manrope, sans-serif"
+                        fontWeight="700"
+                        fontSize="13px"
+                        color={tableHeaderColor}
+                        textTransform="none"
+                        letterSpacing="0px"
+                        textAlign="center"
+                      >
+                        Status
+                      </Th>
+                      <Th
+                        py="14px"
+                        px="18px"
+                        fontFamily="Manrope, sans-serif"
+                        fontWeight="700"
+                        fontSize="13px"
+                        color={tableHeaderColor}
+                        textTransform="none"
+                        letterSpacing="0px"
+                        textAlign="center"
+                      >
+                        Actions
+                      </Th>
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {displayedCameras.length > 0 ? (
-                      displayedCameras.map((camera, index) => (
-                        <Tr key={`${camera.DeviceId}-${index}`}>
-                          <Td style={tableDataStyle}>{(currentPage - 1) * itemsPerPage + index + 1}<VerticalLine /></Td>
-                          <Td style={tableDataStyle}>{camera.district || "N/A"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle}>{camera.operatorName || "N/A"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle}>{camera.operatorMobile || "N/A"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle}>{camera.DeviceId || "N/A"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle} color={camera.status ? "green.400" : "red.400"}>{camera.status ? "⬤" : "⬤"}<VerticalLine /></Td>
-                          <Td style={tableDataStyle}>
-                            <IconButton icon={<Image src={Frame} alt="frame" boxSize="1.5rem" />} size="sm" aria-label="View Live Stream" colorScheme="teal" variant="ghost" onClick={() => handleViewStream(camera)} isDisabled={!camera.streamUrl} />
+                    {displayedCameras.map((camera, index) => {
+                      const rowId = `${camera.DeviceId}-${index}`;
+                      const isOnline = Boolean(camera.status);
+                      const isEvenRow = index % 2 === 1;
+
+                      return (
+                        <Tr
+                          key={rowId}
+                          bg={isEvenRow ? rowAltBg : cardBg}
+                          borderBottom="1px solid"
+                          borderColor={tableBorderColor}
+                          _hover={{ bg: tableRowHoverBg }}
+                          transition="background 0.15s ease"
+                        >
+                          {/* Location */}
+                          <Td
+                            py="14px"
+                            px="18px"
+                            fontFamily="Manrope, sans-serif"
+                            fontSize="13px"
+                            fontWeight="600"
+                            color={titleColor}
+                          >
+                            {camera.district || "N/A"}
+                          </Td>
+
+                          {/* Camera Location Name - Commented out */}
+                          {/* <Td
+                            py="14px"
+                            px="18px"
+                            fontFamily="Manrope, sans-serif"
+                            fontSize="13px"
+                            color={tableTextColor}
+                          >
+                            {camera.assembly || camera.location || "Loc-1"}
+                          </Td> */}
+
+                          {/* Device Id (Styled blue as in reference) */}
+                          <Td
+                            py="14px"
+                            px="18px"
+                            fontFamily="Manrope, sans-serif"
+                            fontSize="13px"
+                            fontWeight="700"
+                            color="#3F77A5"
+                          >
+                            {camera.DeviceId || "N/A"}
+                          </Td>
+
+                          {/* Operator Name */}
+                          <Td
+                            py="14px"
+                            px="18px"
+                            fontFamily="Manrope, sans-serif"
+                            fontSize="13px"
+                            color={tableTextColor}
+                          >
+                            {camera.operatorName || "N/A"}
+                          </Td>
+
+                          {/* Operator Mobile No. */}
+                          <Td
+                            py="14px"
+                            px="18px"
+                            fontFamily="Manrope, sans-serif"
+                            fontSize="13px"
+                            color={tableTextColor}
+                          >
+                            {camera.operatorMobile || "N/A"}
+                          </Td>
+
+                          {/* Status */}
+                          <Td py="14px" px="18px" textAlign="center">
+                            <HStack spacing={1.5} justify="center">
+                              <Box
+                                w="7px"
+                                h="7px"
+                                borderRadius="full"
+                                bg={isOnline ? "#10B981" : "#EF4444"}
+                                boxShadow={
+                                  isOnline
+                                    ? "0 0 6px rgba(16, 185, 129, 0.5)"
+                                    : "none"
+                                }
+                              />
+                              <Text
+                                fontSize="12px"
+                                fontWeight="600"
+                                fontFamily="Manrope, sans-serif"
+                                color={isOnline ? "#10B981" : "#EF4444"}
+                              >
+                                {isOnline ? "Online" : "Offline"}
+                              </Text>
+                            </HStack>
+                          </Td>
+
+                          {/* Actions (Stream Preview button matching reference icon box) */}
+                          <Td py="14px" px="18px" textAlign="center">
+                            <Tooltip label="View Live Stream" hasArrow placement="top">
+                              <IconButton
+                                aria-label="View Live Stream"
+                                icon={<TbPlayerPlay size="15px" />}
+                                size="sm"
+                                h="30px"
+                                w="30px"
+                                minW="30px"
+                                borderRadius="7px"
+                                borderWidth="1px"
+                                borderColor={cardBorder}
+                                bg={actionBtnBg}
+                                color="#3F77A5"
+                                onClick={() => handleViewStream(camera)}
+                                isDisabled={!camera.streamUrl}
+                                _hover={{
+                                  bg: "#3F77A5",
+                                  color: "#FFFFFF",
+                                  borderColor: "#3F77A5",
+                                  transform: "translateY(-1px)",
+                                  boxShadow: "0 2px 6px rgba(63, 119, 165, 0.35)",
+                                }}
+                                _disabled={{
+                                  opacity: 0.35,
+                                  cursor: "not-allowed",
+                                  bg: "transparent",
+                                  borderColor: cardBorder,
+                                  color: subtextColor,
+                                }}
+                                transition="all 0.15s ease"
+                              />
+                            </Tooltip>
                           </Td>
                         </Tr>
-                      ))
-                    ) : (
-                      <Tr><Td colSpan="9" textAlign="center" style={tableDataStyle} p={5}>No Records found.</Td></Tr>
-                    )}
+                      );
+                    })}
                   </Tbody>
                 </Table>
               </Box>
-            </div>
+            </Box>
           </>
         )}
-      </ChakraBox>
 
-      {/* Modal JSX remains unchanged */}
+        {/* --- Pagination Controls at Bottom matching Reference Screenshot --- */}
+        {!loading && displayedCameras.length > 0 && (
+          <Flex
+            justifyContent="center"
+            alignItems="center"
+            gap="6px"
+            mt="20px"
+            pt="12px"
+            fontFamily="Manrope, sans-serif"
+          >
+            {/* Prev Button */}
+            <Button
+              onClick={() => handlePageChange(currentPage - 1)}
+              isDisabled={currentPage === 1}
+              h="34px"
+              px="14px"
+              borderRadius="8px"
+              borderWidth="1px"
+              borderColor={cardBorder}
+              bg={cardBg}
+              color={tableTextColor}
+              fontFamily="Manrope, sans-serif"
+              fontWeight="600"
+              fontSize="12px"
+              _hover={{ bg: tableHeaderBg, borderColor: "#3F77A5" }}
+              _disabled={{ opacity: 0.45, cursor: "not-allowed" }}
+            >
+              Prev
+            </Button>
+
+            {/* Page Number Buttons */}
+            {(() => {
+              const pageNumbers = [];
+              const delta = 1;
+
+              for (let i = 1; i <= totalPages; i++) {
+                if (
+                  i === 1 ||
+                  i === totalPages ||
+                  (i >= currentPage - delta && i <= currentPage + delta)
+                ) {
+                  pageNumbers.push(i);
+                } else if (
+                  (i === currentPage - delta - 1 && i > 1) ||
+                  (i === currentPage + delta + 1 && i < totalPages)
+                ) {
+                  if (pageNumbers[pageNumbers.length - 1] !== "...") {
+                    pageNumbers.push("...");
+                  }
+                }
+              }
+
+              return pageNumbers.map((page, idx) =>
+                page === "..." ? (
+                  <Text key={`ellipsis-${idx}`} mx={1} color={subtextColor} fontSize="12px">
+                    ...
+                  </Text>
+                ) : (
+                  <Button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    h="34px"
+                    minW="34px"
+                    px="10px"
+                    borderRadius="8px"
+                    borderWidth={currentPage === page ? "0px" : "1px"}
+                    borderColor={cardBorder}
+                    bg={currentPage === page ? "#3F77A5" : cardBg}
+                    color={currentPage === page ? "white" : tableTextColor}
+                    fontFamily="Manrope, sans-serif"
+                    fontWeight={currentPage === page ? "700" : "600"}
+                    fontSize="12px"
+                    _hover={{
+                      bg: currentPage === page ? "#2B5273" : tableHeaderBg,
+                    }}
+                  >
+                    {page}
+                  </Button>
+                )
+              );
+            })()}
+
+            {/* Next Button */}
+            <Button
+              onClick={() => handlePageChange(currentPage + 1)}
+              isDisabled={currentPage >= totalPages}
+              h="34px"
+              px="14px"
+              borderRadius="8px"
+              borderWidth="1px"
+              borderColor={cardBorder}
+              bg={cardBg}
+              color={tableTextColor}
+              fontFamily="Manrope, sans-serif"
+              fontWeight="600"
+              fontSize="12px"
+              _hover={{ bg: tableHeaderBg, borderColor: "#3F77A5" }}
+              _disabled={{ opacity: 0.45, cursor: "not-allowed" }}
+            >
+              Next
+            </Button>
+          </Flex>
+        )}
+      </Box>
+
+      {/* ========================================================================= */}
+      {/* 4. STREAM & PTZ MODAL                                                     */}
+      {/* ========================================================================= */}
       <Modal
         isOpen={isStreamModalOpen}
         onClose={handleCloseModal}
         size="4xl"
         isCentered
       >
-        <ModalOverlay />
-        <ModalContent bg="white" color="Black" borderRadius="lg"> {/* Themed Modal */}
-          <ModalHeader>
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent
+          bg={modalBg}
+          color={titleColor}
+          borderRadius="12px"
+          borderWidth="1px"
+          borderColor={cardBorder}
+          overflow="hidden"
+          boxShadow="0 10px 30px rgba(0,0,0,0.2)"
+        >
+          <ModalHeader
+            borderBottom="1px solid"
+            borderColor={cardBorder}
+            py={3}
+            px={5}
+            fontFamily="Manrope, sans-serif"
+            fontSize="16px"
+            fontWeight="700"
+          >
             <Flex justifyContent="space-between" alignItems="center">
-              <Text>Live Stream: {selectedCamera?.DeviceId}</Text>
+              <HStack spacing={2}>
+                <Box
+                  w="8px"
+                  h="8px"
+                  borderRadius="full"
+                  bg={selectedCamera?.status ? "#10B981" : "#EF4444"}
+                />
+                <Text>
+                  Live Stream:{" "}
+                  <Text as="span" color="#3F77A5">
+                    {selectedCamera?.DeviceId}
+                  </Text>
+                </Text>
+              </HStack>
             </Flex>
           </ModalHeader>
-          <ModalCloseButton />
-        <ModalBody>
-  {isStreamModalOpen && selectedCamera && (
-    <Flex direction={{ base: "column", lg: "row" }} gap={4} alignItems="flex-start">
-      
-      {/* Video Container with Overlay */}
-      <Box flex="1" width="100%" position="relative" borderRadius="8px" overflow="hidden">
-        
-        {/* Player Section */}
-        {selectedCamera.DeviceId && selectedCamera.DeviceId.startsWith("SSAN") ? (
-          <SimpleFLVPlayer
-            url={selectedCamera.streamUrl}
-            muted={isMuted}
-            style={{ width: "100%", height: "450px", borderRadius: "8px" }}
-          />
-        ) : (
-          <Player
-            ref={playerRef}
-            device={selectedCamera}
-            initialPlayUrl={selectedCamera.streamUrl}
-            muted={isMuted}
-            style={{ width: "100%", height: "450px", borderRadius: "8px" }}
-            showControls={false}
-          />
-        )}
+          <ModalCloseButton top="12px" right="14px" />
 
-        {/* Mute Toggle Overlay (Multiscreen Style) */}
-        <IconButton
-          position="absolute"
-          bottom="20px"
-          right="20px"
-          zIndex="20"
-          variant="solid"
-          size="md"
-          bg="rgba(0,0,0,0.6)"
-          _hover={{ bg: "black" }}
-          color="white"
-          borderRadius="full"
-          icon={isMuted ? <BsVolumeMute fontSize="22px" /> : <BsVolumeUp fontSize="22px" />}
-          onClick={() => setIsMuted(!isMuted)}
-          aria-label="Toggle Mute"
-        />
-        
-        {/* Info Overlay (Multiscreen Style) */}
-        <Box 
-          position="absolute" 
-          bottom="0" 
-          left="0" 
-          right="0" 
-          bg="rgba(0, 0, 0, 0.5)" 
-          p={2} 
-          zIndex="10"
-        >
-          <Text color="white" fontSize="13px" fontWeight="500">
-            {selectedCamera.district} / {selectedCamera.DeviceId}
-          </Text>
-        </Box>
-      </Box>
+          <ModalBody p={5}>
+            {isStreamModalOpen && selectedCamera && (
+              <Flex
+                direction={{ base: "column", lg: "row" }}
+                gap={4}
+                alignItems="flex-start"
+              >
+                {/* Video Player Section */}
+                <Box
+                  flex="1"
+                  width="100%"
+                  position="relative"
+                  borderRadius="10px"
+                  overflow="hidden"
+                  bg="black"
+                >
+                  {selectedCamera.DeviceId &&
+                  selectedCamera.DeviceId.startsWith("SSAN") ? (
+                    <SimpleFLVPlayer
+                      url={selectedCamera.streamUrl}
+                      muted={isMuted}
+                      style={{
+                        width: "100%",
+                        height: "450px",
+                        borderRadius: "10px",
+                      }}
+                    />
+                  ) : (
+                    <Player
+                      ref={playerRef}
+                      device={selectedCamera}
+                      initialPlayUrl={selectedCamera.streamUrl}
+                      muted={isMuted}
+                      style={{
+                        width: "100%",
+                        height: "450px",
+                        borderRadius: "10px",
+                      }}
+                      showControls={false}
+                    />
+                  )}
 
-      {/* PTZ Controls Side Panel */}
-      <Box 
-        minW="200px" 
-        p={4} 
-        borderRadius="md" 
-        bg={("gray.50")} 
-        display="flex" 
-        flexDirection="column" 
-        alignItems="center"
-      >
-        <Text fontWeight="bold" mb={4}>PTZ Controls</Text>
-        <CameraPTZ
-          deviceId={selectedCamera.DeviceId}
-          onZoomIn={() => playerRef.current?.zoomIn()}
-          onZoomOut={() => playerRef.current?.zoomOut()}
-          onFullscreen={() => playerRef.current?.handleFullscreen()}
-          position="static"
-          transform="none"
-          marginTop="20px"
-        />
-      </Box>
-    </Flex>
-  )}
-</ModalBody>
-          <ModalFooter>
-            <Button onClick={handleCloseModal}>
+                  {/* Mute Toggle Overlay */}
+                  <IconButton
+                    position="absolute"
+                    bottom="20px"
+                    right="20px"
+                    zIndex="20"
+                    size="md"
+                    bg="rgba(0,0,0,0.6)"
+                    _hover={{ bg: "black" }}
+                    color="white"
+                    borderRadius="full"
+                    icon={
+                      isMuted ? (
+                        <BsVolumeMute fontSize="22px" />
+                      ) : (
+                        <BsVolumeUp fontSize="22px" />
+                      )
+                    }
+                    onClick={() => setIsMuted(!isMuted)}
+                    aria-label="Toggle Mute"
+                  />
+
+                  {/* Device Info Overlay */}
+                  <Box
+                    position="absolute"
+                    bottom="0"
+                    left="0"
+                    right="0"
+                    bg="rgba(0, 0, 0, 0.55)"
+                    backdropFilter="blur(2px)"
+                    p={2.5}
+                    zIndex="10"
+                  >
+                    <Text
+                      color="white"
+                      fontSize="13px"
+                      fontWeight="600"
+                      fontFamily="Manrope, sans-serif"
+                    >
+                      {selectedCamera.district || "N/A"} /{" "}
+                      {selectedCamera.DeviceId}
+                    </Text>
+                  </Box>
+                </Box>
+
+                {/* PTZ Controls Side Panel */}
+                <Box
+                  w={{ base: "100%", lg: "220px" }}
+                  p={4}
+                  borderRadius="10px"
+                  bg={modalSectionBg}
+                  borderWidth="1px"
+                  borderColor={cardBorder}
+                  display="flex"
+                  flexDirection="column"
+                  alignItems="center"
+                >
+                  <Text
+                    fontWeight="700"
+                    fontSize="13px"
+                    color={titleColor}
+                    fontFamily="Manrope, sans-serif"
+                    mb={3}
+                  >
+                    PTZ Controls
+                  </Text>
+                  <CameraPTZ
+                    deviceId={selectedCamera.DeviceId}
+                    onZoomIn={() => playerRef.current?.zoomIn()}
+                    onZoomOut={() => playerRef.current?.zoomOut()}
+                    onFullscreen={() => playerRef.current?.handleFullscreen()}
+                    position="static"
+                    transform="none"
+                  />
+                </Box>
+              </Flex>
+            )}
+          </ModalBody>
+
+          <ModalFooter borderTop="1px solid" borderColor={cardBorder} py={3} px={5}>
+            <Button
+              onClick={handleCloseModal}
+              h="34px"
+              px="16px"
+              borderRadius="8px"
+              borderWidth="1px"
+              borderColor={cardBorder}
+              bg={cardBg}
+              color={titleColor}
+              fontFamily="Manrope, sans-serif"
+              fontWeight="600"
+              fontSize="12px"
+              _hover={{ bg: tableHeaderBg }}
+            >
               Close
             </Button>
           </ModalFooter>
@@ -1269,8 +1559,8 @@ return String(c.DeviceId || "").toLowerCase().includes(searchDeviceId.toLowerCas
           productType={selectedCamera.productType}
         />
       )}
-    </div>
+    </Box>
   );
 };
 
-export default Boxes;
+export default Listview;

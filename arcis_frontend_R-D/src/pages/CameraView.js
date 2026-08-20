@@ -13,7 +13,10 @@ import {
   ModalCloseButton,
   ModalBody,
   SimpleGrid,
-  Spinner, // --- CHANGE 1: Import Spinner for loading state
+  Spinner,
+  Button,
+  HStack,
+  Badge,
 } from "@chakra-ui/react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
@@ -27,9 +30,9 @@ import axios from "axios";
 import MobileHeader from "../components/MobileHeader";
 import { RiArrowGoBackLine } from "react-icons/ri";
 import { CiStreamOn } from "react-icons/ci";
+import { TbCamera } from "react-icons/tb";
 
 const CameraView = () => {
-  // --- CHANGE 2: Initialize device as `null` and add loading state
   const [device, setDevice] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,25 +46,23 @@ const CameraView = () => {
   const [videoUrl, setVideoUrl] = useState([]);
   const [noStream, setNoStream] = useState(false);
 
+  // --- Theme Tokens matching Global Design System ---
+  const cardBg = useColorModeValue("#FFFFFF", "#1C222D");
+  const cardBorder = useColorModeValue("#E2E8EF", "rgba(255, 255, 255, 0.08)");
+  const titleColor = useColorModeValue("#1A2E3D", "#FFFFFF");
+  const subtextColor = useColorModeValue("#64748B", "#94A3B8");
+
   const getResponsivePlayerStyle = () => ({
     width,
     height: "auto",
     aspectRatio: "16 / 9",
-    borderRadius: "8px",
+    borderRadius: "10px",
   });
 
-  const textColor = useColorModeValue(
-    "custom.secondaryTextColor",
-    "custom.darkModeText"
-  );
-
-  // --- CHANGE 3: Update fetch function to manage loading state
   const fetchStreamDetails = async (deviceId) => {
-    setIsLoading(true); // Start loading
+    setIsLoading(true);
     try {
       const response = await getStreamDetails(deviceId);
-      console.log("Get getStreamDetails", response);
-
       if (
         response.success &&
         response.streamData &&
@@ -69,17 +70,16 @@ const CameraView = () => {
       ) {
         setDevice(response.streamData[0]);
       } else {
-        setDevice(null); // Set to null if not found
+        setDevice(null);
       }
     } catch (error) {
       console.error("Error fetching camera details:", error);
       setDevice(null);
     } finally {
-      setIsLoading(false); // Stop loading regardless of outcome
+      setIsLoading(false);
     }
   };
 
-  // (handleToggle, handleModalClose, handleBack functions remain the same)
   const handleToggle = () => {
     setIsToggled(!isToggled);
     if (!isToggled) {
@@ -96,7 +96,6 @@ const CameraView = () => {
 
   const handleBack = () => {
     try {
-      console.log("handleBack function called");
       setImageUrll(deviceId);
     } catch (error) {
       console.error("Error in handleBack:", error);
@@ -105,16 +104,13 @@ const CameraView = () => {
     }
   };
 
-  // Fetch stream details when the page loads
   useEffect(() => {
     if (deviceId) {
       fetchStreamDetails(deviceId);
     }
   }, [deviceId]);
 
-  // --- CHANGE 4: Add a guard clause to this effect
   useEffect(() => {
-    // Don't run this if we don't have device details yet
     if (!device || !device.deviceId) {
       return;
     }
@@ -136,8 +132,6 @@ const CameraView = () => {
           setVideoUrl([]);
           setNoStream(true);
         }
-
-        console.log("Matched AI Stream Paths:", matchedPaths);
       } catch (error) {
         console.error("Error fetching AI stream data:", error);
         setNoStream(true);
@@ -145,28 +139,43 @@ const CameraView = () => {
     };
 
     fetchStreamData();
-  }, [device]); // This dependency on 'device' is now safer
+  }, [device]);
 
-  // --- CHANGE 5: Handle loading and error states before rendering the player
   if (isLoading) {
     return (
-      <Flex justify="center" align="center" height="80vh">
-        <Spinner size="xl" />
-        <Text ml={4}>Loading Camera Details...</Text>
+      <Flex justify="center" align="center" height="70vh" direction="column" gap={3}>
+        <Spinner size="xl" color="#3F77A5" thickness="3px" />
+        <Text fontFamily="'Manrope', sans-serif" fontSize="13px" color={subtextColor}>
+          Loading camera details…
+        </Text>
       </Flex>
     );
   }
 
   if (!device) {
     return (
-      <Flex justify="center" align="center" height="80vh">
-        <Text>Camera not found or failed to load details.</Text>
+      <Flex justify="center" align="center" height="70vh" direction="column" gap={3}>
+        <Text fontFamily="'Manrope', sans-serif" fontSize="16px" fontWeight="700" color={titleColor}>
+          Camera not found
+        </Text>
+        <Text fontFamily="'Manrope', sans-serif" fontSize="13px" color={subtextColor}>
+          Failed to load stream details for this camera.
+        </Text>
+        <Button
+          leftIcon={<RiArrowGoBackLine />}
+          onClick={handleBack}
+          size="sm"
+          mt={2}
+          bg="#3F77A5"
+          color="white"
+          _hover={{ bg: "#2B5273" }}
+        >
+          Back to Cameras
+        </Button>
       </Flex>
     );
   }
 
-  // --- CHANGE 6: Define the URL *after* the loading checks. It is now safe.
-  // --- CHANGE 6: Define the URL with SSAN support ---
   let url = "";
   if (device) {
     if (device.deviceId && device.deviceId.startsWith("SSAN")) {
@@ -180,68 +189,154 @@ const CameraView = () => {
 
   return (
     <>
-      {/* Mobile Header */}
       <MobileHeader title="Camera View" />
 
       <Box
-        mt={{ base: "12", md: "0" }}
-        mb={{ base: "20", md: "5" }}
-        p={{ base: 3, md: 0 }}
         maxW="1440px"
         mx="auto"
-      // color={useColorModeValue("custom.lightModeText", "custom.darkModeText")}
+        px={{ base: "12px", sm: "16px", md: "20px", lg: "24px" }}
+        py={{ base: "12px", md: "16px" }}
+        mt={{ base: "12", md: "0" }}
+        mb={{ base: "20", md: "6" }}
+        fontFamily="'Manrope', sans-serif"
       >
+        {/* Top Header Bar */}
         <Flex
           justifyContent="space-between"
           alignItems="center"
-          p={{ base: 2, md: 3 }}
-          borderBottom="1px solid"
-          borderColor="gray.200"
-          mb={4}
+          flexDirection={{ base: "column", sm: "row" }}
+          gap="12px"
+          mb="16px"
         >
-          <Text
-            display="flex"
-            fontSize={{ base: "sm", md: "md" }}
-          >
-            <Box
-              as="span"
-              onClick={handleBack}
-              cursor="pointer"
-              _hover={{ color: "blue.500" }}
-              fontWeight={"bold"}
+          {/* Camera Details & Badges */}
+          <HStack spacing="12px" align="center" flexWrap="wrap">
+            <Flex
+              w="38px"
+              h="38px"
+              borderRadius="10px"
+              bg="#3F77A518"
+              color="#3F77A5"
+              align="center"
+              justify="center"
+              flexShrink={0}
             >
-              Camera
-            </Box>
+              <TbCamera size="20px" />
+            </Flex>
+            <Flex direction="column">
+              <HStack spacing="8px" align="center" flexWrap="wrap">
+                <Text
+                  fontFamily="'Manrope', sans-serif"
+                  fontWeight="700"
+                  fontSize={{ base: "15px", md: "18px" }}
+                  lineHeight="1.2"
+                  color={titleColor}
+                >
+                  {device.cameraName || "Unnamed Camera"}
+                </Text>
+                {device.deviceId && (
+                  <Badge
+                    borderRadius="999px"
+                    px="8px"
+                    py="2px"
+                    bg="#3F77A51A"
+                    color="#3F77A5"
+                    fontFamily="'Manrope', sans-serif"
+                    fontWeight="700"
+                    fontSize="11px"
+                    textTransform="none"
+                  >
+                    {device.deviceId}
+                  </Badge>
+                )}
+                {(() => {
+                  const isOnline = Boolean(
+                    status
+                      ? ["online", "live", "connected", "1", "true"].includes(
+                          String(status).trim().toLowerCase()
+                        )
+                      : device &&
+                        (device.isLive === true ||
+                          device.isLive === "true" ||
+                          String(device.status || "").toLowerCase() === "online")
+                  );
+                  const displayStatus = status
+                    ? String(status).toUpperCase()
+                    : isOnline
+                    ? "ONLINE"
+                    : "OFFLINE";
 
-            <Box as="span" color={textColor} fontWeight="medium">
-              {device.cameraName}
-            </Box>
-          </Text>
-          <Text
-            fontSize={{ base: "sm", md: "md" }}
-            color={textColor}
-            cursor="pointer"
-            display="flex"
-            alignItems="center"
-            _hover={{ color: "blue.500" }}
+                  return (
+                    <Badge
+                      borderRadius="999px"
+                      px="8px"
+                      py="2px"
+                      bg={isOnline ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)"}
+                      color={isOnline ? "#10B981" : "#EF4444"}
+                      fontFamily="'Manrope', sans-serif"
+                      fontWeight="700"
+                      fontSize="11px"
+                      display="inline-flex"
+                      alignItems="center"
+                      gap="4px"
+                      textTransform="uppercase"
+                    >
+                      <Box
+                        w="5px"
+                        h="5px"
+                        borderRadius="full"
+                        bg={isOnline ? "#10B981" : "#EF4444"}
+                      />
+                      {displayStatus}
+                    </Badge>
+                  );
+                })()}
+              </HStack>
+            </Flex>
+          </HStack>
+
+          {/* Back Button */}
+          <Button
+            leftIcon={<RiArrowGoBackLine />}
             onClick={handleBack}
+            h="36px"
+            px="16px"
+            borderRadius="8px"
+            borderWidth="1px"
+            borderColor={cardBorder}
+            bg={cardBg}
+            color={titleColor}
+            fontFamily="'Manrope', sans-serif"
+            fontWeight="600"
+            fontSize="13px"
+            _hover={{ bg: "#3F77A512", borderColor: "#3F77A5", color: "#3F77A5" }}
+            transition="all 0.15s ease"
           >
-            <RiArrowGoBackLine style={{ marginRight: "8px" }} />
-            Back
-          </Text>
+            Back to Cameras
+          </Button>
         </Flex>
 
+        {/* Main Card Container Wrapper */}
         <Box
-          position="relative"
-          borderRadius="lg"
-          w="100%"
+          bg={cardBg}
+          borderWidth="1px"
+          borderColor={cardBorder}
+          borderRadius="14px"
+          p={{ base: "12px", md: "16px" }}
+          boxShadow="0px 1px 6px 0px rgba(26, 46, 61, 0.07)"
         >
-          {/* CONDITIONAL RENDER: Use FLV Player for SSAN, otherwise standard Player */}
           {device.deviceId && device.deviceId.startsWith("SSAN") ? (
-            <SimpleFLVPlayer
-              url={url}
-              style={getResponsivePlayerStyle()}
-            />
+            <Box
+              position="relative"
+              borderRadius="10px"
+              overflow="hidden"
+              bg="black"
+              w="100%"
+            >
+              <SimpleFLVPlayer
+                url={url}
+                style={getResponsivePlayerStyle()}
+              />
+            </Box>
           ) : (
             <Player
               device={device}
@@ -257,21 +352,20 @@ const CameraView = () => {
         </Box>
       </Box>
 
-      {/* The Modal part remains the same */}
+      {/* Modal for AI Streams */}
       {isToggled && (
         <Modal isOpen={isOpen} onClose={handleModalClose} size="full">
           <ModalOverlay />
-          <ModalContent bg="white">
+          <ModalContent bg={cardBg}>
             <ModalCloseButton
               position="absolute"
               top="10px"
               right="10px"
               zIndex="10"
-              color={"Red"}
+              color="red.500"
             />
-           <ModalBody>
-              <SimpleGrid columns={2} spacing={2}>
-                {/* CONDITIONAL RENDER FOR MODAL */}
+            <ModalBody p={4}>
+              <SimpleGrid columns={2} spacing={3}>
                 {device.deviceId && device.deviceId.startsWith("SSAN") ? (
                   <SimpleFLVPlayer
                     url={url}
@@ -286,7 +380,6 @@ const CameraView = () => {
                   />
                 )}
                 
-                {/* AI Streams (Keep as is) */}
                 {videoUrl.map((aiurl, index) => (
                   <Player
                     key={index}

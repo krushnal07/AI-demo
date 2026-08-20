@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import { FaDownload } from "react-icons/fa";
+import { FaDownload, FaCamera } from "react-icons/fa";
 import {
   Modal,
   ModalOverlay,
@@ -10,6 +10,7 @@ import {
   ModalBody,
   ModalCloseButton,
   Button,
+  IconButton,
   useDisclosure,
   Text,
   Box,
@@ -26,10 +27,10 @@ import {
   Tr,
   Th,
   Td,
-  TableContainer,
   useColorModeValue,
 } from "@chakra-ui/react";
 import moment from "moment";
+import MobileHeader from "../components/MobileHeader";
 
 const AnalyticsImage = () => {
   const [data, setData] = useState([]);
@@ -66,18 +67,24 @@ const AnalyticsImage = () => {
   const [selectedPersonName, setSelectedPersonName] = useState("");
   const [isFilterChange, setIsFilterChange] = useState(false);
 
-  // --- Theme tokens (match dashboard) ---
-  const pageHeading = useColorModeValue("gray.800", "white");
-  const subText = useColorModeValue("gray.500", "gray.400");
-  const cardBg = useColorModeValue("#FFFFFF", "gray.800");
-  const cardBorder = useColorModeValue("rgba(226,232,240,0.9)", "whiteAlpha.200");
+  // --- Design System Color Tokens Matching Listview ---
+  const titleColor = useColorModeValue("#1A2E3D", "#FFFFFF");
+  const pageHeading = titleColor;
+  const subtextColor = useColorModeValue("#64748B", "#94A3B8");
+  const subText = subtextColor;
+  const cardBg = useColorModeValue("#FFFFFF", "#1C222D");
+  const cardBorder = useColorModeValue("#E2E8F0", "rgba(255, 255, 255, 0.08)");
   const softShadow = useColorModeValue("0 1px 3px rgba(0,0,0,0.06)", "dark-lg");
   const inputBg = useColorModeValue("white", "gray.700");
   const accent = useColorModeValue("#3F77A5", "#63B3ED");
   const accentTint = useColorModeValue("#EBF3FA", "whiteAlpha.200");
-  const tableHeadBg = useColorModeValue("#F1F5F9", "gray.700");
-  const rowHover = useColorModeValue("gray.50", "whiteAlpha.100");
-  const zebra = useColorModeValue("gray.50", "whiteAlpha.50");
+  const tableHeaderBg = useColorModeValue("#F0F5FA", "#202734");
+  const tableHeaderColor = useColorModeValue("#4A607A", "#94A3B8");
+  const tableBorderColor = useColorModeValue("#F1F5F9", "rgba(255, 255, 255, 0.06)");
+  const rowAltBg = useColorModeValue("#F8FAFC", "#161C26");
+  const tableRowHoverBg = useColorModeValue("#EDF4FA80", "rgba(255, 255, 255, 0.04)");
+  const tableTextColor = useColorModeValue("#4A5568", "#CBD5E1");
+  const actionBtnBg = useColorModeValue("#3F77A512", "#3F77A522");
 
   // Calculate total event count whenever eventCounts or selectedEvent changes
   useEffect(() => {
@@ -410,24 +417,36 @@ const AnalyticsImage = () => {
   const isCountUser = ["count@vmukti.com", "maheshwara@gmail.com", "Lakshmi@gmail.com", "roopa@gmail.com"].includes(email);
   const shouldShowPagination = filteredData.length > recordsPerPage;
 
+  const noEventBadgeBg = useColorModeValue("#F1F5F9", "rgba(255, 255, 255, 0.08)");
+  const noEventBadgeColor = useColorModeValue("#64748B", "#94A3B8");
+  const eventBadgeBg = useColorModeValue("#FFF7ED", "rgba(234, 88, 12, 0.15)");
+  const eventBadgeColor = useColorModeValue("#D97706", "#FDBA74");
+
   const thStyle = {
-    py: 3,
-    px: 3,
-    textAlign: "center",
-    textTransform: "none",
-    fontSize: "12px",
+    py: "14px",
+    px: "18px",
+    fontFamily: "Manrope, sans-serif",
     fontWeight: "700",
-    color: pageHeading,
-    letterSpacing: "0.02em",
+    fontSize: "13px",
+    color: tableHeaderColor,
+    textTransform: "none",
+    letterSpacing: "0px",
     whiteSpace: "nowrap",
   };
-  const tdStyle = { py: 2.5, px: 3, textAlign: "center", fontSize: "13px", borderColor: cardBorder };
+  const tdStyle = {
+    py: "14px",
+    px: "18px",
+    fontFamily: "Manrope, sans-serif",
+    fontSize: "13px",
+    color: tableTextColor,
+    borderColor: tableBorderColor,
+  };
 
   const getAnalyticsBadgeStyle = (label) => {
     if (!label || label === "No Event") {
-      return { bg: "gray.100", color: "gray.600" };
+      return { bg: noEventBadgeBg, color: noEventBadgeColor };
     }
-    return { bg: "orange.50", color: "orange.500" };
+    return { bg: eventBadgeBg, color: eventBadgeColor };
   };
 
   const colCount =
@@ -439,7 +458,17 @@ const AnalyticsImage = () => {
     (isCountUser ? 1 : 0);
 
   return (
-    <Box maxW="1600px" mx="auto" pt={{ base: "70px", md: "0" }} mb={{ base: "100px", md: "6" }} px={{ base: 3, md: 0 }}>
+    <Box
+      maxW="1440px"
+      w="100%"
+      mx="auto"
+      px={{ base: "12px", sm: "16px", md: "20px", lg: "24px" }}
+      py={{ base: "12px", md: "16px" }}
+      fontFamily="'Manrope', sans-serif"
+      mb={{ base: "20", md: "6" }}
+    >
+      <MobileHeader title="Analytics Image Data" />
+
       {/* Image modal */}
       <Modal isOpen={isOpen} onClose={closeModal} isCentered size="4xl">
         <ModalOverlay bg="blackAlpha.700" />
@@ -452,40 +481,110 @@ const AnalyticsImage = () => {
       </Modal>
 
       {/* Header */}
-      <Flex justify="space-between" align={{ base: "flex-start", md: "center" }} mb={5} direction={{ base: "column", md: "row" }} gap={3}>
+      <Flex
+        justify="space-between"
+        align={{ base: "flex-start", sm: "center" }}
+        mb={4}
+        direction={{ base: "column", sm: "row" }}
+        gap={3}
+      >
         <Box>
-          <Text fontWeight={700} fontSize="28px" color={pageHeading} lineHeight="1.2">
-            Analytics Image Data
+          <Text
+            fontFamily="'Manrope', sans-serif"
+            fontWeight={800}
+            fontSize={{ base: "20px", md: "22px" }}
+            lineHeight="1.2"
+            color={pageHeading}
+          >
+            Analytics Reports
           </Text>
-          <Text fontSize="14px" color={subText}>
+          <Text
+            fontFamily="'Manrope', sans-serif"
+            fontSize="13px"
+            color={subText}
+            mt="2px"
+          >
             AI detection records with snapshots, filterable by event, date and camera
           </Text>
         </Box>
         <Button
-          leftIcon={<FaDownload size={14} />}
+          leftIcon={<FaDownload size={13} />}
           onClick={exportToPDF}
           isLoading={pdfLoading}
           loadingText="Exporting…"
           bg={accent}
           color="white"
           _hover={{ opacity: 0.9 }}
-          size="md"
+          size="sm"
           borderRadius="10px"
+          fontWeight="600"
         >
           Export PDF
         </Button>
       </Flex>
 
-      {/* Filter bar */}
-      <Box bg={cardBg} border="1px solid" borderColor={cardBorder} borderRadius="16px" boxShadow={softShadow} p={4} mb={5}>
-        <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={4}>
+      {/* Big Container enclosing Filters, Summary, Table and Pagination */}
+      <Box
+        bg={cardBg}
+        border="1px solid"
+        borderColor={cardBorder}
+        borderRadius="16px"
+        boxShadow={softShadow}
+        p={{ base: 4, md: 6 }}
+        mb={{ base: 6, md: 8 }}
+      >
+        {/* Filters */}
+        <Grid
+          templateColumns={{
+            base: "1fr",
+            sm: "repeat(2, 1fr)",
+            md: "repeat(3, 1fr)",
+            lg: "repeat(4, 1fr)",
+          }}
+          gap="20px"
+          mb={selectedEvent ? "20px" : "24px"}
+        >
+          {/* Event Type */}
           <Box>
-            <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
-              Event Type
+            <Text
+              fontFamily="Manrope, sans-serif"
+              fontWeight="700"
+              fontSize="10px"
+              lineHeight="15px"
+              letterSpacing="0.7px"
+              textTransform="uppercase"
+              color={subText}
+              mb="8px"
+            >
+              EVENT TYPE
             </Text>
-            <Select value={selectedEvent} onChange={handleEventChange} bg={inputBg} borderColor={cardBorder} borderRadius="10px" placeholder="All Events">
+            <Select
+              value={selectedEvent}
+              onChange={handleEventChange}
+              bg={inputBg}
+              borderColor={cardBorder}
+              borderWidth="1px"
+              borderRadius="8px"
+              h="38px"
+              fontFamily="Manrope, sans-serif"
+              fontWeight="400"
+              fontSize="12px"
+              lineHeight="100%"
+              letterSpacing="0px"
+              color={pageHeading}
+              placeholder="All Events"
+              _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
+            >
               {(selectedZone ? Object.entries(zoneEventMap[selectedZone]) : Object.entries(currentEventMap)).map(([key, value]) => (
-                <option key={key} value={key}>
+                <option
+                  key={key}
+                  value={key}
+                  style={{
+                    fontFamily: "Manrope, sans-serif",
+                    fontWeight: "400",
+                    fontSize: "12px",
+                  }}
+                >
                   {value}
                 </option>
               ))}
@@ -494,31 +593,115 @@ const AnalyticsImage = () => {
 
           {selectedEvent === "1" && (
             <Box>
-              <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
-                Recognition Type
+              <Text
+                fontFamily="Manrope, sans-serif"
+                fontWeight="700"
+                fontSize="10px"
+                lineHeight="15px"
+                letterSpacing="0.7px"
+                textTransform="uppercase"
+                color={subText}
+                mb="8px"
+              >
+                RECOGNITION TYPE
               </Text>
-              <Select value={selectedSubEvent} onChange={(e) => setSelectedSubEvent(e.target.value)} bg={inputBg} borderColor={cardBorder} borderRadius="10px">
-                <option value="">All</option>
-                <option value="known">Known</option>
-                <option value="unknown">Unknown</option>
+              <Select
+                value={selectedSubEvent}
+                onChange={(e) => setSelectedSubEvent(e.target.value)}
+                bg={inputBg}
+                borderColor={cardBorder}
+                borderWidth="1px"
+                borderRadius="8px"
+                h="38px"
+                fontFamily="Manrope, sans-serif"
+                fontWeight="400"
+                fontSize="12px"
+                lineHeight="100%"
+                letterSpacing="0px"
+                color={pageHeading}
+                _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
+              >
+                <option value="" style={{ fontFamily: "Manrope, sans-serif", fontSize: "12px" }}>All</option>
+                <option value="known" style={{ fontFamily: "Manrope, sans-serif", fontSize: "12px" }}>Known</option>
+                <option value="unknown" style={{ fontFamily: "Manrope, sans-serif", fontSize: "12px" }}>Unknown</option>
               </Select>
             </Box>
           )}
 
+          {/* Date */}
           <Box>
-            <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
-              Date
+            <Text
+              fontFamily="Manrope, sans-serif"
+              fontWeight="700"
+              fontSize="10px"
+              lineHeight="15px"
+              letterSpacing="0.7px"
+              textTransform="uppercase"
+              color={subText}
+              mb="8px"
+            >
+              SELECT DATE
             </Text>
-            <Input type="date" value={selectedDate} onChange={handleDateChange} bg={inputBg} borderColor={cardBorder} borderRadius="10px" />
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={handleDateChange}
+              bg={inputBg}
+              borderColor={cardBorder}
+              borderWidth="1px"
+              borderRadius="8px"
+              h="38px"
+              fontFamily="Manrope, sans-serif"
+              fontWeight="400"
+              fontSize="12px"
+              lineHeight="100%"
+              letterSpacing="0px"
+              color={pageHeading}
+              _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
+            />
           </Box>
 
+          {/* Camera ID */}
           <Box>
-            <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
-              Camera ID
+            <Text
+              fontFamily="Manrope, sans-serif"
+              fontWeight="700"
+              fontSize="10px"
+              lineHeight="15px"
+              letterSpacing="0.7px"
+              textTransform="uppercase"
+              color={subText}
+              mb="8px"
+            >
+              CAMERA ID
             </Text>
-            <Select value={selectedCamera} onChange={handleCameraChange} bg={inputBg} borderColor={cardBorder} borderRadius="10px" placeholder="All Cameras">
+            <Select
+              value={selectedCamera}
+              onChange={handleCameraChange}
+              bg={inputBg}
+              borderColor={cardBorder}
+              borderWidth="1px"
+              borderRadius="8px"
+              h="38px"
+              fontFamily="Manrope, sans-serif"
+              fontWeight="400"
+              fontSize="12px"
+              lineHeight="100%"
+              letterSpacing="0px"
+              color={pageHeading}
+              placeholder="All Cameras"
+              _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
+            >
               {cameraIds.map((cameraId) => (
-                <option key={cameraId} value={cameraId}>
+                <option
+                  key={cameraId}
+                  value={cameraId}
+                  style={{
+                    fontFamily: "Manrope, sans-serif",
+                    fontWeight: "400",
+                    fontSize: "12px",
+                  }}
+                >
                   {cameraId}
                 </option>
               ))}
@@ -527,12 +710,45 @@ const AnalyticsImage = () => {
 
           {selectedEvent === "1" && (
             <Box>
-              <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
-                Person Name
+              <Text
+                fontFamily="Manrope, sans-serif"
+                fontWeight="700"
+                fontSize="10px"
+                lineHeight="15px"
+                letterSpacing="0.7px"
+                textTransform="uppercase"
+                color={subText}
+                mb="8px"
+              >
+                PERSON NAME
               </Text>
-              <Select value={selectedPersonName} onChange={handlePersonNameChange} bg={inputBg} borderColor={cardBorder} borderRadius="10px" placeholder="All Persons">
+              <Select
+                value={selectedPersonName}
+                onChange={handlePersonNameChange}
+                bg={inputBg}
+                borderColor={cardBorder}
+                borderWidth="1px"
+                borderRadius="8px"
+                h="38px"
+                fontFamily="Manrope, sans-serif"
+                fontWeight="400"
+                fontSize="12px"
+                lineHeight="100%"
+                letterSpacing="0px"
+                color={pageHeading}
+                placeholder="All Persons"
+                _focus={{ borderColor: "#3F77A5", boxShadow: "0 0 0 1px #3F77A5" }}
+              >
                 {personNames.map((name) => (
-                  <option key={name} value={name}>
+                  <option
+                    key={name}
+                    value={name}
+                    style={{
+                      fontFamily: "Manrope, sans-serif",
+                      fontWeight: "400",
+                      fontSize: "12px",
+                    }}
+                  >
                     {name}
                   </option>
                 ))}
@@ -540,184 +756,245 @@ const AnalyticsImage = () => {
             </Box>
           )}
         </Grid>
-      </Box>
 
-      {/* Event count summary */}
-      {selectedEvent && (
-        <Flex
-          bg={accentTint}
-          border="1px solid"
-          borderColor={cardBorder}
-          borderRadius="12px"
-          p={4}
-          mb={5}
-          justify="space-between"
-          align="center"
-          wrap="wrap"
-          gap={3}
-        >
-          <Text fontWeight="700" color={pageHeading}>
-            {currentEventMap[selectedEvent] || "Event"} Summary
-          </Text>
-          <Flex align="center" gap={4} wrap="wrap">
-            {selectedEvent === "30" && (
-              <>
-                <Text fontSize="14px" color={subText}>
-                  Male: <b style={{ color: "#3182ce" }}>{genderCounts.male}</b>
-                </Text>
-                <Text fontSize="14px" color={subText}>
-                  Female: <b style={{ color: "#d53f8c" }}>{genderCounts.female}</b>
-                </Text>
-              </>
-            )}
-            <Badge bg={accent} color="white" borderRadius="full" px={3} py={1} fontSize="13px" textTransform="none">
-              Total Records: {totalEventCount}
-            </Badge>
-          </Flex>
-        </Flex>
-      )}
-
-      {/* Table */}
-      <Box bg={cardBg} border="1px solid" borderColor={cardBorder} borderRadius="16px" boxShadow={softShadow} overflow="hidden">
-        <TableContainer overflowX="auto">
-          <Table size="sm" ref={tableRef}>
-            <Thead bg={tableHeadBg} position="sticky" top={0} zIndex={1}>
-              <Tr>
-                <Th sx={thStyle}>S.No</Th>
-                <Th sx={thStyle}>Location</Th>
-                <Th sx={thStyle}>Camera ID</Th>
-                <Th sx={thStyle}>Detection Time</Th>
-                <Th sx={thStyle}>Image</Th>
-                <Th sx={thStyle}>Analytics Type</Th>
-                {/* <Th sx={thStyle}>Person Name</Th> */}
-                {showNumberPlateColumn(selectedEvent) && <Th sx={thStyle}>Number Plate</Th>}
-                {showPersonNameColumn(selectedEvent) && <Th sx={thStyle}>Person Name</Th>}
-                {showCountColumn(parseInt(selectedEvent)) && <Th sx={thStyle}>Count</Th>}
-                {showGenderCountColumns(selectedEvent) && (
-                  <>
-                    <Th sx={thStyle}>Male Count</Th>
-                    <Th sx={thStyle}>Female Count</Th>
-                  </>
-                )}
-                {isCountUser && <Th sx={thStyle}>Count</Th>}
-              </Tr>
-            </Thead>
-            <Tbody>
-              {loading ? (
-                <Tr>
-                  <Td colSpan={colCount} textAlign="center" py={12} borderColor={cardBorder}>
-                    <Flex direction="column" align="center" gap={3}>
-                      <Spinner size="lg" color={accent} thickness="3px" />
-                      <Text color={subText}>Loading…</Text>
-                    </Flex>
-                  </Td>
-                </Tr>
-              ) : error ? (
-                <Tr>
-                  <Td colSpan={colCount} textAlign="center" py={12} color="red.500" borderColor={cardBorder}>
-                    {error}
-                  </Td>
-                </Tr>
-              ) : filteredData.length === 0 ? (
-                <Tr>
-                  <Td colSpan={colCount} textAlign="center" py={12} color={subText} borderColor={cardBorder}>
-                    No records found for the selected filters.
-                  </Td>
-                </Tr>
-              ) : (
-                currentRecords.map((item, index) => {
-                  const anId = item.an_id;
-                  return (
-                    <Tr key={item._id} bg={index % 2 !== 0 ? zebra : "transparent"} _hover={{ bg: rowHover }}>
-                      <Td sx={tdStyle}>{indexOfFirstRecord + index + 1}</Td>
-                      <Td sx={tdStyle}>{item.cameraDetails?.locations?.[0] || "N/A"}</Td>
-                      <Td sx={tdStyle}>{item.cameradid}</Td>
-                      <Td sx={tdStyle} whiteSpace="nowrap">
-                        {item.an_id === 20 || item.an_id === 30
-                          ? moment(item.sendtime).subtract(5, "hours").subtract(30, "minutes").add(5, "hours").add(30, "minutes").format("DD-MM-YYYY HH:mm:ss")
-                          : moment(item.sendtime).subtract(5, "hours").subtract(30, "minutes").format("DD-MM-YYYY HH:mm:ss")}
-                      </Td>
-                      <Td sx={tdStyle}>
-                        {item.imgurl ? (
-                          <Image
-                            src={item.imgurl}
-                            alt="Analytics"
-                            boxSize="36px"
-                            objectFit="cover"
-                            borderRadius="6px"
-                            cursor="pointer"
-                            mx="auto"
-                            transition="transform 0.2s ease"
-                            _hover={{ transform: "scale(1.08)" }}
-                            onClick={() => handleImageClick(item.imgurl)}
-                          />
-                        ) : (
-                          <Text color={subText}>—</Text>
-                        )}
-                      </Td>
-                      <Td sx={tdStyle}>
-                        {(() => {
-                          const label = currentEventMap[anId] || "No Event";
-                          const badgeStyle = getAnalyticsBadgeStyle(label);
-                          return (
-                            <Badge {...badgeStyle} borderRadius="full" px={2.5} py={0.5} textTransform="none" fontWeight="600">
-                              {label}
-                            </Badge>
-                          );
-                        })()}
-                      </Td>
-                       {/* <Td sx={tdStyle}>{item.person_name}</Td> */}
-                      {showNumberPlateColumn(selectedEvent) && <Td sx={tdStyle}>{item.numberplateid || "N/A"}</Td>}
-                      {showPersonNameColumn(selectedEvent) && <Td sx={tdStyle}>{item.person_name || "N/A"}</Td>}
-                      {showCountColumn(anId) && <Td sx={tdStyle}>{item.ImgCount}</Td>}
-                      {showGenderCountColumns(selectedEvent) && (
-                        <>
-                          <Td sx={tdStyle}>{item.male_count || 0}</Td>
-                          <Td sx={tdStyle}>{item.female_count || 0}</Td>
-                        </>
-                      )}
-                      {isCountUser && <Td sx={tdStyle}>{item.ImgCount}</Td>}
-                    </Tr>
-                  );
-                })
+        {/* Event count summary */}
+        {selectedEvent && (
+          <Flex
+            bg={accentTint}
+            border="1px solid"
+            borderColor={cardBorder}
+            borderRadius="12px"
+            p={4}
+            mb={5}
+            justify="space-between"
+            align="center"
+            wrap="wrap"
+            gap={3}
+          >
+            <Text fontWeight="700" color={pageHeading}>
+              {currentEventMap[selectedEvent] || "Event"} Summary
+            </Text>
+            <Flex align="center" gap={4} wrap="wrap">
+              {selectedEvent === "30" && (
+                <>
+                  <Text fontSize="14px" color={subText}>
+                    Male: <b style={{ color: "#3182ce" }}>{genderCounts.male}</b>
+                  </Text>
+                  <Text fontSize="14px" color={subText}>
+                    Female: <b style={{ color: "#d53f8c" }}>{genderCounts.female}</b>
+                  </Text>
+                </>
               )}
-            </Tbody>
-          </Table>
-        </TableContainer>
-      </Box>
+              <Badge bg={accent} color="white" borderRadius="full" px={3} py={1} fontSize="13px" textTransform="none">
+                Total Records: {totalEventCount}
+              </Badge>
+            </Flex>
+          </Flex>
+        )}
 
-      {/* Pagination */}
-      {shouldShowPagination && filteredData.length > 0 && (
-        <Flex justify="center" align="center" mt={6} gap={1} wrap="wrap">
-          <Button size="sm" variant="outline" borderColor={cardBorder} onClick={() => goToPage(currentPage - 1)} isDisabled={currentPage === 1} mr={1}>
-            Prev
-          </Button>
-          {visiblePages.map((page, index) =>
-            typeof page === "number" ? (
-              <Button
-                key={index}
-                size="sm"
-                minW="38px"
-                variant={currentPage === page ? "solid" : "outline"}
-                bg={currentPage === page ? accent : "transparent"}
-                color={currentPage === page ? "white" : "inherit"}
-                borderColor={cardBorder}
-                _hover={currentPage === page ? { bg: accent } : { bg: rowHover }}
-                onClick={() => goToPage(page)}
+        {/* Table View matching Listview Layout & Typography */}
+        <Box
+          borderRadius="10px"
+          overflow="hidden"
+          border="1px solid"
+          borderColor={tableBorderColor}
+        >
+          <Box overflowX="auto">
+            <Table variant="simple" size="md" ref={tableRef}>
+              <Thead
+                position="sticky"
+                top={0}
+                zIndex={2}
+                bg={tableHeaderBg}
               >
-                {page}
-              </Button>
-            ) : (
-              <Text key={index} px={1} color={subText}>
-                …
-              </Text>
-            )
-          )}
-          <Button size="sm" variant="outline" borderColor={cardBorder} onClick={() => goToPage(currentPage + 1)} isDisabled={currentPage === totalPages} ml={1}>
-            Next
-          </Button>
-        </Flex>
-      )}
+                <Tr borderBottom="1px solid" borderColor={tableBorderColor}>
+                  <Th sx={thStyle}>S.No</Th>
+                  <Th sx={thStyle}>Location</Th>
+                  <Th sx={thStyle}>Camera ID</Th>
+                  <Th sx={thStyle}>Detection Time</Th>
+                  <Th sx={thStyle} textAlign="center">Image</Th>
+                  <Th sx={thStyle} textAlign="center">Analytics Type</Th>
+                  {showNumberPlateColumn(selectedEvent) && <Th sx={thStyle}>Number Plate</Th>}
+                  {showPersonNameColumn(selectedEvent) && <Th sx={thStyle}>Person Name</Th>}
+                  {showCountColumn(parseInt(selectedEvent)) && <Th sx={thStyle}>Count</Th>}
+                  {showGenderCountColumns(selectedEvent) && (
+                    <>
+                      <Th sx={thStyle}>Male Count</Th>
+                      <Th sx={thStyle}>Female Count</Th>
+                    </>
+                  )}
+                  {isCountUser && <Th sx={thStyle}>Count</Th>}
+                </Tr>
+              </Thead>
+              <Tbody>
+                {loading ? (
+                  <Tr>
+                    <Td colSpan={colCount} textAlign="center" py={12} borderColor={tableBorderColor}>
+                      <Flex direction="column" align="center" gap={3}>
+                        <Spinner size="lg" color={accent} thickness="3px" />
+                        <Text color={subtextColor} fontFamily="Manrope, sans-serif">Loading…</Text>
+                      </Flex>
+                    </Td>
+                  </Tr>
+                ) : error ? (
+                  <Tr>
+                    <Td colSpan={colCount} textAlign="center" py={12} color="red.500" borderColor={tableBorderColor} fontFamily="Manrope, sans-serif">
+                      {error}
+                    </Td>
+                  </Tr>
+                ) : filteredData.length === 0 ? (
+                  <Tr>
+                    <Td colSpan={colCount} textAlign="center" py={12} color={subtextColor} borderColor={tableBorderColor} fontFamily="Manrope, sans-serif">
+                      No records found for the selected filters.
+                    </Td>
+                  </Tr>
+                ) : (
+                  currentRecords.map((item, index) => {
+                    const anId = item.an_id;
+                    const isEvenRow = index % 2 === 1;
+                    return (
+                      <Tr
+                        key={item._id}
+                        bg={isEvenRow ? rowAltBg : cardBg}
+                        borderBottom="1px solid"
+                        borderColor={tableBorderColor}
+                        _hover={{ bg: tableRowHoverBg }}
+                        transition="background 0.15s ease"
+                      >
+                        {/* S.No */}
+                        <Td sx={tdStyle} fontWeight="600" color={titleColor}>
+                          {indexOfFirstRecord + index + 1}
+                        </Td>
+
+                        {/* Location */}
+                        <Td sx={tdStyle} fontWeight="600" color={titleColor}>
+                          {item.cameraDetails?.locations?.[0] || "N/A"}
+                        </Td>
+
+                        {/* Camera ID (Styled blue 700 matching Listview DeviceId) */}
+                        <Td sx={tdStyle} fontWeight="700" color="#3F77A5">
+                          {item.cameradid}
+                        </Td>
+
+                        {/* Detection Time */}
+                        <Td sx={tdStyle} whiteSpace="nowrap">
+                          {item.an_id === 20 || item.an_id === 30
+                            ? moment(item.sendtime).subtract(5, "hours").subtract(30, "minutes").add(5, "hours").add(30, "minutes").format("DD-MM-YYYY HH:mm:ss")
+                            : moment(item.sendtime).subtract(5, "hours").subtract(30, "minutes").format("DD-MM-YYYY HH:mm:ss")}
+                        </Td>
+
+                        {/* Image */}
+                        <Td sx={tdStyle} textAlign="center">
+                          {item.imgurl ? (
+                            <IconButton
+                              aria-label="View Image"
+                              icon={<FaCamera size="14px" />}
+                              size="sm"
+                              h="30px"
+                              w="30px"
+                              minW="30px"
+                              borderRadius="7px"
+                              borderWidth="1px"
+                              borderColor={cardBorder}
+                              bg={actionBtnBg}
+                              color="#3F77A5"
+                              onClick={() => handleImageClick(item.imgurl)}
+                              _hover={{
+                                bg: "#3F77A5",
+                                color: "#FFFFFF",
+                                borderColor: "#3F77A5",
+                                transform: "translateY(-1px)",
+                                boxShadow: "0 2px 6px rgba(63, 119, 165, 0.35)",
+                              }}
+                              transition="all 0.15s ease"
+                            />
+                          ) : (
+                            <Text color={subtextColor}>—</Text>
+                          )}
+                        </Td>
+
+                        {/* Analytics Type */}
+                        <Td sx={tdStyle} textAlign="center">
+                          {(() => {
+                            const label = currentEventMap[anId] || "No Event";
+                            const badgeStyle = getAnalyticsBadgeStyle(label);
+                            return (
+                              <Badge
+                                {...badgeStyle}
+                                borderRadius="full"
+                                px="12px"
+                                py="3px"
+                                fontSize="12px"
+                                textTransform="none"
+                                fontWeight="600"
+                                fontFamily="Manrope, sans-serif"
+                              >
+                                {label}
+                              </Badge>
+                            );
+                          })()}
+                        </Td>
+
+                        {showNumberPlateColumn(selectedEvent) && (
+                          <Td sx={tdStyle}>{item.numberplateid || "N/A"}</Td>
+                        )}
+                        {showPersonNameColumn(selectedEvent) && (
+                          <Td sx={tdStyle}>{item.person_name || "N/A"}</Td>
+                        )}
+                        {showCountColumn(anId) && (
+                          <Td sx={tdStyle} fontWeight="600">{item.ImgCount}</Td>
+                        )}
+                        {showGenderCountColumns(selectedEvent) && (
+                          <>
+                            <Td sx={tdStyle}>{item.male_count || 0}</Td>
+                            <Td sx={tdStyle}>{item.female_count || 0}</Td>
+                          </>
+                        )}
+                        {isCountUser && (
+                          <Td sx={tdStyle} fontWeight="600">{item.ImgCount}</Td>
+                        )}
+                      </Tr>
+                    );
+                  })
+                )}
+              </Tbody>
+            </Table>
+          </Box>
+        </Box>
+
+        {/* Pagination */}
+        {shouldShowPagination && filteredData.length > 0 && (
+          <Flex justify="center" align="center" mt={6} gap={1} wrap="wrap">
+            <Button size="sm" variant="outline" borderColor={cardBorder} onClick={() => goToPage(currentPage - 1)} isDisabled={currentPage === 1} mr={1}>
+              Prev
+            </Button>
+            {visiblePages.map((page, index) =>
+              typeof page === "number" ? (
+                <Button
+                  key={index}
+                  size="sm"
+                  minW="38px"
+                  variant={currentPage === page ? "solid" : "outline"}
+                  bg={currentPage === page ? accent : "transparent"}
+                  color={currentPage === page ? "white" : "inherit"}
+                  borderColor={cardBorder}
+                  _hover={currentPage === page ? { bg: accent } : { bg: tableRowHoverBg }}
+                  onClick={() => goToPage(page)}
+                >
+                  {page}
+                </Button>
+              ) : (
+                <Text key={index} px={1} color={subText}>
+                  …
+                </Text>
+              )
+            )}
+            <Button size="sm" variant="outline" borderColor={cardBorder} onClick={() => goToPage(currentPage + 1)} isDisabled={currentPage === totalPages} ml={1}>
+              Next
+            </Button>
+          </Flex>
+        )}
+      </Box>
     </Box>
   );
 };

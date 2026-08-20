@@ -201,21 +201,7 @@ function MainApp() {
   }, []);
 
   return (
-    <Container maxW="100vw" p="0" bg={useColorModeValue("white", "#231F1F")}>
-      {/* Fixed background — rendered OUTSIDE <Scrollbars> so it stays anchored
-          to the viewport and never scrolls with the page content. */}
-      <Image
-        src={useColorModeValue("/images/background_img_light.png", "/images/background_img.png")}
-        position="fixed"
-        top="0"
-        left="0"
-        w="100vw"
-        h="100vh"
-        objectFit="cover"
-        opacity="0.3"
-        zIndex="0"
-        pointerEvents="none"
-      />
+    <Container maxW="100vw" p="0" bg={useColorModeValue("#E8EFF7", "#1E2837")}>
       <Scrollbars
         autoHide
         autoHideTimeout={1000}
@@ -280,7 +266,9 @@ function MainApp() {
                     ? "0"
                     : isMobile
                     ? "0"
-                    : { md: "60px" }
+                    : isSidebarExpanded
+                    ? "228px"
+                    : "68px"
                 }
                 top={
                   isLoginPage
@@ -289,18 +277,18 @@ function MainApp() {
                       : "0"
                     : isMobile
                     ? "10px"
-                    : { md: "90px" }
+                    : "56px"
                 }
                 width={
                   isLoginPage
                     ? "100%"
                     : isMobile
                     ? "100%"
-                    : {
-                        md: "calc(100% - 60px)",
-                      }
+                    : isSidebarExpanded
+                    ? "calc(100% - 228px)"
+                    : "calc(100% - 68px)"
                 }
-                transition="left 0.2s, width 0.2s"
+                transition="left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
                 overflowY="auto"
                 flexWrap="wrap"
               >

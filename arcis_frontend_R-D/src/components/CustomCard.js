@@ -1,104 +1,98 @@
-import { Box, Stack, Text, useColorModeValue, Flex, Icon } from '@chakra-ui/react';
+import React from 'react';
+import { Box, Flex, Text, useColorModeValue, Icon } from '@chakra-ui/react';
 
-const CustomCard = ({ title, value, color, IconComponent, layout = 'vertical', subtitle }) => {
-  const cardBg = useColorModeValue('#FFFFFF', 'gray.800');
-  const borderColor = useColorModeValue('rgba(226, 232, 240, 0.9)', 'whiteAlpha.200');
-  const titleColor = useColorModeValue('gray.500', 'gray.400');
-  const valueColor = useColorModeValue('gray.800', 'white');
-  const subtitleColor = useColorModeValue('gray.400', 'gray.500');
-  const shadow = useColorModeValue('0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', 'dark-lg');
-  const hoverShadow = useColorModeValue('0 8px 24px rgba(0,0,0,0.08)', 'dark-lg');
+const CustomCard = ({
+  title,
+  value,
+  color = '#3F77A5',
+  iconBg,
+  subtextColor,
+  IconComponent,
+  subtitle,
+}) => {
+  const cardBg = useColorModeValue('#FFFFFF', '#1C222D');
+  const borderColor = useColorModeValue('#E2E8EF', 'rgba(255, 255, 255, 0.08)');
+  const titleColor = useColorModeValue('#64748B', '#94A3B8');
+  const valueColor = useColorModeValue('#1A2E3D', '#FFFFFF');
+  const shadow = '0px 1px 6px 0px rgba(26, 46, 61, 0.07)';
 
-  // Soft tint of the accent color for the icon tile (8-digit hex = ~12% alpha)
-  const tint = `${color}1F`;
-
-  if (layout === 'vertical') {
-    return (
-      <Box
-        position="relative"
-        borderRadius="16px"
-        bg={cardBg}
-        px={5}
-        py={5}
-        height="100%"
-        minH="150px"
-        border="1px solid"
-        borderColor={borderColor}
-        boxShadow={shadow}
-        overflow="hidden"
-        transition="transform 0.2s ease, box-shadow 0.2s ease"
-        _hover={{ transform: 'translateY(-3px)', boxShadow: hoverShadow }}
-      >
-        {/* Accent strip */}
-        <Box position="absolute" top="0" left="0" right="0" height="3px" bg={color} opacity={0.9} />
-
-        <Flex justify="space-between" align="flex-start">
-          <Flex
-            alignItems="center"
-            justifyContent="center"
-            bg={tint}
-            color={color}
-            borderRadius="12px"
-            boxSize="46px"
-          >
-            {IconComponent && <Icon as={IconComponent} boxSize="22px" />}
-          </Flex>
-        </Flex>
-
-        <Box mt={4}>
-          <Text
-            fontSize="12px"
-            color={titleColor}
-            fontWeight="600"
-            textTransform="uppercase"
-            letterSpacing="0.06em"
-          >
-            {title}
-          </Text>
-          <Text fontSize="32px" fontWeight="700" color={valueColor} lineHeight="1.1" mt={1}>
-            {value}
-          </Text>
-          {subtitle && (
-            <Text fontSize="12px" color={subtitleColor} fontWeight="500" mt={1}>
-              {subtitle}
-            </Text>
-          )}
-        </Box>
-      </Box>
-    );
-  }
+  const defaultIconBg = iconBg || `${color}16`;
 
   return (
     <Box
-      borderRadius="12px"
+      w="100%"
+      minH="175px"
       bg={cardBg}
-      p={4}
-      border="1px solid"
+      p="20px"
+      borderRadius="14px"
+      borderWidth="3px 1px 1px 1px"
+      borderStyle="solid"
       borderColor={borderColor}
       boxShadow={shadow}
+      display="flex"
+      flexDirection="column"
+      justifyContent="space-between"
+      fontFamily="'Manrope', sans-serif"
+      transition="transform 0.2s ease, box-shadow 0.2s ease"
+      _hover={{ transform: 'translateY(-2px)', boxShadow: '0px 4px 12px 0px rgba(26, 46, 61, 0.1)' }}
     >
-      <Flex alignItems="center" gap={4}>
-        <Flex
-          alignItems="center"
-          justifyContent="center"
-          bg={tint}
-          color={color}
-          borderRadius="10px"
-          boxSize="42px"
-          minW="42px"
-        >
-          {IconComponent && <Icon as={IconComponent} boxSize="18px" />}
-        </Flex>
-
-        <Stack spacing={0}>
-          <Text fontSize="13px" color={titleColor} fontWeight="500">
-            {title}
-          </Text>
-          <Text fontSize="22px" fontWeight="700" color={valueColor}>
-            {value}
-          </Text>
-        </Stack>
+      {/* Top Row: Icon Container (42x42, border-radius: 11px) */}
+      <Flex
+        w="42px"
+        h="42px"
+        minW="42px"
+        borderRadius="11px"
+        bg={defaultIconBg}
+        color={color}
+        align="center"
+        justify="center"
+      >
+        {IconComponent && <Icon as={IconComponent} boxSize="20px" />}
       </Flex>
+
+      {/* Content Section */}
+      <Box pt="14px">
+        {/* Title (Manrope 600 SemiBold, 10px, line-height 15px, letter-spacing 0.8px, uppercase) */}
+        <Text
+          fontFamily="'Manrope', sans-serif"
+          fontWeight="600"
+          fontSize="10px"
+          lineHeight="15px"
+          letterSpacing="0.8px"
+          textTransform="uppercase"
+          color={titleColor}
+        >
+          {title}
+        </Text>
+
+        {/* Number / Value (Manrope 800 ExtraBold, 36px, line-height 36px) */}
+        <Text
+          fontFamily="'Manrope', sans-serif"
+          fontWeight="800"
+          fontSize="36px"
+          lineHeight="36px"
+          letterSpacing="0px"
+          color={valueColor}
+          mt="4px"
+        >
+          {value}
+        </Text>
+
+        {/* Subtitle / Region / Percentage (Manrope 600 SemiBold, 11px, line-height 16.5px) */}
+        {subtitle && (
+          <Text
+            fontFamily="'Manrope', sans-serif"
+            fontWeight="600"
+            fontSize="11px"
+            lineHeight="16.5px"
+            letterSpacing="0px"
+            color={subtextColor || color}
+            mt="4px"
+          >
+            {subtitle}
+          </Text>
+        )}
+      </Box>
     </Box>
   );
 };

@@ -301,6 +301,11 @@ const handleDistrictSelect = async (district) => {
   ];
 
   const bgColor = useColorModeValue("custom.primary", "custom.darkModePrimary");
+  const titleColor = useColorModeValue("#1A2E3D", "#FFFFFF");
+  const totalCamColor = useColorModeValue("#1A2E3D", "#FFFFFF");
+  const menuBg = useColorModeValue("#FFFFFF", "#1C222D");
+  const menuBorder = useColorModeValue("#E2E8F0", "rgba(255, 255, 255, 0.1)");
+  const menuHoverBg = useColorModeValue("#F1F5F9", "#2A3240");
 
   const navigate = useNavigate();
 
@@ -326,6 +331,8 @@ const handleDistrictSelect = async (district) => {
           fontSize={{ base: "lg", md: "2xl" }}
           fontWeight="bold"
           textAlign={{ base: "center", md: "left" }}
+          color={titleColor}
+          fontFamily="'Manrope', sans-serif"
         >
           Dashboard
         </Text>
@@ -348,7 +355,7 @@ const handleDistrictSelect = async (district) => {
           title="Total Cameras"
           value={totalCameras}
           sanand="55539"
-          color="black"
+          color={totalCamColor}
           bcolor="white"
           IconComponent={BsCurrencyDollar}
         />
@@ -388,8 +395,6 @@ const handleDistrictSelect = async (district) => {
           xl: "repeat(2, 1fr)",
         }}
         gap={6}
-      // padding="0% 2%"
-      // height="500px"
       >
         <Box height="100%" display="flex" flexDirection="column">
           <Box flex="1">
@@ -397,17 +402,35 @@ const handleDistrictSelect = async (district) => {
               <MenuButton
                 as={Button}
                 rightIcon={<ChevronDownIcon />}
-                colorScheme="teal"
-                width="250px"   // Set fixed width
-                textAlign="left" // Align text inside the button
+                bg={menuBg}
+                color={titleColor}
+                borderWidth="1px"
+                borderColor={menuBorder}
+                _hover={{ bg: menuHoverBg }}
+                _active={{ bg: menuHoverBg }}
+                width="250px"
+                textAlign="left"
+                fontFamily="'Manrope', sans-serif"
+                fontSize="13px"
+                fontWeight="500"
               >
                 {selectedDistrict ? selectedDistrict.dist_name : "Select District"}
               </MenuButton>
 
-              <MenuList width="250px"> {/* Match the width of the button */}
+              <MenuList
+                width="250px"
+                bg={menuBg}
+                borderColor={menuBorder}
+                boxShadow="0px 4px 12px rgba(0,0,0,0.15)"
+              >
                 <MenuItem
                   key="all-districts"
                   onClick={() => handleDistrictSelect(null)}
+                  bg={menuBg}
+                  color={titleColor}
+                  _hover={{ bg: menuHoverBg }}
+                  fontFamily="'Manrope', sans-serif"
+                  fontSize="13px"
                 >
                   All Districts
                 </MenuItem>
@@ -415,6 +438,11 @@ const handleDistrictSelect = async (district) => {
                   <MenuItem
                     key={district._id}
                     onClick={() => handleDistrictSelect(district)}
+                    bg={menuBg}
+                    color={titleColor}
+                    _hover={{ bg: menuHoverBg }}
+                    fontFamily="'Manrope', sans-serif"
+                    fontSize="13px"
                   >
                     {district.dist_name}
                   </MenuItem>

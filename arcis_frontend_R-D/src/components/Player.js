@@ -429,47 +429,48 @@ const Player = React.forwardRef(({
     <Box position="relative" width={width} height="auto" overflow="visible">
       {showCameraPTZ && <CameraPTZ deviceId={device.deviceId} />}
 
-      {playUrl && playUrl.includes("hdl" && "jessica") ? (
-        <Box display="flex" justifyContent="center" className="container-shell">
-          <Box id="container" ref={containerRef} className={className} style={style}></Box>
-        </Box>
-      ) : playUrl && (playUrl.includes("record") || playUrl.includes("blob.core.windows.net") || playUrl.includes("storage.googleapis.com") || playUrl.includes(".mp4")) ? (
-        <Box position="relative" width={width} height={height}>
-          <video style={style} autoPlay controls muted={isMuted} src={playUrl} />
-        </Box>
-      ) : (
-        <JessibucaPlayer
-          ref={containerRef}
-          decodeMode="useMSE"
-          style={{ ...style, background: 'transparent' }}
-          controls={false}
-          muted={isMuted}
-          loadingText="loading"
-          src={playUrl}
-          decoder="/decoder.js"
-          onStart={() => {
-            if (!isUnmountedRef.current) {
-              setIsReconnecting(false);
-              setIsPlaying(true);
-              reconnectAttemptsRef.current = 0;
-              clearReconnectTimer();
-            }
-          }}
-          onTimeout={() => {
-            if (!isUnmountedRef.current) scheduleReconnect(playUrl);
-          }}
-          onLoadingTimeout={() => {
-            if (!isUnmountedRef.current) scheduleReconnect(playUrl);
-          }}
-          onDelayTimeout={() => {
-            if (!isUnmountedRef.current) scheduleReconnect(playUrl);
-          }}
-          onError={() => {
-            if (!isUnmountedRef.current) scheduleReconnect(playUrl);
-          }}
-        />
-
-      )}
+      <Box position="relative" borderRadius="10px" overflow="hidden" bg="#000000" w="100%">
+        {playUrl && playUrl.includes("hdl" && "jessica") ? (
+          <Box display="flex" justifyContent="center" className="container-shell">
+            <Box id="container" ref={containerRef} className={className} style={style}></Box>
+          </Box>
+        ) : playUrl && (playUrl.includes("record") || playUrl.includes("blob.core.windows.net") || playUrl.includes("storage.googleapis.com") || playUrl.includes(".mp4")) ? (
+          <Box position="relative" width={width} height={height}>
+            <video style={style} autoPlay controls muted={isMuted} src={playUrl} />
+          </Box>
+        ) : (
+          <JessibucaPlayer
+            ref={containerRef}
+            decodeMode="useMSE"
+            style={{ ...style, background: 'transparent' }}
+            controls={false}
+            muted={isMuted}
+            loadingText="loading"
+            src={playUrl}
+            decoder="/decoder.js"
+            onStart={() => {
+              if (!isUnmountedRef.current) {
+                setIsReconnecting(false);
+                setIsPlaying(true);
+                reconnectAttemptsRef.current = 0;
+                clearReconnectTimer();
+              }
+            }}
+            onTimeout={() => {
+              if (!isUnmountedRef.current) scheduleReconnect(playUrl);
+            }}
+            onLoadingTimeout={() => {
+              if (!isUnmountedRef.current) scheduleReconnect(playUrl);
+            }}
+            onDelayTimeout={() => {
+              if (!isUnmountedRef.current) scheduleReconnect(playUrl);
+            }}
+            onError={() => {
+              if (!isUnmountedRef.current) scheduleReconnect(playUrl);
+            }}
+          />
+        )}
+      </Box>
 
       {showControls && (
         <PlayerControls

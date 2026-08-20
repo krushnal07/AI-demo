@@ -109,144 +109,210 @@ const Header = ({
     onOpen();
   };
 
+  const userInitial =
+    userName && userName.trim().length > 0
+      ? userName.trim().charAt(0).toUpperCase()
+      : "U";
+
+  const formattedDate = currentTime.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const formattedTime = currentTime.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
   return (
     <Box
-      px={6}
       w="100%"
-      h="75px"
-      // --- CHANGE IS HERE ---
-      // 'relative' means it sits in the normal flow of the page.
-      // When the page scrolls, this element scrolls up with it.
+      h="56px"
       position="relative"
-      //  bg={headerBg}
-      //  boxShadow="sm" // Optional: adds a nice shadow under the header
-      // ---------------------
       color={textColor}
+      fontFamily="'Manrope', sans-serif"
     >
-
       <Flex
-        h="75px"
+        h="56px"
         alignItems="center"
-        px={6}
-        justifyContent="space-between"
-        bg={headerBg}
-        backdropFilter="blur(8px)"
+        px={{ base: 4, sm: 6 }}
+        justifyContent="flex-end"
+        gap="14px"
+        bg={useColorModeValue("#FFFFFF", "#131922")}
         borderBottom="1px solid"
-        borderColor={headerBorder}
-        boxShadow="0 1px 3px rgba(0,0,0,0.04)"
-
-        // FIXED POSITIONING
+        borderColor={useColorModeValue("#E2E8EF", "rgba(255, 255, 255, 0.08)")}
+        boxShadow={useColorModeValue("0 1px 3px rgba(0,0,0,0.05)", "0 2px 8px rgba(0,0,0,0.25)")}
         position="absolute"
         top="0"
         right="0"
-
-        left={{ base: 0, md: "60px" }}
-        transition="left 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+        left={{ base: 0, md: isSidebarExpanded ? "228px" : "68px" }}
+        width={{
+          base: "100%",
+          md: isSidebarExpanded ? "calc(100% - 228px)" : "calc(100% - 68px)",
+        }}
+        transition="left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
         zIndex="1000"
       >
-        {/* 1. LEFT SECTION: Brand */}
-        <Flex alignItems="center" gap={3} minW={0}>
-          <Flex
-            alignItems="center"
-            justifyContent="center"
-            boxSize="42px"
-            borderRadius="12px"
-            bgGradient="linear(135deg, #3F77A5, #1C4ED8)"
-            color="white"
-            boxShadow="0 4px 12px rgba(28,78,216,0.25)"
-            flexShrink={0}
-          >
-            <Icon as={BsCameraVideoFill} boxSize="20px" />
+        {/* 1. TIME CONTAINER (Width: ~143px, Height: 18px, Gap: 5px) */}
+        <Flex
+          alignItems="center"
+          gap="5px"
+          h="18px"
+          display={{ base: "none", sm: "flex" }}
+          userSelect="none"
+        >
+          {/* Time icon container (13x13) */}
+          <Flex w="13px" h="13px" align="center" justify="center" flexShrink={0}>
+            <TimeIcon boxSize="13px" color={useColorModeValue("#64748B", "#94A3B8")} />
           </Flex>
-          <Box lineHeight="1.2" display={{ base: "none", sm: "block" }}>
-            <Text fontSize="17px" fontWeight="700" color={brandTitle} whiteSpace="nowrap">
-              Live Video Management System
-            </Text>
 
-          </Box>
+          {/* Time text container (Manrope 600 SemiBold, 12px, Line-height: 18px, Color: #64748B) */}
+          <Text
+            fontFamily="'Manrope', sans-serif"
+            fontWeight="600"
+            fontSize="12px"
+            lineHeight="18px"
+            letterSpacing="0px"
+            color={useColorModeValue("#64748B", "#94A3B8")}
+            whiteSpace="nowrap"
+          >
+            {formattedDate} · {formattedTime}
+          </Text>
         </Flex>
 
-        {/* 2. RIGHT SECTION: Time, Notifications, Theme, Profile */}
-        <Flex justifyContent="flex-end" alignItems="center" gap={{ base: 2, md: 3 }}>
-          {/* Live date + time pill */}
-          <Flex
-            alignItems="center"
-            gap={2}
-            bg={pillBg}
-            border="1px solid"
-            borderColor={pillBorder}
-            px={3}
-            py={1.5}
-            borderRadius="full"
-            display={{ base: "none", lg: "flex" }}
+        {/* 2. THEME CHANGE CONTAINER (as it is) */}
+        <Tooltip label={colorMode === "light" ? "Dark mode" : "Light mode"} hasArrow>
+          <IconButton
+            aria-label="Toggle dark mode"
+            icon={colorMode === "light" ? <FaMoon /> : <FaSun />}
+            onClick={toggleColorMode}
+            size="sm"
+            variant="ghost"
+            borderRadius="8px"
+            w="32px"
+            h="32px"
+            minW="32px"
+            color={useColorModeValue("#64748B", "#94A3B8")}
+            _hover={{ bg: useColorModeValue("#F1F5F9", "whiteAlpha.100") }}
+          />
+        </Tooltip>
+
+        {/* 3. PROFILE CONTAINER (Avatar 32x32 gradient, Name 12px Bold #1A2E3D, Role 10px Regular #64748B) */}
+        <Menu isLazy>
+          <MenuButton
+            as={Button}
+            variant="ghost"
+            p={1}
+            h="38px"
+            borderRadius="8px"
+            _hover={{ bg: useColorModeValue("#F8FAFC", "whiteAlpha.100") }}
+            _active={{ bg: useColorModeValue("#F1F5F9", "whiteAlpha.200") }}
           >
-            <TimeIcon boxSize="14px" color={subText} />
-            <Text fontSize="13px" fontWeight="600" whiteSpace="nowrap">
-              {currentTime.toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} ·{" "}
-              {currentTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-            </Text>
-          </Flex>
-
-
-
-          {/* Theme toggle */}
-          <Tooltip label={colorMode === "light" ? "Dark mode" : "Light mode"} hasArrow>
-            <IconButton
-              aria-label="Toggle dark mode"
-              icon={colorMode === "light" ? <FaMoon /> : <FaSun />}
-              onClick={toggleColorMode}
-              size="sm"
-              variant="ghost"
-              borderRadius="12px"
-            />
-          </Tooltip>
-
-          <Divider orientation="vertical" h="28px" display={{ base: "none", md: "block" }} />
-
-          {/* Profile menu */}
-          <Menu isLazy>
-            <MenuButton
-              as={Button}
-              variant="ghost"
-              px={2}
-              py={1}
-              h="auto"
-              borderRadius="12px"
-              _hover={{ bg: pillBg }}
-              _active={{ bg: pillBg }}
-            >
-              <Flex alignItems="center" gap={2}>
-                <Avatar size="sm" name={userName} bg="#3F77A5" color="white" />
-                <VStack spacing={0} align="flex-start" display={{ base: "none", md: "flex" }} lineHeight="1.1">
-                  <Text fontSize="13px" fontWeight="600" maxW="120px" isTruncated>
-                    {userName}
-                  </Text>
-                  <Text fontSize="11px" color={subText} textTransform="capitalize">
-                    {userRole}
-                  </Text>
-                </VStack>
-              </Flex>
-            </MenuButton>
-            <MenuList>
-              <Box px={3} py={2}>
-                <Text fontSize="sm" fontWeight="700">{userName}</Text>
-                <Text fontSize="xs" color={subText} textTransform="capitalize">{userRole}</Text>
-              </Box>
-              <Divider />
-              <MenuItem icon={<FaRegUser size="15px" />} onClick={() => openProfileModal("My Profile")} fontSize="sm">
-                My Profile
-              </MenuItem>
-              <MenuItem
-                icon={<CgLogOff size="18px" />}
-                onClick={() => openModal("logout")}
-                color="red.600"
-                fontSize="sm"
+            <Flex alignItems="center" gap="10px">
+              {/* 1. Profile avatar container (32x32, border-radius: 16px, background: linear-gradient(135deg, #3F77A5 0%, #DB7B3A 100%)) */}
+              <Flex
+                w="32px"
+                h="32px"
+                minW="32px"
+                borderRadius="16px"
+                bgGradient="linear(135deg, #3F77A5 0%, #DB7B3A 100%)"
+                color="#FFFFFF"
+                align="center"
+                justify="center"
+                fontFamily="'Manrope', sans-serif"
+                fontWeight="700"
+                fontSize="13px"
+                flexShrink={0}
+                userSelect="none"
               >
-                Logout
-              </MenuItem>
-            </MenuList>
-          </Menu>
-        </Flex>
+                {userInitial}
+              </Flex>
+
+              {/* 2 & 3. Profile Name and Role container */}
+              <VStack
+                spacing={0}
+                align="flex-start"
+                display={{ base: "none", md: "flex" }}
+                lineHeight="1.2"
+              >
+                {/* Profile name container (Manrope 700 Bold, 12px, Line-height: 14.4px, Color: #1A2E3D) */}
+                <Text
+                  fontFamily="'Manrope', sans-serif"
+                  fontWeight="700"
+                  fontSize="12px"
+                  lineHeight="14.4px"
+                  letterSpacing="0px"
+                  color={useColorModeValue("#1A2E3D", "#FFFFFF")}
+                  maxW="140px"
+                  isTruncated
+                >
+                  {userName}
+                </Text>
+
+                {/* Role container (Manrope 400 Regular, 10px, Line-height: 15px, Color: #64748B) */}
+                <Text
+                  fontFamily="'Manrope', sans-serif"
+                  fontWeight="400"
+                  fontSize="10px"
+                  lineHeight="15px"
+                  letterSpacing="0px"
+                  color={useColorModeValue("#64748B", "#94A3B8")}
+                  textTransform="capitalize"
+                >
+                  {userRole}
+                </Text>
+              </VStack>
+            </Flex>
+          </MenuButton>
+          <MenuList
+            bg={useColorModeValue("#FFFFFF", "#1C1A1A")}
+            borderColor={useColorModeValue("#E2E8EF", "whiteAlpha.200")}
+            boxShadow="0 10px 25px rgba(0, 0, 0, 0.12)"
+            borderRadius="10px"
+            p="6px"
+            fontFamily="'Manrope', sans-serif"
+            zIndex="1100"
+          >
+            <Box px={3} py={2}>
+              <Text
+                fontSize="13px"
+                fontWeight="700"
+                color={useColorModeValue("#1A2E3D", "#FFFFFF")}
+              >
+                {userName}
+              </Text>
+              <Text
+                fontSize="11px"
+                color={useColorModeValue("#64748B", "#94A3B8")}
+                textTransform="capitalize"
+              >
+                {userRole}
+              </Text>
+            </Box>
+            <Divider my={1} />
+            <MenuItem
+              icon={<FaRegUser size="14px" />}
+              onClick={() => openProfileModal("My Profile")}
+              fontSize="13px"
+              borderRadius="6px"
+              _hover={{ bg: useColorModeValue("#F1F5F9", "whiteAlpha.100") }}
+            >
+              My Profile
+            </MenuItem>
+            <MenuItem
+              icon={<CgLogOff size="16px" />}
+              onClick={() => openModal("logout")}
+              color="red.500"
+              fontSize="13px"
+              borderRadius="6px"
+              _hover={{ bg: useColorModeValue("#FEF2F2", "whiteAlpha.100") }}
+            >
+              Logout
+            </MenuItem>
+          </MenuList>
+        </Menu>
       </Flex>
 
       {/* Logout Modal */}
