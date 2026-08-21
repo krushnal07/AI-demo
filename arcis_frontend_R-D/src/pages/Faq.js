@@ -31,7 +31,7 @@ const FAQ_DATA = [
     items: [
       {
         q: "What is this platform?",
-        a: "This is the VMS (Video Management System) — a centralized dashboard to monitor live camera feeds, review AI-generated events and analytics, and manage your camera network. Access to each section depends on your assigned role (e.g. Master Admin, Admin, CEO, District/Assembly level).",
+        a: "This is the VMS (Video Management System) a centralized dashboard to monitor live camera feeds, review AI-generated events and analytics, and manage your camera network. Access to each section depends on your assigned role (e.g. Master Admin, Admin, CEO, District/Assembly level).",
       },
       {
         q: "How do I log in, and why can't I see some menu items?",

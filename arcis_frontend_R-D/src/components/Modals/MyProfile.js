@@ -1,4 +1,5 @@
-import { CheckIcon, EditIcon, InfoIcon } from "@chakra-ui/icons";
+import React, { useState, useEffect } from "react";
+import { InfoIcon } from "@chakra-ui/icons";
 import {
   Modal,
   ModalBody,
@@ -20,14 +21,18 @@ import {
   VStack,
   useColorModeValue,
   useToast,
-  useBreakpointValue,
+  SimpleGrid,
+  Box,
+  Tooltip,
 } from "@chakra-ui/react";
-import React, { useState, useEffect } from "react";
-import { sendVerificationForUpdateMobile, UpdateName, userProfile, verifyMobileOtpForChangeMobile } from "../../actions/userActions";
-import theme from "../../theme";
-import { TbEdit, TbEditOff } from "react-icons/tb"; // Import the check icon
+import {
+  sendVerificationForUpdateMobile,
+  UpdateName,
+  userProfile,
+  verifyMobileOtpForChangeMobile,
+} from "../../actions/userActions";
+import { TbEdit, TbEditOff } from "react-icons/tb";
 import { IoCheckmarkOutline } from "react-icons/io5";
-// import { CheckIcon } from "react-icons/fa"; // Import the check icon from react-icons/fa
 
 function MyProfile({ isOpen, onClose }) {
   const [profileDetails, setProfileDetails] = useState({
@@ -36,16 +41,23 @@ function MyProfile({ isOpen, onClose }) {
     email: "N/A",
   });
   const [editedDetails, setEditedDetails] = useState(profileDetails);
-  const [fieldBeingEdited, setFieldBeingEdited] = useState(""); // Track the field being edited
-  const [nameChanged, setNameChanged] = useState(false); // Track if name has changed
-  const [mobileChanged, setMobileChanged] = useState(false); // Track if mobile has changed
-  const [emailChanged, setEmailChanged] = useState(false); // Track if email has changed
-  const [verifyModalField, setVerifyModalField] = useState(null); // Track the verification modal
-  const [otp, setOtp] = useState(null);
-
-  const isMobile = useBreakpointValue({ base: true, md: false });
+  const [fieldBeingEdited, setFieldBeingEdited] = useState("");
+  const [nameChanged, setNameChanged] = useState(false);
+  const [mobileChanged, setMobileChanged] = useState(false);
+  const [verifyModalField, setVerifyModalField] = useState(null);
+  const [otp, setOtp] = useState("");
 
   const toast = useToast();
+
+  // --- Theme Colors ---
+  const cardBg = useColorModeValue("#FFFFFF", "#1C222D");
+  const cardBorder = useColorModeValue("#E2E8EF", "rgba(255, 255, 255, 0.08)");
+  const headingColor = useColorModeValue("#1A2E3D", "#FFFFFF");
+  const subtextColor = useColorModeValue("#64748B", "#94A3B8");
+  const inputBg = useColorModeValue("#F8FAFC", "#131822");
+  const btnHoverBg = useColorModeValue("#F1F5F9", "#252D3A");
+  const accentColor = "#3F77A5";
+
   const showToast = (msg, status) => {
     toast({
       description: msg,
@@ -59,20 +71,21 @@ function MyProfile({ isOpen, onClose }) {
   const fetchUserDetails = async () => {
     try {
       const response = await userProfile();
-      const user = response.user;
-
-      setProfileDetails({
-        name: user.name || "N/A",
-        mobile: user.mobile || "N/A",
-        email: user.email || "N/A",
-      });
-      setEditedDetails({
-        name: user.name || "N/A",
-        mobile: user.mobile || "N/A",
-        email: user.email || "N/A",
-      });
+      const user = response?.user;
+      if (user) {
+        setProfileDetails({
+          name: user.name || "N/A",
+          mobile: user.mobile || "N/A",
+          email: user.email || "N/A",
+        });
+        setEditedDetails({
+          name: user.name || "N/A",
+          mobile: user.mobile || "N/A",
+          email: user.email || "N/A",
+        });
+      }
     } catch (error) {
-      console.error("Error fetching user Details:", error);
+      console.error("Error fetching user details:", error);
     }
   };
 
@@ -82,358 +95,361 @@ function MyProfile({ isOpen, onClose }) {
 
   const handleEditToggle = (field) => {
     if (fieldBeingEdited === field) {
-      setFieldBeingEdited(""); // If the same field is clicked, toggle off
+      setFieldBeingEdited("");
     } else {
-      setFieldBeingEdited(field); // Set the field being edited
+      setFieldBeingEdited(field);
     }
   };
 
   const handleInputChange = (e, field) => {
     const updatedDetails = { ...editedDetails, [field]: e.target.value };
-    setEditedDetails(updatedDetails); // Update the field value
+    setEditedDetails(updatedDetails);
 
-    // Track if the field value has changed
-    if (field === "name")
-      setNameChanged(updatedDetails.name !== profileDetails.name);
-    if (field === "mobile")
-      setMobileChanged(updatedDetails.mobile !== profileDetails.mobile);
-    if (field === "email")
-      setEmailChanged(updatedDetails.email !== profileDetails.email);
+    if (field === "name") setNameChanged(updatedDetails.name !== profileDetails.name);
+    if (field === "mobile") setMobileChanged(updatedDetails.mobile !== profileDetails.mobile);
   };
 
   const handleUpdateName = async () => {
     try {
       const response = await UpdateName(editedDetails.name);
-      if (response.status === 200) {
+      if (response?.status === 200) {
         localStorage.setItem("name", editedDetails.name);
-        showToast(response.data.data, "success");
+        setProfileDetails((prev) => ({ ...prev, name: editedDetails.name }));
+        setFieldBeingEdited("");
+        setNameChanged(false);
+        showToast(response.data?.data || "Name updated successfully", "success");
       } else {
-        showToast(response.data.data, "error");
+        showToast(response?.data?.data || "Failed to update name", "error");
       }
     } catch (error) {
-      showToast(error.message, "error");
+      showToast(error.message || "Error updating name", "error");
     }
   };
 
   const handleVerifyClick = async (field) => {
     try {
-      setVerifyModalField(field); // Open the verify modal for the selected field
-      const repsonse = await sendVerificationForUpdateMobile(editedDetails.mobile);
-      console.log('send otppp', repsonse);
+      setVerifyModalField(field);
+      await sendVerificationForUpdateMobile(editedDetails.mobile);
     } catch (error) {
-      console.error("Error fetching user Details:", error);
+      console.error("Error sending verification code:", error);
+      showToast("Error sending verification code", "error");
     }
   };
 
   const handleMobileOtpSubmit = async () => {
     try {
-      const response = await verifyMobileOtpForChangeMobile(editedDetails.mobile, otp);
-      console.log('handlemobileupdate', response);
+      await verifyMobileOtpForChangeMobile(editedDetails.mobile, otp);
       fetchUserDetails();
       closeVerifyModal();
-      onClose();
-      toast.success('Mobile Number Updated Successfully');
+      setFieldBeingEdited("");
+      setMobileChanged(false);
+      showToast("Mobile number updated successfully", "success");
     } catch (error) {
-      console.error("Error fetching user Details:", error);
-      toast.error('Failed to update mobile number. Please try again.');
+      console.error("Error verifying mobile OTP:", error);
+      showToast("Failed to update mobile number. Please try again.", "error");
     }
-  }
+  };
 
   const closeVerifyModal = () => {
-    setVerifyModalField(null); // Close the verify modal
+    setVerifyModalField(null);
+    setOtp("");
   };
 
   return (
     <>
-      <Modal
-        isOpen={isOpen}
-        onClose={onClose}
-        isCentered
-        size="2xl"
-        height="400px"
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader textAlign={"center"}>My Profile</ModalHeader>
-          <ModalCloseButton onClick={onClose} />
-          <ModalBody>
+      <Modal isOpen={isOpen} onClose={onClose} isCentered size={{ base: "md", md: "xl", lg: "2xl" }}>
+        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(2px)" />
+        <ModalContent
+          borderRadius="16px"
+          bg={cardBg}
+          border="1px solid"
+          borderColor={cardBorder}
+          boxShadow="0 20px 60px rgba(0, 0, 0, 0.2)"
+          overflow="hidden"
+          fontFamily="'Manrope', sans-serif"
+          mx={4}
+        >
+          {/* Header */}
+          <ModalHeader
+            textAlign="left"
+            px={{ base: 4, md: 6 }}
+            py={{ base: 4, md: 5 }}
+            borderBottom="1px solid"
+            borderColor={cardBorder}
+            fontFamily="'Manrope', sans-serif"
+            fontWeight={800}
+            fontSize={{ base: "16px", md: "18px" }}
+            color={headingColor}
+            lineHeight="1.2"
+          >
+            My Profile
+          </ModalHeader>
+          <ModalCloseButton
+            top="14px"
+            right="16px"
+            color={subtextColor}
+            _hover={{ color: headingColor, bg: btnHoverBg }}
+            borderRadius="8px"
+          />
+
+          {/* Body */}
+          <ModalBody px={{ base: 4, md: 6 }} py={{ base: 4, md: 6 }}>
             <Tabs variant="unstyled">
-              <TabList>
+              <TabList borderBottom="1px solid" borderColor={cardBorder} gap={{ base: "12px", md: "24px" }} mb="20px">
                 <Tab
+                  p="0 0 10px 0"
+                  fontFamily="'Manrope', sans-serif"
+                  fontSize={{ base: "12px", md: "13px" }}
+                  fontWeight={600}
+                  color={subtextColor}
+                  _hover={{ color: headingColor }}
                   _selected={{
-                    fontWeight: "bold",
-                    borderBottom: "4px solid",
-                    borderColor: useColorModeValue(
-                      theme.colors.custom.primary,
-                      theme.colors.custom.darkModeText
-                    ),
+                    color: accentColor,
+                    fontWeight: 700,
+                    borderBottom: `2.5px solid ${accentColor}`,
+                    mb: "-1px",
                   }}
-                  fontSize={{ base: "xs", md: "sm" }}
                 >
                   Account
                 </Tab>
                 <Tab
+                  p="0 0 10px 0"
+                  fontFamily="'Manrope', sans-serif"
+                  fontSize={{ base: "12px", md: "13px" }}
+                  fontWeight={600}
+                  color={subtextColor}
+                  _hover={{ color: headingColor }}
                   _selected={{
-                    fontWeight: "bold",
-                    borderBottom: "4px solid",
-                    borderColor: useColorModeValue(
-                      theme.colors.custom.primary,
-                      theme.colors.custom.darkModeText
-                    ),
+                    color: accentColor,
+                    fontWeight: 700,
+                    borderBottom: `2.5px solid ${accentColor}`,
+                    mb: "-1px",
                   }}
-                  fontSize={{ base: "xs", md: "sm" }}
                 >
                   Access and security
                 </Tab>
                 <Tab
+                  p="0 0 10px 0"
+                  fontFamily="'Manrope', sans-serif"
+                  fontSize={{ base: "12px", md: "13px" }}
+                  fontWeight={600}
+                  color={subtextColor}
+                  _hover={{ color: headingColor }}
                   _selected={{
-                    fontWeight: "bold",
-                    borderBottom: "4px solid",
-                    borderColor: useColorModeValue(
-                      theme.colors.custom.primary,
-                      theme.colors.custom.darkModeText
-                    ),
+                    color: accentColor,
+                    fontWeight: 700,
+                    borderBottom: `2.5px solid ${accentColor}`,
+                    mb: "-1px",
                   }}
-                  fontSize={{ base: "xs", md: "sm" }}
                 >
                   Notification and email
                 </Tab>
               </TabList>
+
               <TabPanels>
-                {/* Account Tab */}
-                <TabPanel>
-                  <VStack spacing={4} align="stretch">
-                    {isMobile ? (
-                      // Mobile View Layout
-                      <>
-                        <Flex justify="space-between" align="center">
-                          <Text>Name:</Text>
-                          <Text>{profileDetails.name}</Text>
-                        </Flex>
-                        <Flex justify="space-between" align="center">
-                          <Text>Mobile:</Text>
-                          <Text>{profileDetails.mobile}</Text>
-                        </Flex>
-                        <Flex justify="space-between" align="center">
-                          <Text>Email:</Text>
-                          <Text>{profileDetails.email}</Text>
-                        </Flex>
-                      </>
-                    ) : (
-                      <>
-                        {/* User Name Row */}
-                        <Flex justify="space-between" align="center">
-                          <Flex
-                            justify="space-between"
-                            flexDirection={"column"}
-                          >
-                            <Flex align="center">
-                              <Text>User name</Text>
-                              <IconButton
-                                aria-label={
-                                  fieldBeingEdited === "name"
-                                    ? "Save username"
-                                    : "Edit username"
-                                }
-                                icon={
-                                  fieldBeingEdited === "name" ? (
-                                    <TbEditOff />
-                                  ) : (
-                                    <TbEdit />
-                                  )
-                                } // Conditionally render icon
-                                size="sm"
-                                ml={2}
-                                variant="ghost"
-                                onClick={() => handleEditToggle("name")}
-                              />
-                            </Flex>
-                            {fieldBeingEdited === "name" ? (
-                              <Flex align="center">
-                                <Input
-                                  value={editedDetails.name}
-                                  onChange={(e) => handleInputChange(e, "name")}
-                                  width={`${Math.max(
-                                    5 + editedDetails.name.length
-                                  )}ch`} // Adjust width dynamically
-                                />
-                                {nameChanged && (
-                                  <IoCheckmarkOutline
-                                    color="green"
-                                    size={20}
-                                    ml={2}
-                                    onClick={() => handleUpdateName()}
-                                    cursor={"pointer"}
-                                  />
-                                )}
-                              </Flex>
-                            ) : (
-                              <Flex align="center">
-                                <Text>{profileDetails.name}</Text>
-                              </Flex>
-                            )}
-                          </Flex>
-
-                          {/* Mobile Number Row */}
-                          <Flex
-                            justify="space-between"
-                            flexDirection={"column"}
-                          >
-                            <Flex align="center">
-                              <Text>Mobile number</Text>
-                              <IconButton
-                                aria-label={
-                                  fieldBeingEdited === "mobile"
-                                    ? "Save mobile number"
-                                    : "Edit mobile number"
-                                }
-                                icon={
-                                  fieldBeingEdited === "mobile" ? (
-                                    <TbEditOff />
-                                  ) : (
-                                    <TbEdit />
-                                  )
-                                } // Conditionally render icon
-                                size="sm"
-                                ml={2}
-                                variant="ghost"
-                                onClick={() => handleEditToggle("mobile")}
-                              />
-                            </Flex>
-                            {fieldBeingEdited === "mobile" ? (
-                              <Flex align="center">
-                                <Input
-                                  value={editedDetails.mobile}
-                                  onChange={(e) =>
-                                    handleInputChange(e, "mobile")
-                                  }
-                                  width={`${Math.max(
-                                    5 + editedDetails.mobile.length
-                                  )}ch`} // Adjust width dynamically
-                                />
-                                {mobileChanged && (
-                                  <Button
-                                    variant={"text"}
-                                    color="green"
-                                    fontSize="xs  "
-                                    ml={0}
-                                    cursor={"pointer"}
-                                    onClick={() => handleVerifyClick("mobile")}
-                                  >
-                                    Verify
-                                  </Button>
-                                )}
-                              </Flex>
-                            ) : (
-                              <Flex align="center">
-                                <Text>{profileDetails.mobile}</Text>
-                              </Flex>
-                            )}
-                          </Flex>
-
-                          {/* Email Row */}
-                          <Flex
-                            justify="space-between"
-                            flexDirection={"column"}
-                          >
-                            <Flex align="center">
-                              <Text>Email</Text>
-                              {/* <IconButton
-                          aria-label={
-                            fieldBeingEdited === "email"
-                              ? "Save email"
-                              : "Edit email"
-                          }
-                          icon={
-                            fieldBeingEdited === "email" ? (
-                              <TbEditOff />
-                            ) : (
-                              <TbEdit />
-                            )
-                          } // Conditionally render icon
-                          size="sm"
-                          ml={2}
-                          variant="ghost"
-                          onClick={() => handleEditToggle("email")}
-                        /> */}
-                            </Flex>
-                            {fieldBeingEdited === "email" ? (
-                              <Flex align="center">
-                                <Input
-                                  value={editedDetails.email}
-                                  onChange={(e) =>
-                                    handleInputChange(e, "email")
-                                  }
-                                  width={`${
-                                    Math.max(editedDetails.email.length) + 5
-                                  }ch`} // Adjust width dynamically
-                                />
-                                {emailChanged && (
-                                  <Text color="green" fontSize="sm" ml={1}>
-                                    Verify
-                                  </Text>
-                                )}
-                              </Flex>
-                            ) : (
-                              <Flex align="center">
-                                <Text>{profileDetails.email}</Text>
-                              </Flex>
-                            )}
-                          </Flex>
-                        </Flex>
-
-                        {/* Action Buttons */}
-                        <Flex
-                          justify="flex-start"
-                          mt={6}
-                          borderTop="1px solid"
-                          borderColor="gray.200"
-                          pt={4}
-                        >
-                          <Button colorScheme="red" variant="link">
-                            Delete Account
-                          </Button>
+                {/* 1. Account Tab */}
+                <TabPanel p="0">
+                  <VStack spacing={5} align="stretch">
+                    <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={{ base: "14px", sm: "20px" }}>
+                      {/* User Name */}
+                      <Box>
+                        <Flex align="center" justify="space-between" mb="6px">
+                          <Text fontFamily="'Manrope', sans-serif" fontSize="12px" fontWeight={600} color={subtextColor}>
+                            User name
+                          </Text>
                           <IconButton
-                            aria-label="More info"
-                            icon={<InfoIcon />}
-                            size="sm"
-                            ml={2}
+                            aria-label={fieldBeingEdited === "name" ? "Cancel edit" : "Edit username"}
+                            icon={fieldBeingEdited === "name" ? <TbEditOff size="15px" /> : <TbEdit size="15px" />}
+                            size="xs"
                             variant="ghost"
+                            color={subtextColor}
+                            _hover={{ color: headingColor, bg: btnHoverBg }}
+                            onClick={() => handleEditToggle("name")}
                           />
                         </Flex>
-                      </>
-                    )}
+                        {fieldBeingEdited === "name" ? (
+                          <Flex align="center" gap="6px">
+                            <Input
+                              value={editedDetails.name}
+                              onChange={(e) => handleInputChange(e, "name")}
+                              size="sm"
+                              borderRadius="8px"
+                              bg={inputBg}
+                              borderWidth="1px"
+                              borderColor={cardBorder}
+                              fontFamily="'Manrope', sans-serif"
+                              fontSize="13px"
+                              fontWeight={600}
+                              color={headingColor}
+                              _focus={{ borderColor: accentColor, boxShadow: `0 0 0 1px ${accentColor}` }}
+                            />
+                            {nameChanged && (
+                              <IconButton
+                                aria-label="Save name"
+                                icon={<IoCheckmarkOutline size="16px" />}
+                                size="sm"
+                                colorScheme="green"
+                                borderRadius="8px"
+                                onClick={handleUpdateName}
+                              />
+                            )}
+                          </Flex>
+                        ) : (
+                          <Text fontFamily="'Manrope', sans-serif" fontSize="14px" fontWeight={700} color={headingColor}>
+                            {profileDetails.name}
+                          </Text>
+                        )}
+                      </Box>
+
+                      {/* Mobile Number */}
+                      <Box>
+                        <Flex align="center" justify="space-between" mb="6px">
+                          <Text fontFamily="'Manrope', sans-serif" fontSize="12px" fontWeight={600} color={subtextColor}>
+                            Mobile number
+                          </Text>
+                          <IconButton
+                            aria-label={fieldBeingEdited === "mobile" ? "Cancel edit" : "Edit mobile number"}
+                            icon={fieldBeingEdited === "mobile" ? <TbEditOff size="15px" /> : <TbEdit size="15px" />}
+                            size="xs"
+                            variant="ghost"
+                            color={subtextColor}
+                            _hover={{ color: headingColor, bg: btnHoverBg }}
+                            onClick={() => handleEditToggle("mobile")}
+                          />
+                        </Flex>
+                        {fieldBeingEdited === "mobile" ? (
+                          <Flex align="center" gap="6px">
+                            <Input
+                              value={editedDetails.mobile}
+                              onChange={(e) => handleInputChange(e, "mobile")}
+                              size="sm"
+                              borderRadius="8px"
+                              bg={inputBg}
+                              borderWidth="1px"
+                              borderColor={cardBorder}
+                              fontFamily="'Manrope', sans-serif"
+                              fontSize="13px"
+                              fontWeight={600}
+                              color={headingColor}
+                              _focus={{ borderColor: accentColor, boxShadow: `0 0 0 1px ${accentColor}` }}
+                            />
+                            {mobileChanged && (
+                              <Button
+                                size="sm"
+                                colorScheme="blue"
+                                bg={accentColor}
+                                _hover={{ bg: "#315F86" }}
+                                fontFamily="'Manrope', sans-serif"
+                                fontSize="12px"
+                                fontWeight={700}
+                                borderRadius="8px"
+                                onClick={() => handleVerifyClick("mobile")}
+                              >
+                                Verify
+                              </Button>
+                            )}
+                          </Flex>
+                        ) : (
+                          <Text fontFamily="'Manrope', sans-serif" fontSize="14px" fontWeight={700} color={headingColor}>
+                            {profileDetails.mobile}
+                          </Text>
+                        )}
+                      </Box>
+
+                      {/* Email */}
+                      <Box>
+                        <Flex align="center" justify="space-between" mb="6px">
+                          <Text fontFamily="'Manrope', sans-serif" fontSize="12px" fontWeight={600} color={subtextColor}>
+                            Email
+                          </Text>
+                        </Flex>
+                        <Text
+                          fontFamily="'Manrope', sans-serif"
+                          fontSize="14px"
+                          fontWeight={700}
+                          color={headingColor}
+                          wordBreak="break-word"
+                        >
+                          {profileDetails.email}
+                        </Text>
+                      </Box>
+                    </SimpleGrid>
+
+                    {/* Delete Account Button */}
+                    <Flex align="center" pt="16px" borderTop="1px solid" borderColor={cardBorder} gap="6px">
+                      <Button
+                        variant="link"
+                        color="#E53E3E"
+                        _hover={{ textDecoration: "underline", color: "#C53030" }}
+                        fontFamily="'Manrope', sans-serif"
+                        fontWeight={700}
+                        fontSize="13px"
+                      >
+                        Delete Account
+                      </Button>
+                      <Tooltip label="Account deletion terms and security policies" hasArrow placement="top">
+                        <IconButton
+                          aria-label="More info"
+                          icon={<InfoIcon boxSize="13px" />}
+                          size="xs"
+                          variant="ghost"
+                          color={subtextColor}
+                          _hover={{ color: headingColor }}
+                        />
+                      </Tooltip>
+                    </Flex>
                   </VStack>
                 </TabPanel>
 
-                {/* Other Tabs */}
-                <TabPanel>
-                  <p>Access and security content</p>
+                {/* 2. Access and Security Tab */}
+                <TabPanel p="0">
+                  <Box py={4}>
+                    <Text fontFamily="'Manrope', sans-serif" fontSize="13px" color={subtextColor}>
+                      Access permissions, API keys, and security settings for this account.
+                    </Text>
+                  </Box>
                 </TabPanel>
-                <TabPanel>
-                  <p>Notification and email content</p>
+
+                {/* 3. Notification and Email Tab */}
+                <TabPanel p="0">
+                  <Box py={4}>
+                    <Text fontFamily="'Manrope', sans-serif" fontSize="13px" color={subtextColor}>
+                      Email notification preferences, system alerts, and SMS subscriptions.
+                    </Text>
+                  </Box>
                 </TabPanel>
               </TabPanels>
             </Tabs>
           </ModalBody>
-
-          {/* <ModalFooter>
-            <Button colorScheme="blue" onClick={onClose}>
-              Save Changes
-            </Button>
-          </ModalFooter> */}
         </ModalContent>
       </Modal>
 
-      <Modal isOpen={!!verifyModalField} onClose={closeVerifyModal} isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
+      {/* Verify OTP Modal */}
+      <Modal isOpen={!!verifyModalField} onClose={closeVerifyModal} isCentered size="md">
+        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(2px)" />
+        <ModalContent
+          borderRadius="16px"
+          bg={cardBg}
+          border="1px solid"
+          borderColor={cardBorder}
+          fontFamily="'Manrope', sans-serif"
+          p={2}
+          mx={4}
+        >
+          <ModalHeader
+            fontFamily="'Manrope', sans-serif"
+            fontWeight={800}
+            fontSize="16px"
+            color={headingColor}
+            borderBottom="1px solid"
+            borderColor={cardBorder}
+            pb={3}
+          >
             Verify {verifyModalField === "mobile" ? "Mobile Number" : "Email"}
           </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Text mb={4}>
+          <ModalCloseButton top="14px" right="16px" color={subtextColor} _hover={{ color: headingColor }} />
+          <ModalBody py={4}>
+            <Text fontFamily="'Manrope', sans-serif" fontSize="13px" color={subtextColor} mb={3}>
               Enter the verification code sent to your{" "}
               {verifyModalField === "mobile" ? "mobile number" : "email"}:
             </Text>
@@ -441,10 +457,28 @@ function MyProfile({ isOpen, onClose }) {
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               placeholder="Verification Code"
+              size="md"
+              borderRadius="8px"
+              bg={inputBg}
+              borderWidth="1px"
+              borderColor={cardBorder}
+              fontFamily="'Manrope', sans-serif"
+              fontSize="13px"
+              color={headingColor}
+              _focus={{ borderColor: accentColor, boxShadow: `0 0 0 1px ${accentColor}` }}
             />
           </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" onClick={() => handleMobileOtpSubmit()}>
+          <ModalFooter borderTop="1px solid" borderColor={cardBorder} pt={3}>
+            <Button
+              bg={accentColor}
+              color="white"
+              _hover={{ bg: "#315F86" }}
+              fontFamily="'Manrope', sans-serif"
+              fontWeight={700}
+              fontSize="13px"
+              borderRadius="8px"
+              onClick={handleMobileOtpSubmit}
+            >
               Submit
             </Button>
           </ModalFooter>

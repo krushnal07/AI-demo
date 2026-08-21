@@ -376,11 +376,22 @@ const AiDashboard = () => {
           parentHeightOffset: 0,
         },
         theme: { mode: chartTheme },
-        colors: ["#DB7B3A"],
+        colors: [
+          "#3F77A5",
+          "#0284C7",
+          "#06B6D4",
+          "#6366F1",
+          "#8B5CF6",
+          "#10B981",
+          "#14B8A6",
+          "#EC4899",
+        ],
+        legend: { show: false },
         plotOptions: {
           bar: {
             horizontal: true,
-            barHeight: "45%",
+            distributed: true,
+            barHeight: "55%",
             borderRadius: 4,
             borderRadiusApplication: "end",
           },
@@ -409,7 +420,8 @@ const AiDashboard = () => {
         },
         yaxis: {
           labels: {
-            maxWidth: 130,
+            maxWidth: 100,
+            trim: true,
             style: {
               colors: "#64748B",
               fontSize: "10px",
@@ -991,7 +1003,7 @@ const AiDashboard = () => {
               CONTAINER 4: ANALYTICS CONTAINER 1 (3 Charts Row)
               ============================================================ */}
           <Grid
-            templateColumns={{ base: "1fr", lg: "1fr 1fr 1fr" }}
+            templateColumns={{ base: "1fr", lg: "repeat(3, minmax(0, 1fr))" }}
             gap="16px"
             mb="18px"
             alignItems="stretch"
@@ -1001,6 +1013,8 @@ const AiDashboard = () => {
               bg={cardBg}
               h="267.5px"
               minH="267.5px"
+              minW="0"
+              w="100%"
               p="20px"
               borderRadius="14px"
               borderWidth="1px"
@@ -1022,7 +1036,7 @@ const AiDashboard = () => {
                 Alerts by AI Analytics
               </Text>
               {/* Bar Chart (Height: 182px, Padding-top: 12px) */}
-              <Box flex="1" h="182px" pt="12px">
+              <Box flex="1" h="182px" pt="12px" minW="0" w="100%">
                 {byAnalytics.length ? (
                   <ReactApexChart
                     key={`bar-${date}-${byAnalytics.length}`}
@@ -1044,6 +1058,8 @@ const AiDashboard = () => {
               bg={cardBg}
               h="267.5px"
               minH="267.5px"
+              minW="0"
+              w="100%"
               p="20px"
               borderRadius="14px"
               borderWidth="1px"
@@ -1068,6 +1084,7 @@ const AiDashboard = () => {
               <Flex
                 flex="1"
                 h="100%"
+                minW="0"
                 direction="column"
                 justify="center"
                 align="center"
@@ -1128,6 +1145,8 @@ const AiDashboard = () => {
               bg={cardBg}
               h="267.5px"
               minH="267.5px"
+              minW="0"
+              w="100%"
               p="20px"
               borderRadius="14px"
               borderWidth="1px"
@@ -1149,7 +1168,7 @@ const AiDashboard = () => {
                 Alert Timeline · 24H
               </Text>
               {/* Area Chart Graph (Height: 182px, Padding-top: 12px) */}
-              <Box flex="1" h="182px" pt="12px">
+              <Box flex="1" h="182px" pt="12px" minW="0" w="100%">
                 {timeline.length ? (
                   <ReactApexChart
                     key={`timeline-${date}-${timeline.length}`}
@@ -1171,15 +1190,17 @@ const AiDashboard = () => {
               CONTAINER 5: ANALYTICS CONTAINER 2 (Bottom Row: 3 Panels)
               ============================================================ */}
           <Grid
-            templateColumns={{ base: "1fr", lg: "1fr 1fr 1fr" }}
+            templateColumns={{ base: "1fr", lg: "repeat(3, minmax(0, 1fr))" }}
             gap="16px"
             alignItems="stretch"
           >
-            {/* Panel 1: VMukti AI · Insights (Height: 248.65px, Padding: 20px, Radius: 14px) */}
+            {/* Panel 1: VMukti AI · Insights (Height: 267.5px, Padding: 20px, Radius: 14px) */}
             <Box
               bg={cardBg}
-              h="248.65px"
-              minH="248.65px"
+              h="267.5px"
+              minH="267.5px"
+              minW="0"
+              w="100%"
               p="20px"
               borderRadius="14px"
               borderWidth="1px"
@@ -1189,14 +1210,14 @@ const AiDashboard = () => {
               display="flex"
               flexDirection="column"
             >
-              {/* Title & Icon (Manrope 700 Bold, 13px, line-height 19.5px, gap 6px, Icon #F59E0B) */}
+              {/* Title & Icon (Manrope 700 Bold, 14px, line-height 21px, gap 6px, Icon #F59E0B) */}
               <Flex align="center" gap="6px">
-                <Icon as={BsLightningChargeFill} color="#F59E0B" boxSize="12px" />
+                <Icon as={BsLightningChargeFill} color="#F59E0B" boxSize="13px" />
                 <Text
                   fontFamily="'Manrope', sans-serif"
                   fontWeight="700"
-                  fontSize="13px"
-                  lineHeight="19.5px"
+                  fontSize="14px"
+                  lineHeight="21px"
                   letterSpacing="0px"
                   color={headingColor}
                 >
@@ -1204,16 +1225,18 @@ const AiDashboard = () => {
                 </Text>
               </Flex>
 
-              {/* Insights List Container (Padding-top: 12px, Gap: 7px) */}
+              {/* Insights List Container (Height: 182px, Padding-top: 12px, Gap: 8px) */}
               <Box
                 flex="1"
+                h="182px"
                 pt="12px"
-                maxH="170px"
+                minW="0"
+                w="100%"
                 overflowY="auto"
                 pr="4px"
                 display="flex"
                 flexDirection="column"
-                gap="7px"
+                gap="8px"
                 css={{
                   "&::-webkit-scrollbar": { width: "4px" },
                   "&::-webkit-scrollbar-thumb": {
@@ -1223,14 +1246,16 @@ const AiDashboard = () => {
                 }}
               >
                 {insights.length === 0 ? (
-                  <Text
-                    fontFamily="'Manrope', sans-serif"
-                    fontSize="12px"
-                    lineHeight="18.6px"
-                    color={subtextColor}
-                  >
-                    No automated insights generated for this period.
-                  </Text>
+                  <Flex justify="center" align="center" h="100%" color={subtextColor}>
+                    <Text
+                      fontFamily="'Manrope', sans-serif"
+                      fontSize="12px"
+                      lineHeight="18.6px"
+                      color={subtextColor}
+                    >
+                      No automated insights generated for this period.
+                    </Text>
+                  </Flex>
                 ) : (
                   insights.map((txt, i) => (
                     <Flex key={i} gap="7px" align="flex-start">
@@ -1259,11 +1284,13 @@ const AiDashboard = () => {
               </Box>
             </Box>
 
-            {/* Panel 2: Top Cameras · Alerts (Height: 248.65px, Padding: 20px, Radius: 14px) */}
+            {/* Panel 2: Top Cameras · Alerts (Height: 267.5px, Padding: 20px, Radius: 14px) */}
             <Box
               bg={cardBg}
-              h="248.65px"
-              minH="248.65px"
+              h="267.5px"
+              minH="267.5px"
+              minW="0"
+              w="100%"
               p="20px"
               borderRadius="14px"
               borderWidth="1px"
@@ -1273,19 +1300,19 @@ const AiDashboard = () => {
               display="flex"
               flexDirection="column"
             >
-              {/* Title (Manrope 700 Bold, 13px, line-height 19.5px) */}
+              {/* Title (Manrope 700 Bold, 14px, line-height 21px) */}
               <Text
                 fontFamily="'Manrope', sans-serif"
                 fontWeight="700"
-                fontSize="13px"
-                lineHeight="19.5px"
+                fontSize="14px"
+                lineHeight="21px"
                 letterSpacing="0px"
                 color={headingColor}
               >
                 Top Cameras · Alerts
               </Text>
               {/* Bar Chart (Height: 182px, Padding-top: 12px) */}
-              <Box flex="1" h="182px" pt="12px">
+              <Box flex="1" h="182px" pt="12px" minW="0" w="100%">
                 {topCameras.length ? (
                   <ReactApexChart
                     key={`topcam-${date}-${topCameras.length}`}
@@ -1302,11 +1329,13 @@ const AiDashboard = () => {
               </Box>
             </Box>
 
-            {/* Panel 3: Locations · Analytics Matrix (Height: 248.65px, Padding: 20px, Radius: 14px) */}
+            {/* Panel 3: Locations · Analytics Matrix (Height: 267.5px, Padding: 20px, Radius: 14px) */}
             <Box
               bg={cardBg}
-              h="248.65px"
-              minH="248.65px"
+              h="267.5px"
+              minH="267.5px"
+              minW="0"
+              w="100%"
               p="20px"
               borderRadius="14px"
               borderWidth="1px"
@@ -1316,24 +1345,26 @@ const AiDashboard = () => {
               display="flex"
               flexDirection="column"
             >
-              {/* Title (Manrope 700 Bold, 13px, line-height 19.5px) */}
+              {/* Title (Manrope 700 Bold, 14px, line-height 21px) */}
               <Text
                 fontFamily="'Manrope', sans-serif"
                 fontWeight="700"
-                fontSize="13px"
-                lineHeight="19.5px"
+                fontSize="14px"
+                lineHeight="21px"
                 letterSpacing="0px"
                 color={headingColor}
-                mb="8px"
               >
                 Locations · Analytics Matrix
               </Text>
 
-              {/* Summary Matrix Table Container */}
+              {/* Summary Matrix Table Container (Height: 182px, Padding-top: 12px, isolated scroll) */}
               <Box
                 flex="1"
+                h="182px"
+                pt="12px"
+                minW="0"
+                w="100%"
                 overflowX="auto"
-                maxH="170px"
                 overflowY="auto"
                 pr="2px"
                 css={{
@@ -1346,14 +1377,14 @@ const AiDashboard = () => {
               >
                 <Box
                   as="table"
-                  w="100%"
-                  minW={analyticsLabels.length > 4 ? `${analyticsLabels.length * 80 + 130}px` : "100%"}
+                  w="max-content"
+                  minW="100%"
                   fontSize="11px"
                   style={{ borderCollapse: "collapse" }}
                 >
                   <Box as="thead">
                     <Box as="tr" color={subtextColor} textAlign="left">
-                      <Box as="th" py={2} pr={3} fontWeight="600" fontSize="10px" color="#64748B">
+                      <Box as="th" py={2} pr={3} fontWeight="600" fontSize="10px" color="#64748B" whiteSpace="nowrap">
                         Location
                       </Box>
                       {analyticsLabels.map((l) => (
@@ -1371,7 +1402,7 @@ const AiDashboard = () => {
                           {l}
                         </Box>
                       ))}
-                      <Box as="th" py={2} pl={2} textAlign="right" fontWeight="600" fontSize="10px" color="#64748B">
+                      <Box as="th" py={2} pl={2} textAlign="right" fontWeight="600" fontSize="10px" color="#64748B" whiteSpace="nowrap">
                         Total
                       </Box>
                     </Box>
@@ -1383,26 +1414,26 @@ const AiDashboard = () => {
                           {row.district}
                         </Box>
                         {analyticsLabels.map((l) => (
-                          <Box as="td" key={l} py={2} px={2} textAlign="center" color={subtextColor}>
+                          <Box as="td" key={l} py={2} px={2} textAlign="center" color={subtextColor} whiteSpace="nowrap">
                             {fmt(row.byAnalytics[l])}
                           </Box>
                         ))}
-                        <Box as="td" py={2} pl={2} textAlign="right" fontWeight="700" color={headingColor}>
+                        <Box as="td" py={2} pl={2} textAlign="right" fontWeight="700" color={headingColor} whiteSpace="nowrap">
                           {fmt(row.total)}
                         </Box>
                       </Box>
                     ))}
                     {matrix.length > 0 && (
                       <Box as="tr" borderTop="2px solid" borderColor={borderColor}>
-                        <Box as="td" py={2} pr={3} fontWeight="800" color={headingColor} textTransform="uppercase">
+                        <Box as="td" py={2} pr={3} fontWeight="800" color={headingColor} textTransform="uppercase" whiteSpace="nowrap">
                           TOTAL
                         </Box>
                         {analyticsLabels.map((l) => (
-                          <Box as="td" key={l} py={2} px={2} textAlign="center" fontWeight="800" color={headingColor}>
+                          <Box as="td" key={l} py={2} px={2} textAlign="center" fontWeight="800" color={headingColor} whiteSpace="nowrap">
                             {fmt(matrixTotals[l])}
                           </Box>
                         ))}
-                        <Box as="td" py={2} pl={2} textAlign="right" fontWeight="800" color={headingColor}>
+                        <Box as="td" py={2} pl={2} textAlign="right" fontWeight="800" color={headingColor} whiteSpace="nowrap">
                           {fmt(matrixTotals.total)}
                         </Box>
                       </Box>

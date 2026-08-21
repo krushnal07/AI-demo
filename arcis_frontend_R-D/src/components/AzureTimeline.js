@@ -22,7 +22,14 @@ const formatBytes = (bytes) => {
 /**
  * Azure-backed timeline redesigned for high-tech, responsive, dark/light theme consistency.
  */
-const AzureTimeline = ({ date, deviceid, onUrlChange, onTotalDataChange }) => {
+const AzureTimeline = ({
+  date,
+  deviceid,
+  onUrlChange,
+  onTotalDataChange,
+  currentPlayUrl,
+  currentVideoTime,
+}) => {
   const [segments, setSegments] = useState([]);
   const [highlightedIndex, setHighlightedIndex] = useState(null);
   const [hoveredChunk, setHoveredChunk] = useState({ x: 0, y: 0, time: null });
@@ -103,13 +110,26 @@ const AzureTimeline = ({ date, deviceid, onUrlChange, onTotalDataChange }) => {
     return { startTime, endTime, startPercentage, width, index, url: seg.url };
   });
 
+  // --- Sync red playhead position with currently playing video time ---
+  useEffect(() => {
+    if (!currentPlayUrl || currentVideoTime === undefined || currentVideoTime === null) return;
+    const activeSegment = fileMarkers.find((f) => f.url === currentPlayUrl);
+    if (activeSegment) {
+      setHighlightedIndex(activeSegment.index);
+      const currentExactTimeMs = activeSegment.startTime.getTime() + currentVideoTime * 1000;
+      const newPos = calculatePosition(currentExactTimeMs);
+      setCurrentPlaybackTimePosition(newPos);
+    }
+  }, [currentVideoTime, currentPlayUrl, segments]);
+
   // --- Interaction ---
-  const handleFileClick = (index) => {
+  const handleFileClick = (index, offsetSeconds = 0) => {
     setHighlightedIndex(index);
     const seg = fileMarkers[index];
     if (seg && onUrlChange) {
-      onUrlChange(seg.url);
-      setCurrentPlaybackTimePosition(seg.startPercentage);
+      onUrlChange(seg.url, offsetSeconds);
+      const exactTimeMs = seg.startTime.getTime() + offsetSeconds * 1000;
+      setCurrentPlaybackTimePosition(calculatePosition(exactTimeMs));
     }
   };
 
@@ -119,16 +139,32 @@ const AzureTimeline = ({ date, deviceid, onUrlChange, onTotalDataChange }) => {
     const startOfDay = new Date(`${date}T00:00:00Z`);
     const clickedTime = startOfDay.getTime() + (clickPercent / 100) * 24 * 3600 * 1000;
 
-    let closest = null;
-    let minDiff = Infinity;
-    fileMarkers.forEach((f) => {
-      const diff = Math.abs(f.startTime.getTime() - clickedTime);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closest = f;
+    let selectedSeg = null;
+    let offsetSeconds = 0;
+
+    for (const f of fileMarkers) {
+      if (clickedTime >= f.startTime.getTime() && clickedTime <= f.endTime.getTime()) {
+        selectedSeg = f;
+        offsetSeconds = Math.max(0, (clickedTime - f.startTime.getTime()) / 1000);
+        break;
       }
-    });
-    if (closest) handleFileClick(closest.index);
+    }
+
+    if (!selectedSeg) {
+      let minDiff = Infinity;
+      fileMarkers.forEach((f) => {
+        const diff = Math.abs(f.startTime.getTime() - clickedTime);
+        if (diff < minDiff) {
+          minDiff = diff;
+          selectedSeg = f;
+          offsetSeconds = 0;
+        }
+      });
+    }
+
+    if (selectedSeg) {
+      handleFileClick(selectedSeg.index, offsetSeconds);
+    }
   };
 
   const handleMouseMove = (event) => {
@@ -142,18 +178,30 @@ const AzureTimeline = ({ date, deviceid, onUrlChange, onTotalDataChange }) => {
 
   const handleMouseLeave = () => setHoveredChunk({ x: 0, y: 0, time: null });
 
-  // --- Zoom controls ---
-  const handleScroll = () => {
-    if (timelineRef.current) {
-      const scrollPercentage =
-        (timelineRef.current.scrollLeft / timelineRef.current.scrollWidth) * 100;
-      setZoomLevel(Math.max(100, Math.min(800, 100 + scrollPercentage)));
+  // --- Zoom controls with anchored scroll position ---
+  const updateZoom = (newZoom) => {
+    const clamped = Math.max(100, Math.min(800, newZoom));
+    const container = timelineRef.current;
+    if (container) {
+      const currentPos = currentPlaybackTimePosition !== null ? currentPlaybackTimePosition / 100 : 0.5;
+      setZoomLevel(clamped);
+      requestAnimationFrame(() => {
+        if (container) {
+          container.scrollLeft =
+            currentPos * container.scrollWidth - container.clientWidth / 2;
+        }
+      });
+    } else {
+      setZoomLevel(clamped);
     }
   };
 
   const handleWheel = (e) => {
-    if (e.deltaY < 0) setZoomLevel((p) => Math.min(800, p + 15));
-    else setZoomLevel((p) => Math.max(100, p - 15));
+    if (e.ctrlKey || e.metaKey || e.shiftKey) {
+      e.preventDefault();
+      if (e.deltaY < 0) updateZoom(zoomLevel + 25);
+      else updateZoom(zoomLevel - 25);
+    }
   };
 
   return (
@@ -204,7 +252,7 @@ const AzureTimeline = ({ date, deviceid, onUrlChange, onTotalDataChange }) => {
             borderColor={borderColor}
             color={subtextColor}
             _hover={{ bg: "#3F77A512", color: "#3F77A5", borderColor: "#3F77A5" }}
-            onClick={() => setZoomLevel((p) => Math.max(100, p - 30))}
+            onClick={() => updateZoom(zoomLevel - 30)}
           />
           <IconButton
             icon={<FiZoomIn size="12px" />}
@@ -214,13 +262,14 @@ const AzureTimeline = ({ date, deviceid, onUrlChange, onTotalDataChange }) => {
             borderColor={borderColor}
             color={subtextColor}
             _hover={{ bg: "#3F77A512", color: "#3F77A5", borderColor: "#3F77A5" }}
-            onClick={() => setZoomLevel((p) => Math.min(800, p + 30))}
+            onClick={() => updateZoom(zoomLevel + 30)}
           />
         </HStack>
       </Flex>
 
       {/* Timeline Canvas Track */}
       <Box
+        ref={timelineRef}
         overflowX="auto"
         overflowY="hidden"
         w="100%"
@@ -247,8 +296,6 @@ const AzureTimeline = ({ date, deviceid, onUrlChange, onTotalDataChange }) => {
           borderColor={trackBorder}
           borderRadius="8px"
           cursor="pointer"
-          ref={timelineRef}
-          onScroll={handleScroll}
           onClick={handleTimelineClick}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}

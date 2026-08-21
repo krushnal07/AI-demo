@@ -27,6 +27,37 @@ import ImageMask from "./ImageMask";
 import { useLocation } from "react-router-dom";
 import CameraPTZ from "./CameraPTZ";
 
+const ensureJessibucaProLoaded = () => {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined" && typeof window.JessibucaPro === "function") {
+      resolve(true);
+      return;
+    }
+    if (typeof document === "undefined") {
+      resolve(false);
+      return;
+    }
+    const existingScript = document.getElementById("jessibuca-pro-script");
+    if (existingScript) {
+      if (typeof window.JessibucaPro === "function") {
+        resolve(true);
+        return;
+      }
+      existingScript.addEventListener("load", () => resolve(typeof window.JessibucaPro === "function"), { once: true });
+      existingScript.addEventListener("error", () => resolve(false), { once: true });
+      // Fallback check after 500ms
+      setTimeout(() => resolve(typeof window.JessibucaPro === "function"), 500);
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "jessibuca-pro-script";
+    script.src = "/js/jessibuca-pro-demo.js";
+    script.onload = () => resolve(typeof window.JessibucaPro === "function");
+    script.onerror = () => resolve(false);
+    document.head.appendChild(script);
+  });
+};
+
 const RECONNECT_DELAY_MS = 3000; // 3 seconds before each retry
 
 const Player = React.forwardRef(({
@@ -47,6 +78,9 @@ const Player = React.forwardRef(({
   const [playUrl, setPlayUrl] = useState(initialPlayUrl);
   const jessibucaRef = useRef(null);
   const containerRef = useRef(null);
+  const videoRef = useRef(null);
+  const [videoCurrentTime, setVideoCurrentTime] = useState(0);
+  const [videoScale, setVideoScale] = useState(1);
 
   const [error, setError] = useState(null);
   const forceNoOffscreen = false;
@@ -149,20 +183,13 @@ const Player = React.forwardRef(({
     }
   }, [initialPlayUrl]);
 
-  // Cleanup on route change
+  // Reset unmounted flag on mount
   useEffect(() => {
+    isUnmountedRef.current = false;
     return () => {
       isUnmountedRef.current = true;
       clearReconnectTimer();
       destroy();
-    };
-  }, [location]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isUnmountedRef.current = true;
-      clearReconnectTimer();
     };
   }, []);
 
@@ -176,8 +203,8 @@ const Player = React.forwardRef(({
         await destroy();
       }
       if (playUrl) {
-        if (playUrl.includes("hdl" && "jessica")) {
-          createPlayer(playUrl);
+        if (!isVideoFile) {
+          await createPlayer(playUrl);
           playStream(playUrl);
         } else {
           setIsPlaying(true);
@@ -187,25 +214,40 @@ const Player = React.forwardRef(({
     handlePlayUrlChange();
   }, [playUrl]);
 
-  const createPlayer = useCallback((url) => {
+  const createPlayer = useCallback(async (url) => {
     if (!containerRef.current || !(containerRef.current instanceof HTMLElement)) return;
 
-    jessibucaRef.current = new window.JessibucaPro({
-      container: containerRef.current,
-      decoder: "/js/decoder-pro.js",
-      useMSE: true,
-      videoBuffer: 0.2,
-      isResize: false,
-      text: "ArcisAI",
-      loadingText: "Loading",
-      debug: false,
-      zooming: true,
-      operateBtns: {},
-      forceNoOffscreen: forceNoOffscreen,
-      isNotMute: !isMuted, // Sync with current state
-    });
+    if (typeof window.JessibucaPro !== "function") {
+      const loaded = await ensureJessibucaProLoaded();
+      if (!loaded || typeof window.JessibucaPro !== "function") {
+        console.warn("JessibucaPro is not available on window.");
+        return;
+      }
+    }
 
-    if (jessibucaRef.current.on) {
+    if (!containerRef.current || isUnmountedRef.current) return;
+
+    try {
+      jessibucaRef.current = new window.JessibucaPro({
+        container: containerRef.current,
+        decoder: "/js/decoder-pro.js",
+        useMSE: true,
+        videoBuffer: 0.2,
+        isResize: false,
+        text: "ArcisAI",
+        loadingText: "Loading",
+        debug: false,
+        zooming: true,
+        operateBtns: {},
+        forceNoOffscreen: forceNoOffscreen,
+        isNotMute: !isMuted, // Sync with current state
+      });
+    } catch (err) {
+      console.error("Error creating JessibucaPro instance:", err);
+      return;
+    }
+
+    if (jessibucaRef.current && jessibucaRef.current.on) {
       // ✅ Stream is rendering fine — clear reconnect state
       jessibucaRef.current.on("start", () => {
         if (!isUnmountedRef.current) {
@@ -286,9 +328,31 @@ const Player = React.forwardRef(({
 
   const handleFullscreen = async () => {
     try {
-      const player = jessibucaRef.current || containerRef.current;
-      if (player) player.setFullscreen(true);
+      if (isVideoFile && videoRef.current) {
+        const elem = videoRef.current;
+        if (elem.requestFullscreen) {
+          await elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+          await elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+          await elem.msRequestFullscreen();
+        }
+        return;
+      }
+
+      const player = jessibucaRef.current;
+      if (player && typeof player.setFullscreen === "function") {
+        player.setFullscreen(true);
+      } else if (containerRef.current) {
+        const elem = containerRef.current;
+        if (elem.requestFullscreen) {
+          await elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+          await elem.webkitRequestFullscreen();
+        }
+      }
     } catch (error) {
+      console.error("Fullscreen failed:", error);
       setError("Fullscreen failed: " + error.message);
     }
   };
@@ -312,19 +376,31 @@ const Player = React.forwardRef(({
   };
 
   const zoomIn = () => {
-    const player = jessibucaRef.current || containerRef.current;
+    if (isVideoFile) {
+      setVideoScale((prev) => Math.min(3, +(prev + 0.25).toFixed(2)));
+      return;
+    }
+    const player = jessibucaRef.current;
     if (player?.expandZoom) {
       if (player.player) player.player.zooming = true;
       player.expandZoom();
-      setZoomIndex(zoomIndex + 1);
+      setZoomIndex((prev) => prev + 1);
+    } else {
+      setVideoScale((prev) => Math.min(3, +(prev + 0.25).toFixed(2)));
     }
   };
 
   const zoomOut = () => {
-    const player = jessibucaRef.current || containerRef.current;
+    if (isVideoFile) {
+      setVideoScale((prev) => Math.max(1, +(prev - 0.25).toFixed(2)));
+      return;
+    }
+    const player = jessibucaRef.current;
     if (player?.narrowZoom) {
-      if (zoomIndex > 0) setZoomIndex(zoomIndex - 1);
+      if (zoomIndex > 0) setZoomIndex((prev) => prev - 1);
       player.narrowZoom();
+    } else {
+      setVideoScale((prev) => Math.max(1, +(prev - 0.25).toFixed(2)));
     }
   };
 
@@ -377,12 +453,36 @@ const Player = React.forwardRef(({
     }
   };
 
-  const handleUrlChange = (newUrl) => setPlayUrl(newUrl);
+  const isVideoFile = Boolean(
+    playUrl &&
+      (playUrl.includes("record") ||
+        playUrl.includes("blob.core.windows.net") ||
+        playUrl.includes("storage.googleapis.com") ||
+        playUrl.includes(".mp4"))
+  );
+
+  const handleUrlChange = (newUrl, offsetSec = 0) => {
+    setPlayUrl(newUrl);
+    setIsPlaying(true);
+    if (videoRef.current) {
+      if (videoRef.current.src !== newUrl) {
+        videoRef.current.src = newUrl;
+        videoRef.current.load();
+      }
+      if (offsetSec >= 0) {
+        videoRef.current.currentTime = offsetSec;
+      }
+      videoRef.current.play().catch(console.error);
+    }
+  };
   const toggleCameraPTZ = () => setShowCameraPTZ((prevState) => !prevState);
 
   const handleVolumeChange = (val) => {
     setVolume(val);
     const normalizedVolume = val / 100;
+    if (videoRef.current) {
+      videoRef.current.volume = normalizedVolume;
+    }
     const player = jessibucaRef.current || containerRef.current;
     if (player?.player) {
       player.player.volume = normalizedVolume;
@@ -393,6 +493,9 @@ const Player = React.forwardRef(({
   const toggleMute = () => {
     const newMuteState = !isMuted;
     setIsMuted(newMuteState);
+    if (videoRef.current) {
+      videoRef.current.muted = newMuteState;
+    }
     const player = jessibucaRef.current || containerRef.current;
 
     if (player) {
@@ -407,14 +510,31 @@ const Player = React.forwardRef(({
   };
 
   const handlePlayPause = async () => {
+    if (isVideoFile && videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current
+          .play()
+          .then(() => setIsPlaying(true))
+          .catch(console.error);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+      return;
+    }
+
+    const player = jessibucaRef.current || containerRef.current;
     if (isPlaying) {
-      pause();
+      if (player?.pause) player.pause();
+      if (player?.destroy) player.destroy();
+      setIsPlaying(false);
     } else {
       clearReconnectTimer();
       setIsReconnecting(false);
       await destroy();
-      createPlayer(playUrl);
+      await createPlayer(playUrl);
       playStream(playUrl);
+      setIsPlaying(true);
     }
   };
 
@@ -426,49 +546,39 @@ const Player = React.forwardRef(({
   const footerTextShadow = useColorModeValue("none", "1px 1px 2px rgba(0,0,0,0.8)");
 
   return (
-    <Box position="relative" width={width} height="auto" overflow="visible">
+    <Box position="relative" width={width || "100%"} height={height || "100%"} w="100%" h="100%" overflow="visible">
       {showCameraPTZ && <CameraPTZ deviceId={device.deviceId} />}
 
-      <Box position="relative" borderRadius="10px" overflow="hidden" bg="#000000" w="100%">
-        {playUrl && playUrl.includes("hdl" && "jessica") ? (
-          <Box display="flex" justifyContent="center" className="container-shell">
-            <Box id="container" ref={containerRef} className={className} style={style}></Box>
-          </Box>
-        ) : playUrl && (playUrl.includes("record") || playUrl.includes("blob.core.windows.net") || playUrl.includes("storage.googleapis.com") || playUrl.includes(".mp4")) ? (
-          <Box position="relative" width={width} height={height}>
-            <video style={style} autoPlay controls muted={isMuted} src={playUrl} />
+      <Box position="relative" borderRadius="10px" overflow="hidden" bg="#000000" w="100%" h="100%">
+        {isVideoFile ? (
+          <Box position="relative" width={width || "100%"} height={height || "100%"}>
+            <video
+              ref={videoRef}
+              style={{
+                width: "100%",
+                height: "100%",
+                ...style,
+                objectFit: "contain",
+                transform: `scale(${videoScale})`,
+                transformOrigin: "center center",
+                transition: "transform 0.2s ease",
+              }}
+              autoPlay
+              controls
+              muted={isMuted}
+              src={playUrl}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onTimeUpdate={(e) => {
+                setVideoCurrentTime(e.target.currentTime);
+              }}
+              onEnded={() => setIsPlaying(false)}
+            />
           </Box>
         ) : (
-          <JessibucaPlayer
-            ref={containerRef}
-            decodeMode="useMSE"
-            style={{ ...style, background: 'transparent' }}
-            controls={false}
-            muted={isMuted}
-            loadingText="loading"
-            src={playUrl}
-            decoder="/decoder.js"
-            onStart={() => {
-              if (!isUnmountedRef.current) {
-                setIsReconnecting(false);
-                setIsPlaying(true);
-                reconnectAttemptsRef.current = 0;
-                clearReconnectTimer();
-              }
-            }}
-            onTimeout={() => {
-              if (!isUnmountedRef.current) scheduleReconnect(playUrl);
-            }}
-            onLoadingTimeout={() => {
-              if (!isUnmountedRef.current) scheduleReconnect(playUrl);
-            }}
-            onDelayTimeout={() => {
-              if (!isUnmountedRef.current) scheduleReconnect(playUrl);
-            }}
-            onError={() => {
-              if (!isUnmountedRef.current) scheduleReconnect(playUrl);
-            }}
-          />
+          <Box display="flex" justifyContent="center" alignItems="center" w="100%" h="100%" className="container-shell">
+            <Box id="container" ref={containerRef} className={className} style={{ width: "100%", height: "100%", ...style }}></Box>
+          </Box>
         )}
       </Box>
 
@@ -492,6 +602,8 @@ const Player = React.forwardRef(({
           toggleMute={toggleMute}
           volume={volume}
           isMuted={isMuted}
+          currentVideoTime={videoCurrentTime}
+          playUrl={playUrl}
         />
       )}
 

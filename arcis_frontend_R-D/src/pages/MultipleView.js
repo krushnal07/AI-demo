@@ -56,6 +56,8 @@ function MultipleView() {
   const placeholderColor = useColorModeValue("#94A3B8", "#64748B");
   const subtextColor = useColorModeValue("#64748B", "#94A3B8");
   const btnHoverBg = useColorModeValue("#F8FAFC", "#252D3A");
+  const fullscreenBg = useColorModeValue("#E8EFF7", "#0B0F17");
+  const cameraBoxBg = useColorModeValue("#F1F5F9", "#000000");
 
   const [userEmail, setUserEmail] = useState(
     typeof window !== "undefined" ? localStorage.getItem("email") || "" : ""
@@ -426,31 +428,63 @@ function MultipleView() {
     };
   }, []);
 
-  // Determine grid columns dynamically based on selected layout
-  const gridColumns = useMemo(() => {
+  // Determine grid template configuration dynamically based on selected layout
+  const gridStyleConfig = useMemo(() => {
     switch (gridOption) {
       case "2x2":
-        return { base: 1, sm: 2, md: 2 };
+        return {
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gridTemplateRows: "repeat(2, minmax(0, 1fr))",
+        };
       case "3x2":
-        return { base: 1, sm: 2, md: 3 };
+        return {
+          gridTemplateColumns: { base: "repeat(2, minmax(0, 1fr))", md: "repeat(3, minmax(0, 1fr))" },
+          gridTemplateRows: { base: "repeat(3, minmax(0, 1fr))", md: "repeat(2, minmax(0, 1fr))" },
+        };
       case "3x3":
-        return { base: 1, sm: 2, md: 3 };
+        return {
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gridTemplateRows: "repeat(3, minmax(0, 1fr))",
+        };
       case "4x3":
-        return { base: 1, sm: 2, md: 4 };
+        return {
+          gridTemplateColumns: { base: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" },
+          gridTemplateRows: { base: "repeat(6, minmax(0, 1fr))", md: "repeat(3, minmax(0, 1fr))" },
+        };
       default:
-        return { base: 1, sm: 2, md: 2 };
+        return {
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gridTemplateRows: "repeat(2, minmax(0, 1fr))",
+        };
     }
   }, [gridOption]);
+
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+    };
+  }, []);
 
   return (
     <Box
       maxW="1440px"
       w="100%"
+      h="100%"
+      maxH="100%"
       mx="auto"
+      display="flex"
+      flexDirection="column"
+      overflow="hidden"
+      overscrollBehavior="none"
       px={{ base: "12px", sm: "16px", md: "20px", lg: "24px" }}
-      py={{ base: "12px", md: "16px" }}
+      py={{ base: "6px", sm: "8px", md: "10px" }}
       fontFamily="Manrope, sans-serif"
-      mb={{ base: "20", md: "6" }}
+      boxSizing="border-box"
     >
       {/* ========================================================================= */}
       {/* 1. MULTIPLE VIEW TOP CONTROLS CONTAINER                                   */}
@@ -459,16 +493,17 @@ function MultipleView() {
         justifyContent="space-between"
         alignItems="center"
         flexWrap="wrap"
-        gap="12px"
-        mb="14px"
+        gap={{ base: "6px", md: "10px" }}
+        mb={{ base: "6px", md: "8px" }}
+        flexShrink={0}
       >
         {/* Title */}
-        <Box minW="186px">
+        <Box minW={{ base: "auto", sm: "140px" }}>
           <Text
             fontFamily="Manrope, sans-serif"
             fontWeight="800"
-            fontSize="22px"
-            lineHeight="26.4px"
+            fontSize={{ base: "18px", md: "22px" }}
+            lineHeight="1.2"
             letterSpacing="0px"
             color={titleColor}
           >
@@ -479,21 +514,21 @@ function MultipleView() {
         {/* Right side Controls */}
         <Flex
           alignItems="center"
-          gap="10px"
+          gap={{ base: "6px", sm: "8px", md: "10px" }}
           flexWrap="wrap"
           justifyContent={{ base: "flex-start", md: "flex-end" }}
           flex="1"
         >
           {/* 1. Search Camera Input (First) */}
-          <InputGroup w={{ base: "100%", sm: "247px" }} h="33.5px">
-            <InputLeftElement h="33.5px" pointerEvents="none" pl="8px">
+          <InputGroup w={{ base: "100%", sm: "180px", md: "220px", lg: "247px" }} h="32px">
+            <InputLeftElement h="32px" pointerEvents="none" pl="8px">
               <MdSearch size="18px" color="#94A3B8" />
             </InputLeftElement>
             <Input
               placeholder="Search Cameras"
               value={searchDeviceId}
               onChange={(e) => setSearchDeviceId(e.target.value)}
-              h="33.5px"
+              h="32px"
               pl="34px"
               pr="12px"
               borderRadius="8px"
@@ -501,13 +536,13 @@ function MultipleView() {
               borderColor={cardBorder}
               bg={cardBg}
               fontFamily="Manrope, sans-serif"
-              fontSize="13px"
+              fontSize="12px"
               fontWeight="400"
               color={titleColor}
               _placeholder={{
                 color: placeholderColor,
                 fontFamily: "Manrope, sans-serif",
-                fontSize: "13px",
+                fontSize: "12px",
               }}
               _focus={{
                 borderColor: "#3F77A5",
@@ -522,8 +557,8 @@ function MultipleView() {
             onChange={handleDistrictChange}
             placeholder={loadingDistricts ? "Loading..." : "Select Location"}
             isDisabled={loadingDistricts || !userEmail}
-            w={{ base: "100%", sm: "140px" }}
-            h="35px"
+            w={{ base: "100%", sm: "130px", md: "140px" }}
+            h="32px"
             borderRadius="7px"
             borderWidth="1px"
             borderColor={cardBorder}
@@ -552,16 +587,16 @@ function MultipleView() {
           </Select>
 
           {/* 3. Grid View Switcher Buttons (2x2, 3x2, 3x3, 4x3) */}
-          <HStack spacing="6px">
+          <HStack spacing="4px">
             {["2x2", "3x2", "3x3", "4x3"].map((opt) => {
               const isActive = gridOption === opt;
               return (
                 <Button
                   key={opt}
                   onClick={() => handleGridChange(opt)}
-                  h="32px"
-                  px="14px"
-                  py="6px"
+                  h="30px"
+                  px={{ base: "8px", sm: "12px", md: "14px" }}
+                  py="4px"
                   borderRadius="7px"
                   borderWidth="1px"
                   borderColor={isActive ? "#3F77A5" : cardBorder}
@@ -586,8 +621,8 @@ function MultipleView() {
           <Select
             value={autoRefreshInterval}
             onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
-            w="75px"
-            h="32px"
+            w="70px"
+            h="30px"
             borderRadius="7px"
             borderWidth="1px"
             borderColor={cardBorder}
@@ -609,9 +644,9 @@ function MultipleView() {
               aria-label="Toggle Fullscreen"
               icon={<BsArrowsFullscreen fontSize="14px" color="#3F77A5" />}
               onClick={toggleFullScreen}
-              h="32px"
-              w="32px"
-              minW="32px"
+              h="30px"
+              w="30px"
+              minW="30px"
               borderRadius="7px"
               borderWidth="1px"
               borderColor={cardBorder}
@@ -625,7 +660,7 @@ function MultipleView() {
       {/* ========================================================================= */}
       {/* 2. GROUP CONTAINER                                                        */}
       {/* ========================================================================= */}
-      <Box w="100%">
+      <Box w="100%" flexShrink={0} mb={{ base: "6px", md: "8px" }}>
         <CameraGroupBar
           allCameras={allFetchedCameras}
           groups={groups}
@@ -643,27 +678,61 @@ function MultipleView() {
         ref={containerRef}
         position="relative"
         width="100%"
-        bg={isFullScreen ? "#0B0F17" : "transparent"}
-        p={isFullScreen ? 4 : 0}
+        flex="1"
+        minH="0"
+        bg={isFullScreen ? fullscreenBg : "transparent"}
+        p={isFullScreen ? { base: 2, md: 3 } : 0}
         borderRadius={isFullScreen ? "0" : "10px"}
+        overflow="hidden"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        sx={{
+          "&:fullscreen": {
+            backgroundColor: `${fullscreenBg} !important`,
+          },
+          "&:-webkit-full-screen": {
+            backgroundColor: `${fullscreenBg} !important`,
+          },
+        }}
       >
         {isLoading ? (
-          <SimpleGrid columns={gridColumns} spacing="8px" w="100%">
+          <Grid
+            w="100%"
+            h="100%"
+            maxH="100%"
+            maxW="100%"
+            templateColumns={gridStyleConfig.gridTemplateColumns}
+            templateRows={gridStyleConfig.gridTemplateRows}
+            gap={{ base: "6px", sm: "8px", md: "10px" }}
+          >
             {Array.from({ length: itemsPerPage }).map((_, index) => (
               <Box
                 key={index}
+                w="100%"
+                h="100%"
+                minH="0"
+                minW="0"
                 borderRadius="10px"
                 overflow="hidden"
                 borderWidth="1px"
                 borderColor={cardBorder}
                 bg={cardBg}
               >
-                <Skeleton height="260px" borderRadius="10px" />
+                <Skeleton height="100%" width="100%" borderRadius="10px" />
               </Box>
             ))}
-          </SimpleGrid>
+          </Grid>
         ) : camerasToDisplay.length > 0 ? (
-          <SimpleGrid columns={gridColumns} spacing="8px" w="100%">
+          <Grid
+            w="100%"
+            h="100%"
+            maxH="100%"
+            maxW="100%"
+            templateColumns={gridStyleConfig.gridTemplateColumns}
+            templateRows={gridStyleConfig.gridTemplateRows}
+            gap={{ base: "6px", sm: "8px", md: "10px" }}
+          >
             {camerasToDisplay.map((camera, index) => {
               const isMuted = mutedCameras[camera.deviceId] ?? true;
 
@@ -672,20 +741,36 @@ function MultipleView() {
                   key={camera.deviceId + "-grid-" + index}
                   id={`camera-box-${camera.deviceId}`}
                   position="relative"
+                  w="100%"
+                  h="100%"
+                  minH="0"
+                  minW="0"
                   borderRadius="10px"
                   borderWidth="1px"
                   borderColor={cardBorder}
-                  bg="#000000"
+                  bg={cameraBoxBg}
                   overflow="hidden"
-                  display="flex"
-                  flexDirection="column"
                   transition="transform 0.15s ease, box-shadow 0.15s ease"
                   _hover={{
                     boxShadow: "0 4px 12px rgba(63, 119, 165, 0.15)",
                     borderColor: "#3F77A550",
                   }}
+                  sx={{
+                    "&:fullscreen": {
+                      backgroundColor: `${fullscreenBg} !important`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    },
+                    "&:-webkit-full-screen": {
+                      backgroundColor: `${fullscreenBg} !important`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    },
+                  }}
                 >
-                  <Box position="relative" w="100%" h="100%">
+                  <Box position="relative" w="100%" h="100%" overflow="hidden">
                     {camera.deviceId && camera.deviceId.startsWith("SSAN") ? (
                       <SimpleFLVPlayer
                         url={generateStreamUrl(camera)}
@@ -712,12 +797,12 @@ function MultipleView() {
                       left="0"
                       right="0"
                       bg="linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0, 0, 0, 0.75) 100%)"
-                      p="8px 12px"
+                      p={{ base: "4px 8px", md: "6px 12px" }}
                       zIndex="10"
                     >
                       <Text
                         color="#FFFFFF"
-                        fontSize="11px"
+                        fontSize={{ base: "10px", md: "11px" }}
                         fontFamily="Manrope, sans-serif"
                         fontWeight="600"
                         noOfLines={1}
@@ -735,13 +820,13 @@ function MultipleView() {
                     {/* Overlay Action Buttons */}
                     <HStack
                       position="absolute"
-                      bottom="32px"
-                      right="10px"
+                      bottom={{ base: "24px", md: "28px" }}
+                      right={{ base: "6px", md: "10px" }}
                       zIndex="20"
-                      spacing="6px"
+                      spacing={{ base: "4px", md: "6px" }}
                     >
                       <IconButton
-                        size="sm"
+                        size={{ base: "xs", md: "sm" }}
                         variant="solid"
                         bg="rgba(0, 0, 0, 0.6)"
                         _hover={{ bg: "black" }}
@@ -749,32 +834,32 @@ function MultipleView() {
                         borderRadius="full"
                         icon={
                           isMuted ? (
-                            <BsVolumeMute fontSize="16px" />
+                            <BsVolumeMute fontSize="14px" />
                           ) : (
-                            <BsVolumeUp fontSize="16px" />
+                            <BsVolumeUp fontSize="14px" />
                           )
                         }
                         onClick={() => toggleMute(camera.deviceId)}
                         aria-label="Mute / Unmute"
                       />
                       <IconButton
-                        size="sm"
+                        size={{ base: "xs", md: "sm" }}
                         variant="solid"
                         bg="rgba(0, 0, 0, 0.6)"
                         _hover={{ bg: "black" }}
                         color="white"
                         borderRadius="full"
-                        icon={<BsArrowsFullscreen fontSize="14px" />}
+                        icon={<BsArrowsFullscreen fontSize="12px" />}
                         onClick={() => toggleCameraFullscreen(camera.deviceId)}
                         aria-label="Camera Fullscreen"
                       />
-                      <TalkButton deviceId={camera.deviceId} size="sm" />
+                      <TalkButton deviceId={camera.deviceId} size={{ base: "xs", md: "sm" }} />
                     </HStack>
                   </Box>
                 </Box>
               );
             })}
-          </SimpleGrid>
+          </Grid>
         ) : (
           <Box py={10}>
             <NoCameraFound title="No Cameras Found" description="Try selecting a different location or clearing search filters." />
@@ -786,19 +871,21 @@ function MultipleView() {
       {/* 4. NEXT AND PREVIOUS BUTTON CONTAINER                                      */}
       {/* ========================================================================= */}
       <Flex
-        minH="44px"
-        pt="12px"
+        minH={{ base: "32px", md: "36px" }}
+        pt={{ base: "4px", md: "6px" }}
+        pb={{ base: "2px", md: "4px" }}
         justifyContent="center"
         alignItems="center"
-        gap="12px"
+        gap={{ base: "8px", md: "12px" }}
         w="100%"
+        flexShrink={0}
         fontFamily="Manrope, sans-serif"
       >
         {/* Previous Button */}
         <Button
           onClick={() => handlePageChange(activePage - 1)}
           isDisabled={activePage === 1 || totalPages <= 1}
-          h="32px"
+          h="30px"
           px="12px"
           gap="6px"
           borderRadius="8px"
@@ -820,8 +907,8 @@ function MultipleView() {
         <Text
           fontFamily="Manrope, sans-serif"
           fontWeight="600"
-          fontSize="13px"
-          lineHeight="19.5px"
+          fontSize="12px"
+          lineHeight="1"
           letterSpacing="0px"
           color="#64748B"
           px="4px"
@@ -833,7 +920,7 @@ function MultipleView() {
         <Button
           onClick={() => handlePageChange(activePage + 1)}
           isDisabled={activePage === totalPages || totalPages <= 1}
-          h="32px"
+          h="30px"
           px="12px"
           gap="6px"
           borderRadius="8px"

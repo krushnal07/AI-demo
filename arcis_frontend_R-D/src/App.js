@@ -206,7 +206,34 @@ function MainApp() {
         autoHide
         autoHideTimeout={1000}
         autoHideDuration={200}
-        style={{ width: "100vw", height: "100vh" }}
+        style={{
+          width: "100vw",
+          height: "100vh",
+          overflow: location.pathname === "/multiple" ? "hidden" : "auto",
+        }}
+        renderView={({ style, ...props }) => (
+          <div
+            {...props}
+            style={{
+              ...style,
+              overflow: location.pathname === "/multiple" ? "hidden" : "auto",
+              overflowX: "hidden",
+              overflowY: location.pathname === "/multiple" ? "hidden" : "auto",
+              marginBottom: location.pathname === "/multiple" ? 0 : style.marginBottom,
+              marginRight: location.pathname === "/multiple" ? 0 : style.marginRight,
+            }}
+          />
+        )}
+        renderTrackVertical={({ style, ...props }) => (
+          <div
+            {...props}
+            style={{
+              ...style,
+              display: location.pathname === "/multiple" ? "none" : "block",
+            }}
+          />
+        )}
+        renderTrackHorizontal={() => <div style={{ display: "none" }} />}
         renderThumbVertical={({ style, ...props }) => (
           <div
             {...props}
@@ -216,6 +243,7 @@ function MainApp() {
               borderRadius: "6px",
               width: "7px",
               zIndex: "9999",
+              display: location.pathname === "/multiple" ? "none" : "block",
             }}
           />
         )}
@@ -223,8 +251,8 @@ function MainApp() {
         <Box>
           <Flex
             direction="column"
-            height="100vh"
-           bg="transparent"
+            height={isLoginPage ? "100vh" : "0"}
+            bg="transparent"
             backgroundSize="cover"
             backgroundPosition="center"
             bgRepeat={"no-repeat"}
@@ -276,8 +304,17 @@ function MainApp() {
                     ? "calc(100% - 228px)"
                     : "calc(100% - 68px)"
                 }
+                height={
+                  isLoginPage
+                    ? "100vh"
+                    : location.pathname === "/multiple"
+                    ? "calc(100vh - 56px)"
+                    : "auto"
+                }
+                maxHeight={location.pathname === "/multiple" ? "calc(100vh - 56px)" : undefined}
+                overflowY={location.pathname === "/multiple" ? "hidden" : "auto"}
+                overflowX="hidden"
                 transition="left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
-                overflowY="auto"
                 flexWrap="wrap"
               >
                 <Routes>

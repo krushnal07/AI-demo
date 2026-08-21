@@ -74,10 +74,12 @@ const PlayerControls = ({
   toggleMute,
   volume,
   isMuted,
+  currentVideoTime,
+  playUrl,
   // handleGoLive,
 }) => {
   const [selectedDate, setSelectedDate] = useState(getCurrentISTDate());
-  const [url, setUrl] = useState(initialUrl);
+  const [url, setUrl] = useState(initialUrl || playUrl);
   const datePickerRef = useRef(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -111,17 +113,16 @@ const PlayerControls = ({
       console.error("Invalid date:", date);
     }
   };
-  const updateUrl = (newUrl) => {
-    console.log(newUrl);
+  const updateUrl = (newUrl, offsetSec = 0) => {
     setUrl(newUrl);
     if (onUrlChange) {
-      onUrlChange(newUrl); // Notify the parent component
+      onUrlChange(newUrl, offsetSec); // Notify the parent component
     }
   };
 
   useEffect(() => {
-    setUrl(initialUrl); // Update local URL state if initialUrl changes
-  }, [initialUrl]);
+    setUrl(initialUrl || playUrl); // Update local URL state if initialUrl/playUrl changes
+  }, [initialUrl, playUrl]);
 
   const handlePtzControlClick = () => {
     const ptzElement = document.querySelector(".jessibuca-ptz-controls");
@@ -542,6 +543,8 @@ const PlayerControls = ({
             deviceid={device.deviceId}
             onUrlChange={updateUrl}
             onTotalDataChange={handleTotalDataChange}
+            currentPlayUrl={url || playUrl || initialUrl}
+            currentVideoTime={currentVideoTime}
           />
         </Box>
       </Box>

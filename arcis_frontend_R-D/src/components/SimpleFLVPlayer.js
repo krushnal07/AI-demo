@@ -42,10 +42,10 @@ const SimpleFLVPlayer = ({ url, style }) => {
   }, [url]);
 
   return (
-    <Box style={style} bg="black" display="flex" justifyContent="center" alignItems="center">
+    <Box style={style} bg="black" display="flex" justifyContent="center" alignItems="center" w="100%" h="100%" maxW="100%" maxH="100%">
       <video
         ref={videoRef}
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: "100%", height: "100%", maxHeight: "100%", maxWidth: "100%", objectFit: "contain", borderRadius: "10px" }}
         controls
         autoPlay
         muted // Muted is often required for autoplay to work efficiently

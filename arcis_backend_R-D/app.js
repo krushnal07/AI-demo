@@ -48,6 +48,7 @@ app.use(
      "https://vmsai2026.vmukti.com:443",
       "https://vmsai2026.vmukti.com",
      "https://electionarcisai.vmukti.com:443",
+     "http://192.168.4.85:3000",
       '*',
     ],
     credentials: true,

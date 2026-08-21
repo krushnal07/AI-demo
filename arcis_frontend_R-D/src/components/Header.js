@@ -138,8 +138,7 @@ const Header = ({
         h="56px"
         alignItems="center"
         px={{ base: 4, sm: 6 }}
-        justifyContent="flex-end"
-        gap="14px"
+        justifyContent="space-between"
         bg={useColorModeValue("#FFFFFF", "#131922")}
         borderBottom="1px solid"
         borderColor={useColorModeValue("#E2E8EF", "rgba(255, 255, 255, 0.08)")}
@@ -155,49 +154,97 @@ const Header = ({
         transition="left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
         zIndex="1000"
       >
-        {/* 1. TIME CONTAINER (Width: ~143px, Height: 18px, Gap: 5px) */}
+        {/* VMukti Brand Text Container (Width: 85px, Height: 33px) */}
         <Flex
+          w="85px"
+          h="33px"
           alignItems="center"
-          gap="5px"
-          h="18px"
-          display={{ base: "none", sm: "flex" }}
+          cursor="pointer"
+          onClick={() => navigate("/dash")}
           userSelect="none"
+          flexShrink={0}
+          opacity={1}
         >
-          {/* Time icon container (13x13) */}
-          <Flex w="13px" h="13px" align="center" justify="center" flexShrink={0}>
-            <TimeIcon boxSize="13px" color={useColorModeValue("#64748B", "#94A3B8")} />
-          </Flex>
-
-          {/* Time text container (Manrope 600 SemiBold, 12px, Line-height: 18px, Color: #64748B) */}
+          {/* VM text layout (Width: 37px, Height: 33px) */}
           <Text
+            as="span"
+            w="37px"
+            h="33px"
             fontFamily="'Manrope', sans-serif"
-            fontWeight="600"
-            fontSize="12px"
-            lineHeight="18px"
-            letterSpacing="0px"
-            color={useColorModeValue("#64748B", "#94A3B8")}
-            whiteSpace="nowrap"
+            fontWeight="800"
+            fontSize="24px"
+            lineHeight="100%"
+            letterSpacing="0.3px"
+            color={useColorModeValue("#16222E", "#FFFFFF")}
+            display="inline-flex"
+            alignItems="center"
           >
-            {formattedDate} · {formattedTime}
+            VM
+          </Text>
+
+          {/* ukti text layout (Width: 48px, Height: 33px) */}
+          <Text
+            as="span"
+            w="48px"
+            h="33px"
+            fontFamily="'Manrope', sans-serif"
+            fontWeight="800"
+            fontSize="24px"
+            lineHeight="100%"
+            letterSpacing="0.3px"
+            color="#3F77A5"
+            display="inline-flex"
+            alignItems="center"
+          >
+            ukti
           </Text>
         </Flex>
 
-        {/* 2. THEME CHANGE CONTAINER (as it is) */}
-        <Tooltip label={colorMode === "light" ? "Dark mode" : "Light mode"} hasArrow>
-          <IconButton
-            aria-label="Toggle dark mode"
-            icon={colorMode === "light" ? <FaMoon /> : <FaSun />}
-            onClick={toggleColorMode}
-            size="sm"
-            variant="ghost"
-            borderRadius="8px"
-            w="32px"
-            h="32px"
-            minW="32px"
-            color={useColorModeValue("#64748B", "#94A3B8")}
-            _hover={{ bg: useColorModeValue("#F1F5F9", "whiteAlpha.100") }}
-          />
-        </Tooltip>
+        {/* Right side controls (Time, Theme Toggle, Profile Menu) */}
+        <Flex alignItems="center" gap="14px">
+          {/* 1. TIME CONTAINER (Width: ~143px, Height: 18px, Gap: 5px) */}
+          <Flex
+            alignItems="center"
+            gap="5px"
+            h="18px"
+            display={{ base: "none", sm: "flex" }}
+            userSelect="none"
+          >
+            {/* Time icon container (13x13) */}
+            <Flex w="13px" h="13px" align="center" justify="center" flexShrink={0}>
+              <TimeIcon boxSize="13px" color={useColorModeValue("#64748B", "#94A3B8")} />
+            </Flex>
+
+            {/* Time text container (Manrope 600 SemiBold, 12px, Line-height: 18px, Color: #64748B) */}
+            <Text
+              fontFamily="'Manrope', sans-serif"
+              fontWeight="600"
+              fontSize="12px"
+              lineHeight="18px"
+              letterSpacing="0px"
+              color={useColorModeValue("#64748B", "#94A3B8")}
+              whiteSpace="nowrap"
+            >
+              {formattedDate} · {formattedTime}
+            </Text>
+          </Flex>
+
+          {/* 2. THEME CHANGE CONTAINER (as it is) */}
+          <Tooltip label={colorMode === "light" ? "Dark mode" : "Light mode"} hasArrow>
+            <IconButton
+              aria-label="Toggle dark mode"
+              icon={colorMode === "light" ? <FaMoon /> : <FaSun />}
+              onClick={toggleColorMode}
+              size="sm"
+              variant="ghost"
+              borderRadius="8px"
+              w="32px"
+              h="32px"
+              minW="32px"
+              color={useColorModeValue("#64748B", "#94A3B8")}
+              _hover={{ bg: useColorModeValue("#F1F5F9", "whiteAlpha.100") }}
+            />
+          </Tooltip>
 
         {/* 3. PROFILE CONTAINER (Avatar 32x32 gradient, Name 12px Bold #1A2E3D, Role 10px Regular #64748B) */}
         <Menu isLazy>
@@ -313,6 +360,7 @@ const Header = ({
             </MenuItem>
           </MenuList>
         </Menu>
+        </Flex>
       </Flex>
 
       {/* Logout Modal */}
