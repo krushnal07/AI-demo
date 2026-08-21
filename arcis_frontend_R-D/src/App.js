@@ -35,6 +35,7 @@ import Subscription from "./pages/Subscription";
 import Events from "./pages/Events";
 import Others from "./pages/Others";
 import WebSocketComponent from "./components/WebSocketComponent";
+import AlertNotifier from "./components/AlertNotifier";
 import { registerPushNotifications } from "./actions/notification";
 import io from "socket.io-client";
 import ArcisInfo from "./pages/ArcisInfo";
@@ -370,6 +371,7 @@ function App() {
   return (
     <Router>
       <WebSocketComponent />
+     <AlertNotifier />
 
       <MainApp />
     </Router>
