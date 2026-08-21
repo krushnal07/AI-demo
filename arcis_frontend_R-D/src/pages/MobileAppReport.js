@@ -683,7 +683,7 @@ const handleSingleRecordPDF = async (camera, uniqueId) => {
                                                     <Td style={tableDataStyle}>{(currentPage - 1) * itemsPerPage + index + 1}<VerticalLine /></Td>
                                                     <Td style={tableDataStyle}>{camera.district || camera.districtName || "N/A"}<VerticalLine /></Td>
                                                     <Td style={tableDataStyle}>{camera.assembly || camera.acName || "N/A"}<VerticalLine /></Td>
-                                                    <Td style={tableDataStyle}>{camera.deviceId || camera.ptzCameraSerialNumber || "N/A"}<VerticalLine /></Td>
+                                                    <Td style={tableDataStyle} color="#3F77A5" fontWeight="700">{camera.deviceId || camera.ptzCameraSerialNumber || "N/A"}<VerticalLine /></Td>
                                                     <Td style={tableDataStyle}>{camera.vehicleNo || "N/A"}<VerticalLine /></Td>
                                                     <Td style={tableDataStyle}>{camera.driverName || "N/A"}<VerticalLine /></Td>
                                                     <Td style={tableDataStyle}>{camera.driverMobileNo || "N/A"}<VerticalLine /></Td>

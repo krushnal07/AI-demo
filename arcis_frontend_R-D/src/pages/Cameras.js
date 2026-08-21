@@ -99,6 +99,7 @@ import {
 import NoCameraFound from "../components/NoCameraFound";
 import MobileHeader from "../components/MobileHeader";
 import AudioRecorder from "../components/AudioRecorder";
+import VMuktiLogo from "../components/VMuktiLogo";
 import { FiInfo } from "react-icons/fi";
 //import DashboardHeader from "./DashboardHeader";
 
@@ -199,6 +200,7 @@ const Cameras = () => {
   const titleColor = useColorModeValue("#1A2E3D", "#FFFFFF");
   const placeholderColor = useColorModeValue("#1A2E3D80", "#94A3B8");
   const imageContainerBg = useColorModeValue("#E8EFF7", "#1E293B");
+  const cameraPlaceholderLogo = useColorModeValue("/images/Vlogodark.png", "/images/Vlogo.png");
   const radioButtonColor = useColorModeValue("black", "white");
   //const grid_view_icon = useColorModeValue("/images/grid_view_icon_light.png", "/images/grid_view_icon.png");
   //const list_view_icon = useColorModeValue("/images/list_view_icon_light.png", "/images/list_view_icon.png");
@@ -1372,15 +1374,22 @@ const Cameras = () => {
                   {camera.lastImage ? (
                     <Image
                       src={camera.lastImage}
-                      fallbackSrc="https://zeta.arcisai.io/images/icon2.png"
+                      fallbackSrc={cameraPlaceholderLogo}
                       alt="Camera Snapshot"
                       w="100%"
                       h="100%"
                       objectFit="cover"
                     />
                   ) : (
-                    <Flex direction="column" align="center" justify="center" gap={1}>
-                      <Box as={TbCamera} size="48px" color="#3F77A5" />
+                    <Flex direction="column" align="center" justify="center" w="100%" h="100%">
+                      <Image
+                        src={cameraPlaceholderLogo}
+                        alt="Camera Logo"
+                        w="96px"
+                        h="auto"
+                        maxH="72px"
+                        objectFit="contain"
+                      />
                     </Flex>
                   )}
 

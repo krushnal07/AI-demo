@@ -23,7 +23,7 @@ import LoginHeader from "./components/LoginHeader";
 import Signup from "./pages/Signup";
 import Otp from "./pages/otp";
 import Verify from "./pages/Verify";
-import MobileBottomNav from "./components/MobileBottomNav"; // Import your mobile bottom navigation component
+// import MobileBottomNav from "./components/MobileBottomNav"; // Commented out — Sidebar handles all screen sizes
 import Cameras from "./pages/Cameras";
 import Listview from "./pages/Listview";
 import { Scrollbars } from "react-custom-scrollbars-2";
@@ -232,8 +232,7 @@ function MainApp() {
             className="rekhaniboombaam"
           >
             <Box zIndex={"999"}>
-              {!isMobile &&
-                !isDeleteAccountPage &&
+              {!isDeleteAccountPage &&
                 (!isLoginPage ? (
                   <Header
                     isSidebarExpanded={isSidebarExpanded}
@@ -245,16 +244,13 @@ function MainApp() {
             </Box>
           </Flex>
           <Flex>
-            {/* Conditionally render Sidebar for larger screens and MobileBottomNav for smaller screens */}
-            {!isLoginPage &&
-              (isMobile ? (
-                <MobileBottomNav isMobileView={isMobile} /> // Show MobileBottomNav on mobile or tablet view
-              ) : (
-                <Sidebar
-                  isSidebarExpanded={isSidebarExpanded}
-                  setSidebarExpanded={setSidebarExpanded}
-                /> // Show Sidebar on desktop view
-              ))}
+            {/* Sidebar shown on all screen sizes — MobileBottomNav is commented out */}
+            {!isLoginPage && (
+              <Sidebar
+                isSidebarExpanded={isSidebarExpanded}
+                setSidebarExpanded={setSidebarExpanded}
+              />
+            )}
 
             <Flex width="100%">
               <Box
@@ -264,25 +260,17 @@ function MainApp() {
                 left={
                   isLoginPage
                     ? "0"
-                    : isMobile
-                    ? "0"
                     : isSidebarExpanded
                     ? "228px"
                     : "68px"
                 }
                 top={
                   isLoginPage
-                    ? isMobile
-                      ? "-50px"
-                      : "0"
-                    : isMobile
-                    ? "10px"
+                    ? "0"
                     : "56px"
                 }
                 width={
                   isLoginPage
-                    ? "100%"
-                    : isMobile
                     ? "100%"
                     : isSidebarExpanded
                     ? "calc(100% - 228px)"

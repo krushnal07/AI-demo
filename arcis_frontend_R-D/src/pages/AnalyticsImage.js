@@ -872,7 +872,7 @@ const AnalyticsImage = () => {
                         </Td>
 
                         {/* Camera ID (Styled blue 700 matching Listview DeviceId) */}
-                        <Td sx={tdStyle} fontWeight="700" color="#3F77A5">
+                        <Td sx={{ ...tdStyle, color: "#3F77A5", fontWeight: "700" }}>
                           {item.cameradid}
                         </Td>
 
@@ -886,28 +886,47 @@ const AnalyticsImage = () => {
                         {/* Image */}
                         <Td sx={tdStyle} textAlign="center">
                           {item.imgurl ? (
-                            <IconButton
-                              aria-label="View Image"
-                              icon={<FaCamera size="14px" />}
-                              size="sm"
-                              h="30px"
-                              w="30px"
-                              minW="30px"
-                              borderRadius="7px"
-                              borderWidth="1px"
+                            <Box
+                              display="inline-flex"
+                              alignItems="center"
+                              justifyContent="center"
+                              w="42px"
+                              h="42px"
+                              borderRadius="8px"
+                              overflow="hidden"
+                              border="1px solid"
                               borderColor={cardBorder}
                               bg={actionBtnBg}
-                              color="#3F77A5"
-                              onClick={() => handleImageClick(item.imgurl)}
+                              cursor="pointer"
+                              transition="all 0.2s ease"
                               _hover={{
-                                bg: "#3F77A5",
-                                color: "#FFFFFF",
+                                transform: "scale(1.08)",
+                                boxShadow: "0 4px 12px rgba(63, 119, 165, 0.3)",
                                 borderColor: "#3F77A5",
-                                transform: "translateY(-1px)",
-                                boxShadow: "0 2px 6px rgba(63, 119, 165, 0.35)",
                               }}
-                              transition="all 0.15s ease"
-                            />
+                              onClick={() => handleImageClick(item.imgurl)}
+                            >
+                              <Image
+                                src={item.imgurl}
+                                alt="Detection"
+                                w="100%"
+                                h="100%"
+                                objectFit="cover"
+                                fallback={
+                                  <Box
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    w="100%"
+                                    h="100%"
+                                    color="#3F77A5"
+                                    bg={actionBtnBg}
+                                  >
+                                    <FaCamera size="14px" />
+                                  </Box>
+                                }
+                              />
+                            </Box>
                           ) : (
                             <Text color={subtextColor}>—</Text>
                           )}

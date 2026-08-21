@@ -2,14 +2,12 @@ import { useState, useEffect } from "react";
 import { Flex, Box, Text, Image, useColorModeValue } from "@chakra-ui/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MdOutlineSpaceDashboard } from "react-icons/md";
-import { TbDeviceCctv } from "react-icons/tb";
 import { RiCheckboxMultipleBlankLine } from "react-icons/ri";
 import { FaBars } from "react-icons/fa6";
 import theme from "../theme";
 
 const navItems = [
   { icon: <MdOutlineSpaceDashboard />, label: "Dashboard", path: "/dash" },
-  { icon: <TbDeviceCctv />, label: "Camera Status", path: "/CameraStatus" },
   {
     icon: <RiCheckboxMultipleBlankLine />,
     label: "MultiScreen",

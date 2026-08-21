@@ -688,15 +688,37 @@ const Boxes = () => {
         </Box>
         <Button
           onClick={handleOpenAddModal}
-          leftIcon={<FaPlus size={12} />}
-          bg={accent}
-          color="white"
-          _hover={{ opacity: 0.9 }}
-          borderRadius="10px"
-          size="sm"
-          fontWeight="600"
+          display="inline-flex"
+          alignItems="center"
+          justifyContent="center"
+          gap="6px"
+          w="164px"
+          h="38px"
+          pt="9px"
+          pb="9px"
+          pl="18px"
+          pr="18px"
+          borderRadius="8px"
+          bg="#3F77A5"
+          boxShadow="0px 2px 10px 0px #3F77A54D"
+          color="#FFFFFF"
+          _hover={{ bg: "#3570A0", boxShadow: "0px 4px 14px 0px #3F77A54D" }}
+          _active={{ bg: "#2E608F" }}
+          transition="all 0.15s ease"
         >
-          Add New Camera
+          <FaPlus size={11} />
+          <Text
+            fontFamily="Manrope, sans-serif"
+            fontWeight={700}
+            fontSize="13px"
+            lineHeight="19.5px"
+            letterSpacing="0px"
+            textAlign="center"
+            color="#FFFFFF"
+            m={0}
+          >
+            Add New Camera
+          </Text>
         </Button>
       </Flex>
 
@@ -830,7 +852,7 @@ const Boxes = () => {
                             <Td sx={tdStyle} title={camera.location || "N/A"}>
                               {camera.location || "N/A"}
                             </Td>
-                            <Td sx={tdStyle} fontWeight="700" color="#3F77A5">
+                            <Td sx={{ ...tdStyle, color: "#3F77A5", fontWeight: "700" }}>
                               {camera.DeviceId || "N/A"}
                             </Td>
                             <Td sx={tdStyle}>
@@ -985,26 +1007,87 @@ const Boxes = () => {
         )}
       </Box>
 
+      {/* ─── Add New Camera / Edit Camera Modal ─────────────────────────────── */}
       {editingCamera && (
-        <Modal isOpen={isModalOpen} onClose={onClose} isCentered size="xl" scrollBehavior="inside">
-          <ModalOverlay bg="blackAlpha.600" />
-          <ModalContent borderRadius="16px" bg={cardBg} fontFamily="'Manrope', sans-serif">
-            <ModalHeader fontSize="18px" fontWeight="700" color={pageHeading} borderBottom="1px solid" borderColor={cardBorder}>
-              {modalMode === "edit" ? "Edit camera Details" : "Add New camera"}
+        <Modal
+          isOpen={isModalOpen}
+          onClose={onClose}
+          isCentered
+          size={{ base: "xs", sm: "md", md: "lg", lg: "xl" }}
+          scrollBehavior="inside"
+        >
+          <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
+          <ModalContent
+            borderRadius={{ base: "12px", md: "16px" }}
+            bg={cardBg}
+            fontFamily="'Manrope', sans-serif"
+            border="1px solid"
+            borderColor={cardBorder}
+            boxShadow="0 20px 60px rgba(0,0,0,0.18)"
+            mx={{ base: 3, sm: 4 }}
+          >
+            {/* Header */}
+            <ModalHeader
+              px={{ base: 4, md: 6 }}
+              py={{ base: 4, md: 5 }}
+              borderBottom="1px solid"
+              borderColor={cardBorder}
+            >
+              <Text
+                fontFamily="'Manrope', sans-serif"
+                fontWeight={800}
+                fontSize={{ base: "15px", md: "17px" }}
+                color={pageHeading}
+                lineHeight="1.2"
+              >
+                {modalMode === "edit" ? "Edit Camera Details" : "Add New Camera"}
+              </Text>
             </ModalHeader>
-            <ModalCloseButton />
-            <ModalBody pb={6}>
-              <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+            <ModalCloseButton
+              top={{ base: "10px", md: "14px" }}
+              right={{ base: "10px", md: "16px" }}
+              color={subtextColor}
+              _hover={{ color: pageHeading, bg: accentTint }}
+              borderRadius="8px"
+            />
 
+            {/* Body */}
+            <ModalBody px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }}>
+              <Grid
+                templateColumns={{ base: "1fr", sm: "repeat(2, 1fr)" }}
+                gap={{ base: 4, md: 5 }}
+              >
+                {/* Location */}
                 <FormControl isRequired>
-                  <FormLabel fontSize="sm">Location</FormLabel>
+                  <FormLabel
+                    fontFamily="'Manrope', sans-serif"
+                    fontSize={{ base: "12px", md: "13px" }}
+                    fontWeight={600}
+                    color={subtextColor}
+                    mb="6px"
+                    sx={{
+                      "& .chakra-form__required-indicator": { color: "#E53E3E" },
+                    }}
+                  >
+                    Location
+                  </FormLabel>
                   <Select
+                    id="modal-location"
                     name="district"
-                    value={editingCamera.district}
+                    value={editingCamera.district || ""}
                     isDisabled={modalMode === "edit"}
                     onChange={handleModalDistrictChange}
                     placeholder="Select Location"
-                    size="lg"
+                    size="md"
+                    bg={inputBg}
+                    borderColor={cardBorder}
+                    borderRadius="8px"
+                    fontSize="13px"
+                    fontFamily="'Manrope', sans-serif"
+                    color={titleColor}
+                    h="42px"
+                    _focus={{ borderColor: accent, boxShadow: `0 0 0 1px ${accent}` }}
+                    _disabled={{ opacity: 0.55, cursor: "not-allowed" }}
                   >
                     {districtsList.map((d) => (
                       <option key={d} value={d}>{d}</option>
@@ -1012,42 +1095,128 @@ const Boxes = () => {
                   </Select>
                 </FormControl>
 
-                <FormControl isRequired mt={2}>
-                  <FormLabel fontSize="sm">Camera Location Name</FormLabel>
+                {/* Camera Location Name */}
+                <FormControl isRequired>
+                  <FormLabel
+                    fontFamily="'Manrope', sans-serif"
+                    fontSize={{ base: "12px", md: "13px" }}
+                    fontWeight={600}
+                    color={subtextColor}
+                    mb="6px"
+                    sx={{
+                      "& .chakra-form__required-indicator": { color: "#E53E3E" },
+                    }}
+                  >
+                    Camera Location Name
+                  </FormLabel>
                   <Input
+                    id="modal-location-name"
                     name="location"
                     value={editingCamera.location || ""}
                     onChange={handleEditInputChange}
                     placeholder="Enter camera location name"
-                    size="lg"
+                    size="md"
+                    h="42px"
+                    bg={inputBg}
+                    borderColor={cardBorder}
+                    borderRadius="8px"
+                    fontSize="13px"
+                    fontFamily="'Manrope', sans-serif"
+                    color={titleColor}
+                    _placeholder={{ color: placeholderColor, fontSize: "13px" }}
+                    _focus={{ borderColor: accent, boxShadow: `0 0 0 1px ${accent}` }}
                   />
                 </FormControl>
 
+                {/* Add Device Using — only shown in "add" mode, spans full width */}
                 {modalMode === "add" && (
-                  <FormControl mt={2} gridColumn="1 / -1">
-                    <FormLabel fontSize="sm">Add Device Using</FormLabel>
+                  <FormControl gridColumn={{ base: "1", sm: "1 / -1" }}>
+                    <FormLabel
+                      fontFamily="'Manrope', sans-serif"
+                      fontSize={{ base: "12px", md: "13px" }}
+                      fontWeight={600}
+                      color={subtextColor}
+                      mb="8px"
+                    >
+                      Add Device Using
+                    </FormLabel>
                     <RadioGroup value={addDeviceMode} onChange={setAddDeviceMode}>
-                      <HStack spacing={6}>
-                        <Radio value="deviceId">Device ID</Radio>
-                        <Radio value="rtmp">RTMP URL</Radio>
+                      <HStack spacing={{ base: 4, md: 6 }}>
+                        <Radio
+                          value="deviceId"
+                          colorScheme="blue"
+                          size="md"
+                          borderColor={cardBorder}
+                        >
+                          <Text
+                            fontFamily="'Manrope', sans-serif"
+                            fontSize="13px"
+                            fontWeight={500}
+                            color={titleColor}
+                          >
+                            Device ID
+                          </Text>
+                        </Radio>
+                        <Radio
+                          value="rtmp"
+                          colorScheme="blue"
+                          size="md"
+                          borderColor={cardBorder}
+                        >
+                          <Text
+                            fontFamily="'Manrope', sans-serif"
+                            fontSize="13px"
+                            fontWeight={500}
+                            color={titleColor}
+                          >
+                            RTMP URL
+                          </Text>
+                        </Radio>
                       </HStack>
                     </RadioGroup>
                   </FormControl>
                 )}
 
+                {/* Device ID / RTMP URL */}
                 {addDeviceMode === "rtmp" && modalMode === "add" ? (
-                  <FormControl isRequired mt={2}>
-                    <FormLabel fontSize="sm">RTMP URL</FormLabel>
+                  <FormControl isRequired gridColumn={{ base: "1", sm: "1 / -1" }}>
+                    <FormLabel
+                      fontFamily="'Manrope', sans-serif"
+                      fontSize={{ base: "12px", md: "13px" }}
+                      fontWeight={600}
+                      color={subtextColor}
+                      mb="6px"
+                      sx={{
+                        "& .chakra-form__required-indicator": { color: "#E53E3E" },
+                      }}
+                    >
+                      RTMP URL
+                    </FormLabel>
                     <Input
+                      id="modal-rtmp-url"
                       name="rtmpUrl"
                       value={rtmpUrlInput}
                       onChange={handleRtmpUrlChange}
                       placeholder="rtmp://server:port/live-record/deviceId"
-                      size="lg"
+                      size="md"
+                      h="42px"
+                      bg={inputBg}
+                      borderColor={cardBorder}
+                      borderRadius="8px"
+                      fontSize="13px"
+                      fontFamily="'Manrope', sans-serif"
+                      color={titleColor}
                       autoComplete="off"
+                      _placeholder={{ color: placeholderColor, fontSize: "13px" }}
+                      _focus={{ borderColor: accent, boxShadow: `0 0 0 1px ${accent}` }}
                     />
                     {rtmpUrlInput && (
-                      <Text fontSize="xs" mt={1} color={editingCamera.DeviceId ? "gray.500" : "red.500"}>
+                      <Text
+                        fontFamily="'Manrope', sans-serif"
+                        fontSize="11px"
+                        mt="5px"
+                        color={editingCamera.DeviceId ? subtextColor : "red.500"}
+                      >
                         {editingCamera.DeviceId
                           ? `Detected Device ID: ${editingCamera.DeviceId}`
                           : "Invalid RTMP URL format"}
@@ -1055,15 +1224,36 @@ const Boxes = () => {
                     )}
                   </FormControl>
                 ) : (
-                  <FormControl isRequired mt={2} position="relative">
-                    <FormLabel fontSize="sm">Device ID</FormLabel>
+                  <FormControl isRequired position="relative">
+                    <FormLabel
+                      fontFamily="'Manrope', sans-serif"
+                      fontSize={{ base: "12px", md: "13px" }}
+                      fontWeight={600}
+                      color={subtextColor}
+                      mb="6px"
+                      sx={{
+                        "& .chakra-form__required-indicator": { color: "#E53E3E" },
+                      }}
+                    >
+                      Device ID
+                    </FormLabel>
                     <Input
+                      id="modal-device-id"
                       name="DeviceId"
                       value={editingCamera.DeviceId || ""}
                       onChange={handleDeviceIdChange}
                       placeholder="Enter Device ID"
-                      size="lg"
+                      size="md"
+                      h="42px"
+                      bg={inputBg}
+                      borderColor={cardBorder}
+                      borderRadius="8px"
+                      fontSize="13px"
+                      fontFamily="'Manrope', sans-serif"
+                      color={titleColor}
                       autoComplete="off"
+                      _placeholder={{ color: placeholderColor, fontSize: "13px" }}
+                      _focus={{ borderColor: accent, boxShadow: `0 0 0 1px ${accent}` }}
                     />
                     {showSuggestions && deviceIdSuggestions.length > 0 && (
                       <ChakraBox
@@ -1075,22 +1265,27 @@ const Boxes = () => {
                         bg={cardBg}
                         border="1px solid"
                         borderColor={cardBorder}
-                        borderRadius="md"
-                        boxShadow="lg"
-                        maxH="200px"
+                        borderRadius="8px"
+                        boxShadow="0 8px 24px rgba(0,0,0,0.12)"
+                        maxH="180px"
                         overflowY="auto"
+                        mt="4px"
                       >
                         {deviceIdSuggestions.map((id) => (
                           <Box
                             key={id}
                             px={4}
-                            py={2}
+                            py="9px"
                             cursor="pointer"
-                            _hover={{ bg: "blue.50", color: "blue.600" }}
+                            fontFamily="'Manrope', sans-serif"
+                            fontSize="13px"
+                            color={titleColor}
+                            _hover={{ bg: accentTint, color: accent }}
                             onClick={() => handleSelectSuggestion(id)}
-                            fontSize="sm"
                             borderBottom="1px solid"
-                            borderColor="gray.100"
+                            borderColor={cardBorder}
+                            transition="background 0.12s ease"
+                            _last={{ borderBottom: "none" }}
                           >
                             {id}
                           </Box>
@@ -1100,20 +1295,49 @@ const Boxes = () => {
                   </FormControl>
                 )}
 
-                <FormControl mt={2}>
-                  <FormLabel fontSize="sm">Operator Name</FormLabel>
+                {/* Operator Name */}
+                <FormControl>
+                  <FormLabel
+                    fontFamily="'Manrope', sans-serif"
+                    fontSize={{ base: "12px", md: "13px" }}
+                    fontWeight={600}
+                    color={subtextColor}
+                    mb="6px"
+                  >
+                    Operator Name
+                  </FormLabel>
                   <Input
+                    id="modal-operator-name"
                     name="operatorName"
                     value={editingCamera.operatorName || ""}
                     onChange={handleEditInputChange}
-                    placeholder="Enter Operator  Name"
-                    size="lg"
+                    placeholder="Enter Operator Name"
+                    size="md"
+                    h="42px"
+                    bg={inputBg}
+                    borderColor={cardBorder}
+                    borderRadius="8px"
+                    fontSize="13px"
+                    fontFamily="'Manrope', sans-serif"
+                    color={titleColor}
+                    _placeholder={{ color: placeholderColor, fontSize: "13px" }}
+                    _focus={{ borderColor: accent, boxShadow: `0 0 0 1px ${accent}` }}
                   />
                 </FormControl>
 
-                <FormControl mt={2}>
-                  <FormLabel fontSize="sm">Operator Mobile No.</FormLabel>
+                {/* Operator Mobile No. */}
+                <FormControl>
+                  <FormLabel
+                    fontFamily="'Manrope', sans-serif"
+                    fontSize={{ base: "12px", md: "13px" }}
+                    fontWeight={600}
+                    color={subtextColor}
+                    mb="6px"
+                  >
+                    Operator Mobile No.
+                  </FormLabel>
                   <Input
+                    id="modal-operator-mobile"
                     name="operatorMobile"
                     type="tel"
                     maxLength={10}
@@ -1122,47 +1346,81 @@ const Boxes = () => {
                       const value = e.target.value.replace(/\D/g, "");
                       if (value.length <= 10) {
                         handleEditInputChange({
-                          target: { name: "operatorMobile", value: value },
+                          target: { name: "operatorMobile", value },
                         });
                       }
                     }}
                     placeholder="Enter 10-digit number"
-                    size="lg"
+                    size="md"
+                    h="42px"
+                    bg={inputBg}
+                    borderColor={cardBorder}
+                    borderRadius="8px"
+                    fontSize="13px"
+                    fontFamily="'Manrope', sans-serif"
+                    color={titleColor}
+                    _placeholder={{ color: placeholderColor, fontSize: "13px" }}
+                    _focus={{ borderColor: accent, boxShadow: `0 0 0 1px ${accent}` }}
                   />
                 </FormControl>
-
-                {/*<FormControl mt={2}>
-                  <FormLabel fontSize="sm">Vehicle Type</FormLabel>
-                  <Input
-                    name="location_Type"
-                    value={editingCamera.location_Type || ""}
-                    onChange={handleEditInputChange}
-                    placeholder="Enter Vehicle"
-                    size="lg"
-                  />
-                </FormControl>*/}
 
               </Grid>
             </ModalBody>
 
-            <ModalFooter>
+            {/* Footer */}
+            <ModalFooter
+              px={{ base: 4, md: 6 }}
+              py={{ base: 4, md: 5 }}
+              borderTop="1px solid"
+              borderColor={cardBorder}
+              gap={3}
+            >
               <Button
-                colorScheme="blue"
-                mr={3}
+                id="modal-save-btn"
                 onClick={handleSave}
                 isLoading={isSaving}
                 isDisabled={isSaving}
-                size="lg"
+                bg={accent}
+                color="white"
+                _hover={{ opacity: 0.88 }}
+                _active={{ opacity: 0.76 }}
+                borderRadius="9px"
+                fontFamily="'Manrope', sans-serif"
+                fontWeight={700}
+                fontSize={{ base: "13px", md: "14px" }}
+                h={{ base: "38px", md: "42px" }}
+                px={{ base: 5, md: 6 }}
+                minW={{ base: "90px", md: "100px" }}
+                transition="opacity 0.15s ease"
               >
-                Save
+                {modalMode === "add" ? "Add Camera" : "Save"}
               </Button>
-              <Button onClick={onClose} isDisabled={isSaving} size="lg">
+              <Button
+                id="modal-cancel-btn"
+                onClick={onClose}
+                isDisabled={isSaving}
+                variant="outline"
+                borderColor={cardBorder}
+                color={subtextColor}
+                bg="transparent"
+                _hover={{ bg: accentTint, borderColor: accent, color: accent }}
+                borderRadius="9px"
+                fontFamily="'Manrope', sans-serif"
+                fontWeight={600}
+                fontSize={{ base: "13px", md: "14px" }}
+                h={{ base: "38px", md: "42px" }}
+                px={{ base: 5, md: 6 }}
+                minW={{ base: "90px", md: "100px" }}
+                transition="all 0.15s ease"
+              >
                 Cancel
               </Button>
             </ModalFooter>
           </ModalContent>
         </Modal>
       )}
+      {/* ─── End Modal ──────────────────────────────────────────────────────── */}
+
     </Box>
   );
 };

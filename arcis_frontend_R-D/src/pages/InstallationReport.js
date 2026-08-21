@@ -801,7 +801,7 @@ const handlePDFExport = useCallback(() => {
               {camera.assembly || "N/A"}
               <VerticalLine />
             </Td>
-            <Td style={tableDataStyle}>
+            <Td style={tableDataStyle} color="#3F77A5" fontWeight="700">
               {camera.DeviceId || "N/A"}
               <VerticalLine />
             </Td>

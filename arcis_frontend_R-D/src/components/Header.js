@@ -147,9 +147,9 @@ const Header = ({
         position="absolute"
         top="0"
         right="0"
-        left={{ base: 0, md: isSidebarExpanded ? "228px" : "68px" }}
+        left={{ base: "68px", md: isSidebarExpanded ? "228px" : "68px" }}
         width={{
-          base: "100%",
+          base: "calc(100% - 68px)",
           md: isSidebarExpanded ? "calc(100% - 228px)" : "calc(100% - 68px)",
         }}
         transition="left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1)"

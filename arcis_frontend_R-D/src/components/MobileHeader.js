@@ -1,15 +1,10 @@
-import React from "react";
-import {
-  Box,
-  Flex,
-  Heading,
-  HStack,
-  IconButton,
-  useColorModeValue,
-} from "@chakra-ui/react";
-import { IoIosArrowBack, IoMdNotificationsOutline } from "react-icons/io";
+// MobileHeader is disabled — returns null. Kept for import compatibility.
 
+// MobileHeader is disabled — the standard Header navbar handles all screen sizes.
+// The component is kept here so existing imports in pages don't break.
 const MobileHeader = ({ title }) => {
+  // Commented out — replaced by responsive Header navbar
+  /*
   return (
     <Box display={{ base: "block", md: "none" }}>
       <Box
@@ -23,24 +18,20 @@ const MobileHeader = ({ title }) => {
         left="0"
         zIndex="1000"
         p={3}
-        // borderRadius="16px 16px"
       >
         <Flex align="center" justify="space-between" position="relative">
-          {/* Back Button or Placeholder */}
           <Box>
             {title !== "Dashboard" ? (
               <IconButton
                 icon={<IoIosArrowBack size="26px" />}
                 aria-label="Go Back"
                 variant="plain"
-                onClick={() => window.history.back()} // Navigate back in browser history
+                onClick={() => window.history.back()}
               />
             ) : (
-              <Box w="40px" /> // Placeholder to maintain alignment
+              <Box w="40px" />
             )}
           </Box>
-
-          {/* Center Title */}
           <Heading
             as="h6"
             fontSize="19px"
@@ -51,8 +42,6 @@ const MobileHeader = ({ title }) => {
           >
             {title}
           </Heading>
-
-          {/* Right Content (Notifications Icon) */}
           <HStack spacing={1}>
             <Box position="relative">
               <IconButton
@@ -66,6 +55,8 @@ const MobileHeader = ({ title }) => {
       </Box>
     </Box>
   );
+  */
+  return null;
 };
 
 export default MobileHeader;
