@@ -143,29 +143,32 @@ const Events = () => {
     onClose();
   };
 
-  const currentEventMap = eventOptions;
-
-  // Event ids actually present in the data returned for the selected date (+ camera search, if any)
-  const availableEventIds = useMemo(() => {
-    const ids = new Set();
+  // Event types actually present in the data for the selected date (+ camera search, if any).
+  // Labels come from the API (`msg`, resolved server-side from messageMapping) so the UI
+  // never has to keep its own copy of the full event list.
+  const availableEvents = useMemo(() => {
+    const found = new Map();
     const searchTermLower = cameraSearchTerm.toLowerCase();
     data.forEach((item) => {
       if (item?.an_id === undefined || item?.an_id === null) return;
       if (searchTermLower && !item.cameradid?.toLowerCase().includes(searchTermLower)) return;
-      ids.add(item.an_id.toString());
+      const key = item.an_id.toString();
+      if (!found.has(key)) found.set(key, item.msg || eventOptions[key] || `Event ${key}`);
     });
-    return ids;
-  }, [data, cameraSearchTerm]);
+    return found;
+  }, [data, cameraSearchTerm, eventOptions]);
 
-  // Only the event types that exist in the DB for this date are offered in the dropdown
-  const availableEventOptions = Object.entries(eventOptions).filter(([key]) => availableEventIds.has(key));
+  const availableEventOptions = [...availableEvents.entries()];
+
+  // Label for a record: prefer the API-provided name, fall back to the local map
+  const labelFor = (item) => item?.msg || eventOptions[item?.an_id] || `Event ${item?.an_id}`;
 
   // Clear the selection if the chosen event has no records for the new date/camera
   useEffect(() => {
-    if (selectedEvent && !availableEventIds.has(selectedEvent)) {
+    if (selectedEvent && !availableEvents.has(selectedEvent)) {
       setSelectedEvent("");
     }
-  }, [availableEventIds, selectedEvent]);
+  }, [availableEvents, selectedEvent]);
 
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
@@ -402,7 +405,7 @@ const Events = () => {
                   fontWeight="600"
                   textTransform="none"
                 >
-                  {currentEventMap[item.an_id] || "Event"}
+                  {labelFor(item)}
                 </Badge>
               </Box>
               <Box bg={infoBg} px={4} py={3}>

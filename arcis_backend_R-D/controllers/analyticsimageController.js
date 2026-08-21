@@ -287,9 +287,12 @@ const getAnalyticsImages = async (req, res) => {
 
     // Step 5: Manually attach the camera details to each analytics image
     // This replicates what the $lookup was supposed to do.
+    // Resolve the human-readable event name here so the frontend never has to keep
+    // its own copy of messageMapping in sync with this one.
     const responseData = analyticsImages.map(image => {
         return {
             ...image,
+            msg: image.msg || messageMapping[image.an_id] || `Event ${image.an_id}`,
             cameraDetails: cameraDetailsMap.get(image.cameradid) || null // Get details from map
         };
     });

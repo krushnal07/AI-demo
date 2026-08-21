@@ -237,28 +237,37 @@ const AnalyticsImage = () => {
   };
   const currentEventMap = selectedZone ? zoneEventMap[selectedZone] : fullZoneEventMap.default;
 
-  // Event ids actually present in the data returned for the selected date (+ camera, if chosen)
-  const availableEventIds = useMemo(() => {
-    const ids = new Set();
+  // Event types actually present in the data for the selected date (+ camera, if chosen).
+  // Labels come from the API (`msg`, resolved server-side from messageMapping) so the UI
+  // never has to keep its own copy of the full event list.
+  const availableEvents = useMemo(() => {
+    const found = new Map();
     data.forEach((item) => {
       if (item?.an_id === undefined || item?.an_id === null) return;
       if (selectedCamera && item.cameradid !== selectedCamera) return;
-      ids.add(item.an_id.toString());
+      const key = item.an_id.toString();
+      if (!found.has(key)) found.set(key, item.msg || `Event ${key}`);
     });
-    return ids;
+    return found;
   }, [data, selectedCamera]);
 
-  // Only the event types that exist in the DB for this date are offered in the dropdown
-  const eventOptions = Object.entries(currentEventMap).filter(([key]) => availableEventIds.has(key));
+  // In zone mode the zone map decides which events belong to the zone; otherwise the
+  // dropdown is driven purely by what the DB returned for this date.
+  const eventOptions = selectedZone
+    ? Object.entries(zoneEventMap[selectedZone]).filter(([key]) => availableEvents.has(key))
+    : [...availableEvents.entries()];
+
+  // Label for a record: prefer the API-provided name, fall back to the local maps
+  const labelFor = (item) => item?.msg || currentEventMap[item?.an_id] || `Event ${item?.an_id}`;
 
   // Clear the selection if the chosen event has no records for the new date/camera
   useEffect(() => {
-    if (selectedEvent && !availableEventIds.has(selectedEvent)) {
+    if (selectedEvent && !availableEvents.has(selectedEvent)) {
       setSelectedEvent("");
       setSelectedSubEvent("");
       setSelectedPersonName("");
     }
-  }, [availableEventIds, selectedEvent]);
+  }, [availableEvents, selectedEvent]);
 
   const handleDateChange = (event) => {
     setSelectedDate(event.target.value);
@@ -327,7 +336,7 @@ const AnalyticsImage = () => {
           item.cameradid?.toString() || "N/A",
           item.sendtime ? moment.utc(item.sendtime).format("DD-MM-YYYY HH:mm:ss") : "N/A",
           "",
-          currentEventMap[item.an_id] || "No Event Occurred",
+          labelFor(item),
         ];
         if (isCountUser) rowData.push(item.ImgCount?.toString() || "0");
         body.push(rowData);
@@ -581,7 +590,7 @@ const AnalyticsImage = () => {
           gap={3}
         >
           <Text fontWeight="700" color={pageHeading}>
-            {currentEventMap[selectedEvent] || "Event"} Summary
+            {availableEvents.get(selectedEvent) || currentEventMap[selectedEvent] || "Event"} Summary
           </Text>
           <Flex align="center" gap={4} wrap="wrap">
             {selectedEvent === "30" && (
@@ -678,7 +687,7 @@ const AnalyticsImage = () => {
                       </Td>
                       <Td sx={tdStyle}>
                         <Badge bg={accentTint} color={accent} borderRadius="full" px={2.5} py={0.5} textTransform="none" fontWeight="600">
-                          {currentEventMap[anId] || "No Event"}
+                          {labelFor(item)}
                         </Badge>
                       </Td>
                        {/* <Td sx={tdStyle}>{item.person_name}</Td> */}

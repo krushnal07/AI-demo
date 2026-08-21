@@ -5,6 +5,7 @@ const analyticsImageSchema = new mongoose.Schema({
     sendtime: { type: Date, required: true },
     imgurl: { type: String, required: true },
     an_id: { type: Number, required: true },
+    msg: { type: String }, // human-readable event name, resolved from messageMapping on save
     ImgCount: { type: Number, required: true },
     numberplateid: { type: String }, // Add this line
     person_name: { type: String }, // Add this line
