@@ -565,4 +565,63 @@ const getAiDashboard = async (req, res) => {
   }
 };
 
-module.exports = { saveAnalyticsImage, getAnalyticsImages, getZoneWiseCounts, getAiDashboard };
+const getLatestAlerts = async (req, res) => {
+  try {
+    const { email, afterId } = req.query;
+    if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+    const user = await User.findOne({ email }, { UserAccessibleRegions: 1 }).lean();
+    if (!user || !user.UserAccessibleRegions?.length) {
+      return res.status(200).json({ success: true, data: [], cursor: afterId || null });
+    }
+
+    const cameras = await Camera.find(
+      { districtAssemblyCode: { $in: user.UserAccessibleRegions } },
+      { deviceId: 1, name: 1, locations: 1, _id: 0 }
+    ).lean();
+    if (!cameras.length) return res.status(200).json({ success: true, data: [], cursor: afterId || null });
+
+    const deviceIds = cameras.map((c) => c.deviceId);
+    const camMap = new Map(
+      cameras.map((c) => {
+        const loc = c.locations?.[0];
+        return [c.deviceId, (typeof loc === "string" ? loc : loc?.loc_name) || c.name || c.deviceId];
+      })
+    );
+
+    // Establish a baseline cursor only — nothing here is "new" yet.
+    if (!afterId || !mongoose.Types.ObjectId.isValid(afterId)) {
+      const latest = await AnalyticsImage.findOne({ cameradid: { $in: deviceIds } })
+        .sort({ _id: -1 })
+        .select("_id")
+        .lean();
+      return res.status(200).json({ success: true, data: [], cursor: latest?._id || null });
+    }
+
+    const alerts = await AnalyticsImage.find({
+      cameradid: { $in: deviceIds },
+      _id: { $gt: new mongoose.Types.ObjectId(afterId) },
+    })
+      .sort({ _id: 1 })
+      .limit(50)
+      .lean();
+
+    const data = alerts.map((a) => ({
+      id: a._id,
+      cameradid: a.cameradid,
+      location: camMap.get(a.cameradid) || a.cameradid,
+      eventType: messageMapping[a.an_id] || a.msg || "No Event Occurred",
+      sendtime: a.sendtime,
+      imgurl: a.imgurl,
+    }));
+
+    const cursor = alerts.length ? alerts[alerts.length - 1]._id : afterId;
+
+    return res.status(200).json({ success: true, data, cursor });
+  } catch (error) {
+    console.error("Error fetching latest alerts:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { saveAnalyticsImage, getAnalyticsImages, getZoneWiseCounts, getAiDashboard,getLatestAlerts};
