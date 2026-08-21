@@ -62,7 +62,8 @@ const messageMapping = {
   206:"Physical Conflict / Aggressive Movement Detected",
   207:"Crowd / Unusual Gathering Detected",
   208:"Unauthorized item(s) detected",
-  209:"Invigilator Inactivity Detected"
+  209:"Invigilator Inactivity Detected",
+  210:"Loitering At Passage"
   
   
   
