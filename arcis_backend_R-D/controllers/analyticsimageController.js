@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const AnalyticsImage = require("../models/analyticsimage");
 const Camera = require("../models/cameraModel");
 const District = require("../models/district");
