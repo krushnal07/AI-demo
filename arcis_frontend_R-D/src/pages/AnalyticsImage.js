@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import axios from "axios";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -236,6 +236,29 @@ const AnalyticsImage = () => {
     default: countEmails.includes(email) ? countEmailEventMap : defaultEventMap,
   };
   const currentEventMap = selectedZone ? zoneEventMap[selectedZone] : fullZoneEventMap.default;
+
+  // Event ids actually present in the data returned for the selected date (+ camera, if chosen)
+  const availableEventIds = useMemo(() => {
+    const ids = new Set();
+    data.forEach((item) => {
+      if (item?.an_id === undefined || item?.an_id === null) return;
+      if (selectedCamera && item.cameradid !== selectedCamera) return;
+      ids.add(item.an_id.toString());
+    });
+    return ids;
+  }, [data, selectedCamera]);
+
+  // Only the event types that exist in the DB for this date are offered in the dropdown
+  const eventOptions = Object.entries(currentEventMap).filter(([key]) => availableEventIds.has(key));
+
+  // Clear the selection if the chosen event has no records for the new date/camera
+  useEffect(() => {
+    if (selectedEvent && !availableEventIds.has(selectedEvent)) {
+      setSelectedEvent("");
+      setSelectedSubEvent("");
+      setSelectedPersonName("");
+    }
+  }, [availableEventIds, selectedEvent]);
 
   const handleDateChange = (event) => {
     setSelectedDate(event.target.value);
@@ -476,8 +499,16 @@ const AnalyticsImage = () => {
             <Text fontSize="12px" fontWeight="600" color={subText} mb={1.5} textTransform="uppercase" letterSpacing="0.05em">
               Event Type
             </Text>
-            <Select value={selectedEvent} onChange={handleEventChange} bg={inputBg} borderColor={cardBorder} borderRadius="10px" placeholder="All Events">
-              {(selectedZone ? Object.entries(zoneEventMap[selectedZone]) : Object.entries(currentEventMap)).map(([key, value]) => (
+            <Select
+              value={selectedEvent}
+              onChange={handleEventChange}
+              bg={inputBg}
+              borderColor={cardBorder}
+              borderRadius="10px"
+              placeholder={eventOptions.length ? "All Events" : "No events for this date"}
+              isDisabled={eventOptions.length === 0}
+            >
+              {eventOptions.map(([key, value]) => (
                 <option key={key} value={key}>
                   {value}
                 </option>

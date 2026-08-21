@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import axios from "axios";
 import moment from "moment";
 import { FaChevronLeft, FaChevronRight, FaSearch } from "react-icons/fa";
@@ -144,6 +144,29 @@ const Events = () => {
   };
 
   const currentEventMap = eventOptions;
+
+  // Event ids actually present in the data returned for the selected date (+ camera search, if any)
+  const availableEventIds = useMemo(() => {
+    const ids = new Set();
+    const searchTermLower = cameraSearchTerm.toLowerCase();
+    data.forEach((item) => {
+      if (item?.an_id === undefined || item?.an_id === null) return;
+      if (searchTermLower && !item.cameradid?.toLowerCase().includes(searchTermLower)) return;
+      ids.add(item.an_id.toString());
+    });
+    return ids;
+  }, [data, cameraSearchTerm]);
+
+  // Only the event types that exist in the DB for this date are offered in the dropdown
+  const availableEventOptions = Object.entries(eventOptions).filter(([key]) => availableEventIds.has(key));
+
+  // Clear the selection if the chosen event has no records for the new date/camera
+  useEffect(() => {
+    if (selectedEvent && !availableEventIds.has(selectedEvent)) {
+      setSelectedEvent("");
+    }
+  }, [availableEventIds, selectedEvent]);
+
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = filteredData.slice(indexOfFirstRecord, indexOfLastRecord);
@@ -280,7 +303,8 @@ const Events = () => {
                 Event Type
               </Text>
               <Select
-                placeholder="All events"
+                placeholder={availableEventOptions.length ? "All events" : "No events for this date"}
+                isDisabled={availableEventOptions.length === 0}
                 value={selectedEvent}
                 onChange={handleEventChange}
                 bg={inputBg}
@@ -288,7 +312,7 @@ const Events = () => {
                 borderRadius="10px"
                 size="md"
               >
-                {Object.entries(eventOptions).map(([key, value]) => (
+                {availableEventOptions.map(([key, value]) => (
                   <option key={key} value={key}>
                     {value}
                   </option>
