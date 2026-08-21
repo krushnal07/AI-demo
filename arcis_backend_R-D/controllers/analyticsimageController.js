@@ -53,7 +53,21 @@ const messageMapping = {
   101:"crowd detection (outdoor)",
   102:"crowd detection (indoor)",
   43:"Intruder",
-  100:"Heatmap"
+  100:"Heatmap",
+  201:"Max Person Detected In Question Paper Room",
+  202:"Movement at entry / exit Gate",
+  203:"Camera Tampering Detected",
+  204:"Camera Offline Detected",
+  205:"Movement Detected In Classroom Before/After Exam Hours",
+  206:"Physical Conflict / Aggressive Movement Detected",
+  207:"Crowd / Unusual Gathering Detected",
+  208:"Unauthorized item(s) detected",
+  209:"Invigilator Inactivity Detected"
+  
+  
+  
+  
+  
 };
 
 function renderSendTime(currentsendtime){
