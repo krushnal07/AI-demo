@@ -6,6 +6,7 @@ import React, { useEffect, useRef } from "react";
 import { Box, Flex, Image, Text, CloseButton, useColorModeValue, useToast } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import theme from "../theme";
+import { hasPermission } from "./Sidebar";
 
 const POLL_INTERVAL_MS = 8000;
 
@@ -22,7 +23,13 @@ const AlertNotifier = () => {
     const email = localStorage.getItem("email");
     if (!email) return;
 
+    // These toasts are AI events, so they follow the sidebar's "AI Events"
+    // permission. The server enforces this too -- this just avoids polling.
+    const role = localStorage.getItem("role") || "Guest";
+    if (!hasPermission(role, "AI Events")) return;
+
     let cancelled = false;
+    let intervalId = null;
     const baseUrl = `${process.env.REACT_APP_BASE_URL}/api/Analytics/latest-alerts`;
 
     const poll = async () => {
@@ -31,6 +38,15 @@ const AlertNotifier = () => {
           ? `${baseUrl}?email=${encodeURIComponent(email)}&afterId=${cursorRef.current}`
           : `${baseUrl}?email=${encodeURIComponent(email)}`;
         const res = await fetch(url);
+
+        // Server says this role may not receive alerts -- stop rather than
+        // retry every 8s for the rest of the session.
+        if (res.status === 403) {
+          cancelled = true;
+          if (intervalId) clearInterval(intervalId);
+          return;
+        }
+
         const json = await res.json();
         if (cancelled || !json?.success) return;
 
@@ -76,7 +92,7 @@ const AlertNotifier = () => {
                     navigate("/reports");
                   }}
                 >
-                 
+                  View details
                 </Text>
               </Box>
             ),
@@ -88,7 +104,7 @@ const AlertNotifier = () => {
     };
 
     poll();
-    const intervalId = setInterval(poll, POLL_INTERVAL_MS);
+    intervalId = setInterval(poll, POLL_INTERVAL_MS);
 
     return () => {
       cancelled = true;
