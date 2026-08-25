@@ -76,7 +76,7 @@ const AlertNotifier = () => {
                     navigate("/reports");
                   }}
                 >
-                  View details
+                 
                 </Text>
               </Box>
             ),
