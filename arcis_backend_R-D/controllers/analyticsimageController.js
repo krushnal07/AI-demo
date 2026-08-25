@@ -579,8 +579,19 @@ const getLatestAlerts = async (req, res) => {
     const { email, afterId } = req.query;
     if (!email) return res.status(400).json({ success: false, message: "Email is required" });
 
-    const user = await User.findOne({ email }, { UserAccessibleRegions: 1 }).lean();
-    if (!user || !user.UserAccessibleRegions?.length) {
+    const user = await User.findOne({ email }, { UserAccessibleRegions: 1, role: 1 }).lean();
+    if (!user) {
+      return res.status(200).json({ success: true, data: [], cursor: afterId || null });
+    }
+
+    // role is stored as an array on the user document
+    const roles = Array.isArray(user.role) ? user.role : [user.role];
+    if (!roles.some((r) => ALERT_ROLES.includes(r))) {
+      return res.status(403).json({ success: false, message: "Not permitted to receive AI event alerts" });
+    }
+
+    // Every role, MasterAdmin included, only sees its accessible regions.
+    if (!user.UserAccessibleRegions?.length) {
       return res.status(200).json({ success: true, data: [], cursor: afterId || null });
     }
 
@@ -633,5 +644,4 @@ const getLatestAlerts = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
-
 module.exports = { saveAnalyticsImage, getAnalyticsImages, getZoneWiseCounts, getAiDashboard, getLatestAlerts };
