@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import moment from "moment";
-import { FaChevronLeft, FaChevronRight, FaSearch } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaSearch, FaPlay } from "react-icons/fa";
 import {
   Modal,
   ModalOverlay,
@@ -25,6 +25,7 @@ import {
   IconButton,
   useColorModeValue,
 } from "@chakra-ui/react";
+import SimpleFLVPlayer from "../components/SimpleFLVPlayer";
 
 const Events = () => {
   const [data, setData] = useState([]);
@@ -35,7 +36,7 @@ const Events = () => {
   const [selectedDate, setSelectedDate] = useState(moment());
   const [selectedEvent, setSelectedEvent] = useState("");
   const [cameraSearchTerm, setCameraSearchTerm] = useState("");
-  const [modalImage, setModalImage] = useState(null);
+  const [modalMedia, setModalMedia] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage] = useState(25);
   const tableRef = useRef(null);
@@ -44,13 +45,8 @@ const Events = () => {
   const [cameraIds, setCameraIds] = useState([]);
   const [eventOptions] = useState({
     40: "Max person",
-    
-    1: "facial Recognition",
-    
-    43:"Intruder",
-    42:"Idle WorkStation",
-    17:"line crossing",
-    100:"heatmap"
+    41: "Box Detection",
+    42:"Idle WorkStation"
   });
 
   // --- Theme tokens (match dashboard) ---
@@ -131,45 +127,22 @@ const Events = () => {
 
   const formatDate = useCallback((dateString) => moment(dateString).format("DD-MM-YYYY HH:mm:ss"), []);
 
+  // Browsers play mp4 natively but not flv, which needs mpegts.js.
+  const isFlv = (url = "") => url.split("?")[0].toLowerCase().endsWith(".flv");
+
   const handleDateChange = (date) => setSelectedDate(date);
   const handleCameraSearchChange = (event) => setCameraSearchTerm(event.target.value);
   const handleEventChange = (event) => setSelectedEvent(event.target.value);
-  const handleImageClick = (imgUrl) => {
-    setModalImage(imgUrl);
+  const handleMediaClick = (item) => {
+    setModalMedia({ imgurl: item.imgurl, vidurl: item.vidurl });
     onOpen();
   };
   const closeModal = () => {
-    setModalImage(null);
+    setModalMedia(null);
     onClose();
   };
 
-  // Event types actually present in the data for the selected date (+ camera search, if any).
-  // Labels come from the API (`msg`, resolved server-side from messageMapping) so the UI
-  // never has to keep its own copy of the full event list.
-  const availableEvents = useMemo(() => {
-    const found = new Map();
-    const searchTermLower = cameraSearchTerm.toLowerCase();
-    data.forEach((item) => {
-      if (item?.an_id === undefined || item?.an_id === null) return;
-      if (searchTermLower && !item.cameradid?.toLowerCase().includes(searchTermLower)) return;
-      const key = item.an_id.toString();
-      if (!found.has(key)) found.set(key, item.msg || eventOptions[key] || `Event ${key}`);
-    });
-    return found;
-  }, [data, cameraSearchTerm, eventOptions]);
-
-  const availableEventOptions = [...availableEvents.entries()];
-
-  // Label for a record: prefer the API-provided name, fall back to the local map
-  const labelFor = (item) => item?.msg || eventOptions[item?.an_id] || `Event ${item?.an_id}`;
-
-  // Clear the selection if the chosen event has no records for the new date/camera
-  useEffect(() => {
-    if (selectedEvent && !availableEvents.has(selectedEvent)) {
-      setSelectedEvent("");
-    }
-  }, [availableEvents, selectedEvent]);
-
+  const currentEventMap = eventOptions;
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = filteredData.slice(indexOfFirstRecord, indexOfLastRecord);
@@ -255,13 +228,35 @@ const Events = () => {
 
   return (
     <Box maxW="1600px" mx="auto" pt={{ base: "70px", md: "0" }} mb={{ base: "100px", md: "6" }} px={{ base: 3, md: 0 }}>
-      {/* Image modal */}
+      {/* Event media modal */}
       <Modal isOpen={isOpen} onClose={closeModal} isCentered size="4xl">
         <ModalOverlay bg="blackAlpha.700" />
         <ModalContent bg={cardBg} borderRadius="16px" overflow="hidden">
           <ModalCloseButton zIndex={2} />
           <ModalBody display="flex" justifyContent="center" alignItems="center" p={4}>
-            <Image src={modalImage} alt="Enlarged view" maxW="100%" maxH="80vh" borderRadius="10px" />
+            {modalMedia?.vidurl ? (
+              isFlv(modalMedia.vidurl) ? (
+                <SimpleFLVPlayer
+                  url={modalMedia.vidurl}
+                  isLive={false}
+                  poster={modalMedia.imgurl}
+                  style={{ width: "100%", height: "70vh", borderRadius: "10px" }}
+                />
+              ) : (
+                <video
+                  src={modalMedia.vidurl}
+                  poster={modalMedia.imgurl}
+                  controls
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  style={{ maxWidth: "100%", maxHeight: "80vh", borderRadius: "10px" }}
+                />
+              )
+            ) : (
+              <Image src={modalMedia?.imgurl} alt="Enlarged view" maxW="100%" maxH="80vh" borderRadius="10px" />
+            )}
           </ModalBody>
         </ModalContent>
       </Modal>
@@ -306,8 +301,7 @@ const Events = () => {
                 Event Type
               </Text>
               <Select
-                placeholder={availableEventOptions.length ? "All events" : "No events for this date"}
-                isDisabled={availableEventOptions.length === 0}
+                placeholder="All events"
                 value={selectedEvent}
                 onChange={handleEventChange}
                 bg={inputBg}
@@ -315,7 +309,7 @@ const Events = () => {
                 borderRadius="10px"
                 size="md"
               >
-                {availableEventOptions.map(([key, value]) => (
+                {Object.entries(eventOptions).map(([key, value]) => (
                   <option key={key} value={key}>
                     {value}
                   </option>
@@ -389,9 +383,29 @@ const Events = () => {
                   cursor="pointer"
                   transition="transform 0.3s ease"
                   _hover={{ transform: "scale(1.05)" }}
-                  onClick={() => handleImageClick(item.imgurl)}
+                  onClick={() => handleMediaClick(item)}
                   fallbackSrc="https://via.placeholder.com/300x180?text=No+Preview"
                 />
+                {item.vidurl && (
+                  <Flex
+                    position="absolute"
+                    inset="0"
+                    align="center"
+                    justify="center"
+                    pointerEvents="none"
+                  >
+                    <Flex
+                      align="center"
+                      justify="center"
+                      boxSize="44px"
+                      borderRadius="full"
+                      bg="blackAlpha.600"
+                      color="white"
+                    >
+                      <FaPlay size={15} style={{ marginLeft: "3px" }} />
+                    </Flex>
+                  </Flex>
+                )}
                 <Badge
                   position="absolute"
                   top="8px"
@@ -405,7 +419,7 @@ const Events = () => {
                   fontWeight="600"
                   textTransform="none"
                 >
-                  {labelFor(item)}
+                  {currentEventMap[item.an_id] || "Event"}
                 </Badge>
               </Box>
               <Box bg={infoBg} px={4} py={3}>
@@ -413,7 +427,7 @@ const Events = () => {
                   {item.cameradid || "Unknown camera"}
                 </Text>
                 <Text fontSize="12px" color={subText} mt={0.5}>
-                   {item.an_id === 20 || item.an_id === 30
+                     {item.an_id === 20 || item.an_id === 30
                                             ? moment(item.sendtime).subtract(5, "hours").subtract(30, "minutes").add(5, "hours").add(30, "minutes").format("DD-MM-YYYY HH:mm:ss")
                                             : moment(item.sendtime).subtract(5, "hours").subtract(30, "minutes").format("DD-MM-YYYY HH:mm:ss")}
                 </Text>
