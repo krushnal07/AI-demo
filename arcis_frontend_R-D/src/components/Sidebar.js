@@ -72,14 +72,24 @@ const allMenuItems = [
   { label: "FAQ", icon: <MdOutlineQuestionAnswer />, path: "/faq" },
 ];
 
-const rolePermissions = {
+export const rolePermissions = {
   MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "Analytics Reports": true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Register Face", "Vehicle Logs", "Hardware Service"], "AI Assistant": true, FAQ: true },
-  USER: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true  },
+  VmuktiAdmin: { Dashboard: true,   "Multi View": true, Cameras: true   },
   CEO: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Assistant": true, FAQ: true },
   ECI: { "Multi View": true, "AI Assistant": true, FAQ: true },
   DistrictLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true, "AI Assistant": true, FAQ: true },
   AssemblyLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, Heatmap: true, "AI Assistant": true, FAQ: true },
   Guest: { "AI Assistant": true, FAQ: true },
+};
+
+// True when the role may see the given menu label. A sub-item list counts as
+// access to the parent label.
+export const hasPermission = (role, label) => {
+  const permissions = rolePermissions[role];
+  if (!permissions) return false;
+  if (permissions === "all") return true;
+  const allowed = permissions[label];
+  return allowed === true || (Array.isArray(allowed) && allowed.length > 0);
 };
 
 const getFilteredMenu = (items, role) => {
