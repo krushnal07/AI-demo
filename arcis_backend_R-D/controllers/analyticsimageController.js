@@ -52,7 +52,17 @@ const messageMapping = {
   104:"vacant booth",
   103:"evm proximity violation",
   101:"crowd detection (outdoor)",
-  102:"crowd detection (indoor)"
+  102:"crowd detection (indoor)",
+  201:"Max Person Detected In Question Paper Room",
+  202:"Movement at entry / exit Gate",
+  203:"Camera Tampering Detected",
+  204:"Camera Offline Detected",
+  205:"Movement Detected In Classroom Before/After Exam Hours",
+  206:"Physical Conflict / Aggressive Movement Detected",
+  207:"Crowd / Unusual Gathering Detected",
+  208:"Unauthorized item(s) detected",
+  209:"Invigilator Inactivity Detected",
+  210:"Loitering At Passage"
 };
 
 function renderSendTime(currentsendtime){
