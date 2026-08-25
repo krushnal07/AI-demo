@@ -203,6 +203,7 @@ function MainApp() {
 
   return (
     <Container maxW="100vw" p="0" bg={useColorModeValue("white", "#231F1F")}>
+      {!isLoginPage && <AlertNotifier />}
       {/* Fixed background — rendered OUTSIDE <Scrollbars> so it stays anchored
           to the viewport and never scrolls with the page content. */}
       <Image
@@ -371,7 +372,6 @@ function App() {
   return (
     <Router>
       <WebSocketComponent />
-     <AlertNotifier />
 
       <MainApp />
     </Router>
