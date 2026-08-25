@@ -393,6 +393,7 @@ const getAiDashboard = async (req, res) => {
       analyticsLabels: [],
       timeline: [],
       topCameras: [],
+      topLocations: [],
       matrix: [],
       liveFeed: [],
       insights: [],
@@ -456,6 +457,7 @@ const getAiDashboard = async (req, res) => {
     const byAnalytics = {};
     const matrix = {};
     const camAgg = {};
+    const locAgg = {};
     const timelineMap = {};
     const uniqueCams = new Set();
 
@@ -480,8 +482,23 @@ const getAiDashboard = async (req, res) => {
       c.total++;
       c.byAnalytics[label] = (c.byAnalytics[label] || 0) + 1;
 
+      // The same location name can exist in more than one district, so key on both.
+      const locKey = `${cam.district}||${cam.location}`;
+      const l = (locAgg[locKey] = locAgg[locKey] || {
+        location: cam.location,
+        district: cam.district,
+        cameras: new Set(),
+        total: 0,
+        byAnalytics: {},
+      });
+      l.cameras.add(a.cameradid);
+      l.total++;
+      l.byAnalytics[label] = (l.byAnalytics[label] || 0) + 1;
+
       const istHour = new Date(new Date(a.sendtime).getTime() + IST).getUTCHours();
-      timelineMap[istHour] = (timelineMap[istHour] || 0) + 1;
+      const slot = (timelineMap[istHour] = timelineMap[istHour] || { count: 0, byAnalytics: {} });
+      slot.count++;
+      slot.byAnalytics[label] = (slot.byAnalytics[label] || 0) + 1;
     }
 
     const total = alerts.length;
@@ -495,9 +512,22 @@ const getAiDashboard = async (req, res) => {
 
     const topCameras = Object.values(camAgg).sort((a, b) => b.total - a.total).slice(0, 10);
 
+    const topLocations = Object.values(locAgg)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10)
+      .map((l) => ({ ...l, cameras: l.cameras.size }));
+
     const timeline = [];
     for (let h = 0; h < 24; h++) {
-      timeline.push({ hour: h, label: `${String(h).padStart(2, "0")}:00`, count: timelineMap[h] || 0 });
+      const slot = timelineMap[h] || { count: 0, byAnalytics: {} };
+      const byAnalyticsHour = {};
+      analyticsLabels.forEach((l) => (byAnalyticsHour[l] = slot.byAnalytics[l] || 0));
+      timeline.push({
+        hour: h,
+        label: `${String(h).padStart(2, "0")}:00`,
+        count: slot.count,
+        byAnalytics: byAnalyticsHour,
+      });
     }
 
     const matrixRows = Object.keys(matrix)
@@ -532,8 +562,8 @@ const getAiDashboard = async (req, res) => {
       insights.push(`${byDistrictArr[0].district} leads all districts with ${byDistrictArr[0].count.toLocaleString()} alerts — ${byDistrictArr[0].pct}% of total traffic.`);
     if (peak.count > 0)
       insights.push(`Peak activity at ${peak.label} hrs IST with ${peak.count.toLocaleString()} alerts — align control-room staffing to this window.`);
-    if (topCameras[0])
-      insights.push(`Camera ${topCameras[0].deviceId} (${topCameras[0].district}) is the single busiest unit: ${topCameras[0].total.toLocaleString()} alerts.`);
+    if (topLocations[0])
+      insights.push(`${topLocations[0].location} (${topLocations[0].district}) is the single busiest location: ${topLocations[0].total.toLocaleString()} alerts across ${topLocations[0].cameras} camera(s).`);
     if (byAnalyticsArr[0] && total)
       insights.push(`"${byAnalyticsArr[0].label}" dominates the AI analytics mix with ${byAnalyticsArr[0].count.toLocaleString()} detections (${((byAnalyticsArr[0].count / total) * 100).toFixed(1)}%).`);
     if (uniqueCams.size)
@@ -557,6 +587,7 @@ const getAiDashboard = async (req, res) => {
       analyticsLabels,
       timeline,
       topCameras,
+      topLocations,
       matrix: matrixRows,
       liveFeed,
       insights,

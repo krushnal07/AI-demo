@@ -117,7 +117,7 @@ const AiDashboard = () => {
   const byAnalytics = dd.byAnalytics || [];
   const analyticsLabels = dd.analyticsLabels || [];
   const timeline = dd.timeline || [];
-  const topCameras = dd.topCameras || [];
+  const topLocations = dd.topLocations || [];
   const matrix = dd.matrix || [];
   const liveFeed = dd.liveFeed || [];
   const insights = dd.insights || [];
@@ -158,36 +158,53 @@ const AiDashboard = () => {
   // hour (an upstream double-offset bug). Realign here by rotating each
   // hour's count back into its correct slot so the chart reads true IST.
   const TIMELINE_HOUR_OFFSET = 6;
-  const correctedTimelineCounts = useMemo(() => {
-    const counts = timeline.map((t) => t.count || 0);
-    if (!counts.length) return [];
-    return Array.from({ length: counts.length }, (_, h) => counts[(h + TIMELINE_HOUR_OFFSET) % counts.length]);
-  }, [timeline]);
+  // One line per analytics type, each realigned to true IST.
+  const timelineSeries = useMemo(() => {
+    if (!timeline.length) return [];
+    const rotate = (counts) =>
+      Array.from({ length: counts.length }, (_, h) => counts[(h + TIMELINE_HOUR_OFFSET) % counts.length]);
+    return analyticsLabels.map((label) => ({
+      name: label,
+      data: rotate(timeline.map((t) => t.byAnalytics?.[label] || 0)),
+    }));
+  }, [timeline, analyticsLabels]);
 
   const timelineArea = useMemo(() => ({
     options: {
-      chart: { type: "area", background: "transparent", toolbar: { show: false }, fontFamily: "inherit" },
+      chart: { type: "line", background: "transparent", toolbar: { show: false }, fontFamily: "inherit", zoom: { enabled: false } },
       theme: { mode: colorMode },
-      colors: ["#34D399"],
+      colors: SERIES_COLORS,
       stroke: { curve: "smooth", width: 2 },
-      fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
+      markers: { size: 0, hover: { size: 5 } },
       dataLabels: { enabled: false },
+      legend: { position: "bottom", labels: { colors: sub }, fontSize: "10px", itemMargin: { horizontal: 6, vertical: 2 } },
       xaxis: { categories: timeline.map((t) => t.label), labels: { style: { colors: sub, fontSize: "10px" }, rotate: 0, hideOverlappingLabels: true }, tickAmount: 12 },
       yaxis: { labels: { style: { colors: sub, fontSize: "10px" }, formatter: (v) => fmt(Math.round(v)) } },
       grid: { borderColor: border },
-      tooltip: { theme: colorMode, y: { formatter: (v) => fmt(v) } },
+      // Hovering a line shows only that alert type, not every series at once.
+      tooltip: {
+        theme: colorMode,
+        shared: false,
+        intersect: false,
+        followCursor: true,
+        x: { show: true },
+        y: { formatter: (v) => fmt(v), title: { formatter: (name) => `${name}:` } },
+      },
     },
-    series: [{ name: "Alerts", data: correctedTimelineCounts }],
-  }), [timeline, correctedTimelineCounts, colorMode, sub, border]);
+    series: timelineSeries,
+  }), [timeline, timelineSeries, colorMode, sub, border]);
 
-  const topCamBar = useMemo(() => ({
+  const topLocBar = useMemo(() => ({
     options: {
       chart: { type: "bar", stacked: true, background: "transparent", toolbar: { show: false }, fontFamily: "inherit" },
       theme: { mode: colorMode },
       colors: SERIES_COLORS,
       plotOptions: { bar: { horizontal: true, barHeight: "55%", borderRadius: 3 } },
       dataLabels: { enabled: false },
-      xaxis: { categories: topCameras.map((c) => c.deviceId), labels: { style: { colors: sub, fontSize: "10px" } } },
+      xaxis: {
+        categories: topLocations.map((l) => `${l.location} · ${l.district}`),
+        labels: { style: { colors: sub, fontSize: "10px" }, maxWidth: 160 },
+      },
       yaxis: { labels: { style: { colors: sub, fontSize: "10px" } } },
       grid: { borderColor: border },
       legend: { position: "bottom", labels: { colors: sub }, fontSize: "10px" },
@@ -195,9 +212,9 @@ const AiDashboard = () => {
     },
     series: analyticsLabels.map((label) => ({
       name: label,
-      data: topCameras.map((c) => c.byAnalytics[label] || 0),
+      data: topLocations.map((l) => l.byAnalytics[label] || 0),
     })),
-  }), [topCameras, analyticsLabels, colorMode, sub, border]);
+  }), [topLocations, analyticsLabels, colorMode, sub, border]);
 
   const matrixTotals = useMemo(() => {
     const t = { total: 0 };
@@ -313,7 +330,7 @@ const AiDashboard = () => {
                 : <Text color={sub} fontSize="sm" py={10} textAlign="center">No data</Text>}
             </Panel>
             <Panel title="Alert Timeline · 24h (IST)">
-              {timeline.length ? <ReactApexChart options={timelineArea.options} series={timelineArea.series} type="area" height={260} />
+              {timeline.length ? <ReactApexChart options={timelineArea.options} series={timelineArea.series} type="line" height={300} />
                 : <Text color={sub} fontSize="sm" py={10} textAlign="center">No data</Text>}
             </Panel>
           </Grid>
@@ -337,8 +354,8 @@ const AiDashboard = () => {
             </Panel>
 
             {/* Top cameras */}
-            <Panel title="Top 10 Cameras · Camera · Location · Alerts">
-              {topCameras.length ? <ReactApexChart options={topCamBar.options} series={topCamBar.series} type="bar" height={300} />
+            <Panel title="Top 10 Locations · Location · District · Alerts">
+              {topLocations.length ? <ReactApexChart options={topLocBar.options} series={topLocBar.series} type="bar" height={300} />
                 : <Text color={sub} fontSize="sm" py={10} textAlign="center">No data</Text>}
             </Panel>
 
