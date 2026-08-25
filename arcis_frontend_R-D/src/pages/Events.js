@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import axios from "axios";
 import moment from "moment";
 import { FaChevronLeft, FaChevronRight, FaSearch, FaPlay } from "react-icons/fa";
@@ -43,11 +43,6 @@ const Events = () => {
   const email = localStorage.getItem("email");
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [cameraIds, setCameraIds] = useState([]);
-  const [eventOptions] = useState({
-    40: "Max person",
-    41: "Box Detection",
-    42:"Idle WorkStation"
-  });
 
   // --- Theme tokens (match dashboard) ---
   const pageHeading = useColorModeValue("gray.800", "white");
@@ -142,7 +137,33 @@ const Events = () => {
     onClose();
   };
 
-  const currentEventMap = eventOptions;
+  // Event types actually present in the data for the selected date (+ camera search, if any).
+  // Labels come from the API (`msg`, resolved server-side from messageMapping) so the UI
+  // never has to keep its own copy of the full event list.
+  const availableEvents = useMemo(() => {
+    const found = new Map();
+    const searchTermLower = cameraSearchTerm.toLowerCase();
+    data.forEach((item) => {
+      if (item?.an_id === undefined || item?.an_id === null) return;
+      if (searchTermLower && !item.cameradid?.toLowerCase().includes(searchTermLower)) return;
+      const key = item.an_id.toString();
+      if (!found.has(key)) found.set(key, item.msg || `Event ${key}`);
+    });
+    return found;
+  }, [data, cameraSearchTerm]);
+
+  const eventOptions = [...availableEvents.entries()];
+
+  // Label for a record: prefer the API-provided name, fall back to the generic id label
+  const labelFor = (item) => item?.msg || availableEvents.get(item?.an_id?.toString()) || "Event";
+
+  // Clear the selection if the chosen event has no records for the new date/camera
+  useEffect(() => {
+    if (selectedEvent && !availableEvents.has(selectedEvent)) {
+      setSelectedEvent("");
+    }
+  }, [availableEvents, selectedEvent]);
+
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = filteredData.slice(indexOfFirstRecord, indexOfLastRecord);
@@ -301,7 +322,8 @@ const Events = () => {
                 Event Type
               </Text>
               <Select
-                placeholder="All events"
+                placeholder={eventOptions.length ? "All events" : "No events for this date"}
+                isDisabled={eventOptions.length === 0}
                 value={selectedEvent}
                 onChange={handleEventChange}
                 bg={inputBg}
@@ -309,7 +331,7 @@ const Events = () => {
                 borderRadius="10px"
                 size="md"
               >
-                {Object.entries(eventOptions).map(([key, value]) => (
+                {eventOptions.map(([key, value]) => (
                   <option key={key} value={key}>
                     {value}
                   </option>
@@ -419,7 +441,7 @@ const Events = () => {
                   fontWeight="600"
                   textTransform="none"
                 >
-                  {currentEventMap[item.an_id] || "Event"}
+                  {labelFor(item)}
                 </Badge>
               </Box>
               <Box bg={infoBg} px={4} py={3}>
