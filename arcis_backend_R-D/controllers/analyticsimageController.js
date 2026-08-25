@@ -58,7 +58,7 @@ const messageMapping = {
   203:"Camera Tampering Detected",
   204:"Camera Offline Detected",
   205:"Movement Detected In Classroom Before/After Exam Hours",
-  206:"Physical Conflict / Aggressive Movement Detected",
+  206:"Suspecious Movement",
   207:"Crowd / Unusual Gathering Detected",
   208:"Unauthorized item(s) detected",
   209:"Invigilator Inactivity Detected",
