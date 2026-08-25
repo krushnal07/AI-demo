@@ -4,6 +4,7 @@ const analyticsImageSchema = new mongoose.Schema({
     cameradid: { type: String, required: true },
     sendtime: { type: Date, required: true },
     imgurl: { type: String, required: true },
+    vidurl: { type: String },
     an_id: { type: Number, required: true },
     msg: { type: String }, // human-readable event name, resolved from messageMapping on save
     ImgCount: { type: Number, required: true },
