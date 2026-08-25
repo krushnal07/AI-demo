@@ -3,19 +3,26 @@ import React, { useEffect, useRef } from "react";
 import mpegts from "mpegts.js";
 import { Box } from "@chakra-ui/react";
 
-const SimpleFLVPlayer = ({ url, style }) => {
+const SimpleFLVPlayer = ({ url, style, isLive = true, hasAudio = false, poster }) => {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
 
   useEffect(() => {
-    if (mpegts.getFeatureList().mseLivePlayback && url) {
+    // A live stream needs MSE live playback; a recorded clip only needs MSE.
+    const supported = isLive ? mpegts.getFeatureList().mseLivePlayback : mpegts.isSupported();
+
+    if (supported && url) {
       // Initialize Player
       playerRef.current = mpegts.createPlayer({
         type: "flv", // Support flv format
         url: url,
-        isLive: true,
+        isLive: isLive,
         cors: true,
-        hasAudio: false, // Set to true if your cameras have audio
+        hasAudio: hasAudio, // Set to true if your cameras have audio
+      });
+
+      playerRef.current.on(mpegts.Events.ERROR, (type, detail, info) => {
+        console.error("FLV playback error:", type, detail, info);
       });
 
       playerRef.current.attachMediaElement(videoRef.current);
@@ -39,12 +46,13 @@ const SimpleFLVPlayer = ({ url, style }) => {
         playerRef.current = null;
       }
     };
-  }, [url]);
+  }, [url, isLive, hasAudio]);
 
   return (
     <Box style={style} bg="black" display="flex" justifyContent="center" alignItems="center">
       <video
         ref={videoRef}
+        poster={poster}
         style={{ width: "100%", height: "100%" }}
         controls
         autoPlay
