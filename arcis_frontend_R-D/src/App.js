@@ -33,6 +33,7 @@ import Faq from "./pages/Faq";
 import theme from "./theme";
 import Subscription from "./pages/Subscription";
 import Events from "./pages/Events";
+import AiAlerts from "./pages/AiAlerts";
 import Others from "./pages/Others";
 import WebSocketComponent from "./components/WebSocketComponent";
 import { AlertProvider } from "./components/AlertNotifier";
@@ -318,6 +319,7 @@ function MainApp() {
                   />
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/events" element={<Events />} />
+                  <Route path="/ai-alerts" element={<AiAlerts />} />
                   <Route path="/verify/:id" element={<Verify />} />
                   <Route path="/otp" element={<Otp />} />
                   <Route path="/dashboard" element={<Dashboard />} />

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
+import MarkdownMessage from "../components/MarkdownMessage";
 import { keyframes } from "@emotion/react";
 import {
   Box,
@@ -30,20 +31,38 @@ import {
   AiOutlineStar,
   AiOutlineUnorderedList,
   AiOutlineMessage,
+  AiOutlineLeft,
+  AiOutlineRight,
 } from "react-icons/ai";
 import { BsRobot } from "react-icons/bs";
 
 const getUrl = (item) => (typeof item === "string" ? item : item?.url || item?.href || item?.path || "");
 const getLabel = (item, fallback) => (typeof item === "string" ? fallback : item?.name || item?.filename || fallback);
 
-const CHATBOT_BASE_URL = "http://192.168.4.33:8090";
-const CHATBOT_URL = `${CHATBOT_BASE_URL}/chat`;
-const CHATBOT_SAVE_URL = `${CHATBOT_BASE_URL}/chat/save`;
-const CHATBOT_CACHE_URL = `${CHATBOT_BASE_URL}/chat/cache`;
-const CHATBOT_DELETE_URL = `${CHATBOT_BASE_URL}/chat/delete`;
-const DATA_COVERAGE_URL = `${CHATBOT_BASE_URL}/cameras/data-coverage`;
+const CHATBOT_HOST = "http://79.112.108.70:38358";
+// Streams server-sent events: data: {"content"|"image_url"|"save_prompt"} then data: [DONE]
+const CHATBOT_STREAM_URL = `${CHATBOT_HOST}/api/chat/stream`;
+const CACHE_SAVE_URL = `${CHATBOT_HOST}/api/cache/save`;
+const CACHE_LIST_URL = `${CHATBOT_HOST}/api/cache/list`;
+const CACHE_DELETE_URL = `${CHATBOT_HOST}/api/cache/delete`; // + /{entry_id}
+const DATA_COVERAGE_URL = `${CHATBOT_HOST}/api/camera_coverage`;
+const QUICK_PROMPTS = [
+  { emoji: "📋", label: "Cameras", prompt: "List all cameras" },
+  { emoji: "🎥", label: "Camera Summary", prompt: "Provide me a summary of Janpath on 2026-06-13" },
+  { emoji: "🚌", label: "White Bus", prompt: "have you seen any white bus at Rajkot Bus Port" },
+  { emoji: "🚛", label: "Truck", prompt: "have you seen any truck at Chiman bhai Bridge on 2026-06-13" },
+  { emoji: "🛺", label: "Auto-rickshaw", prompt: "have you seen any auto-rickshaw at Janpath on 2026-06-13" },
+  { emoji: "🚦", label: "Traffic Jam", prompt: "have you seen a traffic jam at Janpath on 2026-06-13" },
+  { emoji: "🚶", label: "Pedestrians", prompt: "were there pedestrians at O.N.G.C. Office on 2026-06-13" },
+  { emoji: "👥", label: "Crowd", prompt: "was there a crowd at Rajkot Bus Port" },
+  { emoji: "🔢", label: "Number Plates", prompt: "have you seen any number plate starting with GJ in cam10" },
+  { emoji: "🚘", label: "Trace a Plate", prompt: "have you seen GJ27EA8879 in cam10 on 2025-08-28" },
+  { emoji: "🔢", label: "Vehicle Count", prompt: "how many vehicles were detected at cam10 on 2025-08-28" },
+  { emoji: "🛑", label: "Vehicle Stopped", prompt: "did any vehicle stop at cam10 on 2025-08-28" },
+];
 const GREETING = { sender: "bot", text: "Hi, how can I help you today?", timestamp: null };
 const MAX_INPUT_HEIGHT = 120;
+const IMAGE_PREVIEW_COUNT = 5;
 
 const bounce = keyframes`
   0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
@@ -79,18 +98,24 @@ const formatTime = (timestamp) => {
   return new Date(timestamp).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 };
 
-const TypingDots = ({ color }) => (
-  <Flex gap="4px" align="center" px={1}>
-    {[0, 1, 2].map((i) => (
-      <Box
-        key={i}
-        w="6px"
-        h="6px"
-        borderRadius="full"
-        bg={color}
-        sx={{ animation: `${bounce} 1.2s ease-in-out infinite`, animationDelay: `${i * 0.15}s` }}
-      />
-    ))}
+// Shown in the reply bubble until the first streamed characters arrive.
+const GeneratingIndicator = ({ color }) => (
+  <Flex gap="6px" align="center">
+    <Text fontSize="sm" color={color} fontWeight="500">
+      Vmukti AI
+    </Text>
+    <Flex gap="3px" align="center">
+      {[0, 1, 2].map((i) => (
+        <Box
+          key={i}
+          w="4px"
+          h="4px"
+          borderRadius="full"
+          bg={color}
+          sx={{ animation: `${bounce} 1.2s ease-in-out infinite`, animationDelay: `${i * 0.15}s` }}
+        />
+      ))}
+    </Flex>
   </Flex>
 );
 
@@ -107,9 +132,11 @@ const Chatbot = () => {
   const [messages, setMessages] = useState(loadStoredMessages);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [savedIds, setSavedIds] = useState(new Set());
   const [isSavedOpen, setIsSavedOpen] = useState(false);
   const [savedItems, setSavedItems] = useState([]);
+  const [expandedImages, setExpandedImages] = useState(() => new Set());
+  // { images, index } while a thumbnail is open full size
+  const [lightbox, setLightbox] = useState(null);
   const [isLoadingSaved, setIsLoadingSaved] = useState(false);
   const toast = useToast();
   const messagesEndRef = useRef(null);
@@ -156,57 +183,134 @@ const Chatbot = () => {
     return groups;
   }, [messages]);
 
-  const handleSend = async () => {
-    const trimmed = input.trim();
+  // Rewrites the trailing bot bubble as stream chunks arrive.
+  const patchStreamingBot = (patch) =>
+    setMessages((prev) => {
+      const next = [...prev];
+      const last = next[next.length - 1];
+      if (last?.sender === "bot") next[next.length - 1] = { ...last, ...patch };
+      return next;
+    });
+
+  // presetText comes from a quick-prompt chip; typeof guards against a
+  // click event being passed in by an onClick={handleSend} style call.
+  const handleSend = async (presetText) => {
+    const source = typeof presetText === "string" ? presetText : input;
+    const trimmed = source.trim();
     if (!trimmed || isSending) return;
 
     const email = localStorage.getItem("email");
 
-    setMessages((prev) => [...prev, { sender: "user", text: trimmed, timestamp: Date.now() }]);
+    setMessages((prev) => [
+      ...prev,
+      { sender: "user", text: trimmed, timestamp: Date.now() },
+      // placeholder bubble that fills in chunk by chunk
+      { sender: "bot", text: "", timestamp: Date.now(), images: [], streaming: true },
+    ]);
     setInput("");
     setIsSending(true);
 
+    let answer = "";
+    const images = [];
+    let savePayload = null;
+
     try {
-      const response = await axios.post(CHATBOT_URL, {
-        session_id: email,
-        message: trimmed,
-        email,
+      const response = await fetch(CHATBOT_STREAM_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: trimmed, session_id: email || "default" }),
       });
 
-      const data = response.data || {};
-      const replyText =
-        data.answer ||
-        data.message ||
-        data.reply ||
-        data.response ||
-        (typeof data === "string" ? data : JSON.stringify(data));
+      if (!response.ok) throw new Error(`Request failed (${response.status})`);
+      if (!response.body) throw new Error("Streaming is not supported in this browser");
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "bot",
-          text: replyText,
-          timestamp: Date.now(),
-          images: data.images || [],
-          videos: data.videos || [],
-          files: data.files || [],
-          qaId: data.qa_id || null,
-        },
-      ]);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let streaming = true;
+
+      while (streaming) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE events are blank-line separated; hold back any partial tail
+        const events = buffer.split("\n\n");
+        buffer = events.pop() || "";
+
+        for (const event of events) {
+          const dataLine = event.split("\n").find((line) => line.startsWith("data:"));
+          if (!dataLine) continue;
+
+          const payload = dataLine.slice(5).trim();
+          if (!payload) continue;
+          if (payload === "[DONE]") {
+            streaming = false;
+            break;
+          }
+
+          let parsed;
+          try {
+            parsed = JSON.parse(payload);
+          } catch (err) {
+            continue; // skip a malformed event rather than losing the reply
+          }
+
+          if (typeof parsed.content === "string") {
+            answer += parsed.content;
+            patchStreamingBot({ text: answer });
+          }
+          if (parsed.image_url) {
+            images.push(parsed.image_url);
+            patchStreamingBot({ images: [...images] });
+          }
+          if (parsed.save_prompt) {
+            savePayload = parsed.save_prompt;
+          }
+        }
+      }
+
+      patchStreamingBot({
+        text: answer || "No answer returned.",
+        images: [...images],
+        streaming: false,
+        // POST /api/cache/save takes exactly { query, answer, image_urls }
+        savePayload: savePayload || { query: trimmed, answer, image_urls: images },
+      });
     } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", text: "Sorry, something went wrong - please try again.", timestamp: Date.now() },
-      ]);
+      patchStreamingBot({
+        text: "Sorry, something went wrong - please try again.",
+        streaming: false,
+      });
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to reach the assistant",
+        description: error.message || "Failed to reach the assistant",
         status: "error",
       });
     } finally {
       setIsSending(false);
     }
   };
+
+  const openLightbox = (images, index) => setLightbox({ images, index });
+  const closeLightbox = () => setLightbox(null);
+
+  const stepLightbox = (delta) =>
+    setLightbox((prev) => {
+      if (!prev) return prev;
+      const next = prev.index + delta;
+      if (next < 0 || next >= prev.images.length) return prev;
+      return { ...prev, index: next };
+    });
+
+  const toggleImages = (index) =>
+    setExpandedImages((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -223,11 +327,18 @@ const Chatbot = () => {
     setMessages([GREETING]);
   };
 
-  const handleSaveMessage = async (qaId) => {
-    if (!qaId || savedIds.has(qaId)) return;
+  // The stream hands us { query, answer, image_urls }, which is exactly the
+  // body /api/cache/save expects. The saved entry id comes back in the response.
+  const handleSaveMessage = async (payload, index) => {
+    if (!payload) return;
     try {
-      await axios.post(CHATBOT_SAVE_URL, { qa_id: qaId });
-      setSavedIds((prev) => new Set(prev).add(qaId));
+      const response = await axios.post(CACHE_SAVE_URL, {
+        query: payload.query,
+        answer: payload.answer,
+        image_urls: payload.image_urls || [],
+      });
+      const entryId = response.data?.id || response.data?.entry_id || null;
+      setMessages((prev) => prev.map((msg, i) => (i === index ? { ...msg, saved: true, entryId } : msg)));
       toast({ title: "Saved", status: "success", duration: 2000 });
     } catch (error) {
       toast({
@@ -238,16 +349,11 @@ const Chatbot = () => {
     }
   };
 
-  const handleDeleteMessage = async (qaId, index) => {
-    if (!qaId) return;
+  const handleDeleteMessage = async (entryId, index) => {
     try {
-      await axios.post(CHATBOT_DELETE_URL, { qa_id: qaId });
+      // only saved answers exist server-side; the rest are local only
+      if (entryId) await axios.delete(`${CACHE_DELETE_URL}/${entryId}`);
       setMessages((prev) => prev.filter((_, i) => i !== index));
-      setSavedIds((prev) => {
-        const next = new Set(prev);
-        next.delete(qaId);
-        return next;
-      });
       toast({ title: "Deleted", status: "success", duration: 2000 });
     } catch (error) {
       toast({
@@ -260,14 +366,14 @@ const Chatbot = () => {
 
   const normalizeSavedList = (data) => {
     if (Array.isArray(data)) return data;
-    return data?.items || data?.cache || data?.data || [];
+    return data?.entries || data?.items || data?.cache || data?.data || [];
   };
 
   const handleOpenSaved = async () => {
     setIsSavedOpen(true);
     setIsLoadingSaved(true);
     try {
-      const response = await axios.get(CHATBOT_CACHE_URL);
+      const response = await axios.get(CACHE_LIST_URL);
       setSavedItems(normalizeSavedList(response.data));
     } catch (error) {
       toast({
@@ -281,16 +387,11 @@ const Chatbot = () => {
     }
   };
 
-  const handleDeleteSavedItem = async (qaId) => {
-    if (!qaId) return;
+  const handleDeleteSavedItem = async (entryId) => {
+    if (!entryId) return;
     try {
-      await axios.post(CHATBOT_DELETE_URL, { qa_id: qaId });
-      setSavedItems((prev) => prev.filter((item) => (item.qa_id || item.qaId) !== qaId));
-      setSavedIds((prev) => {
-        const next = new Set(prev);
-        next.delete(qaId);
-        return next;
-      });
+      await axios.delete(`${CACHE_DELETE_URL}/${entryId}`);
+      setSavedItems((prev) => prev.filter((item) => (item.id || item.entry_id) !== entryId));
       toast({ title: "Deleted", status: "success", duration: 2000 });
     } catch (error) {
       toast({
@@ -348,10 +449,10 @@ const Chatbot = () => {
   };
 
   return (
-    <Flex h="calc(100vh - 110px)" p={3} gap={3}>
+    <Flex h="calc(100vh - 88px)" p={3} gap={3}>
       {/* Left: chat history */}
       <Box
-        w="260px"
+        w="300px"
         display={{ base: "none", md: "flex" }}
         flexDirection="column"
         bg={cardBg}
@@ -405,7 +506,7 @@ const Chatbot = () => {
       </Box>
 
       {/* Right: chat thread */}
-      <Box flex="1" display="flex" flexDirection="column" maxW="820px" mx="auto">
+      <Box flex="1" display="flex" flexDirection="column" maxW="1200px" mx="auto">
         <Flex
           justifyContent="space-between"
           alignItems="center"
@@ -478,7 +579,7 @@ const Chatbot = () => {
                 <Avatar size="xs" icon={<BsRobot fontSize="12px" />} bg="custom.accent" color="white" flexShrink={0} />
               )}
 
-              <Flex direction="column" alignItems={msg.sender === "user" ? "flex-end" : "flex-start"} maxW="75%">
+              <Flex direction="column" alignItems={msg.sender === "user" ? "flex-end" : "flex-start"} maxW="85%">
                 <Box
                   bg={msg.sender === "user" ? userBubbleBg : botBubbleBg}
                   color={msg.sender === "user" ? "white" : botBubbleText}
@@ -488,18 +589,56 @@ const Chatbot = () => {
                   borderRadius="18px"
                   borderTopRightRadius={msg.sender === "user" ? "4px" : "18px"}
                   borderTopLeftRadius={msg.sender === "bot" ? "4px" : "18px"}
-                  whiteSpace="pre-wrap"
+                  whiteSpace={msg.sender === "bot" ? "normal" : "pre-wrap"}
                   fontSize="sm"
                   lineHeight="1.5"
                 >
-                  {msg.text}
+                  {msg.sender === "bot" ? (
+                    msg.streaming && !msg.text ? (
+                      <GeneratingIndicator color={botBubbleText} />
+                    ) : (
+                      <MarkdownMessage text={msg.text} />
+                    )
+                  ) : (
+                    msg.text
+                  )}
 
                   {msg.images?.length > 0 && (
-                    <Flex direction="column" gap={2} mt={2}>
-                      {msg.images.map((img, i) => (
-                        <Image key={i} src={getUrl(img)} alt={getLabel(img, "image")} borderRadius="8px" maxW="100%" />
-                      ))}
-                    </Flex>
+                    <Box mt={2}>
+                      <Flex gap={2} wrap="wrap">
+                        {(expandedImages.has(index) ? msg.images : msg.images.slice(0, IMAGE_PREVIEW_COUNT)).map(
+                          (img, i) => (
+                            <Image
+                              key={i}
+                              src={getUrl(img)}
+                              alt={getLabel(img, "image")}
+                              boxSize="72px"
+                              objectFit="cover"
+                              borderRadius="8px"
+                              flexShrink={0}
+                              cursor="pointer"
+                              transition="transform 0.15s ease"
+                              _hover={{ transform: "scale(1.06)" }}
+                              onClick={() => openLightbox(msg.images, i)}
+                            />
+                          )
+                        )}
+                      </Flex>
+
+                      {msg.images.length > IMAGE_PREVIEW_COUNT && (
+                        <Button
+                          size="xs"
+                          variant="link"
+                          mt={2}
+                          color="custom.accent"
+                          onClick={() => toggleImages(index)}
+                        >
+                          {expandedImages.has(index)
+                            ? "Show less"
+                            : `Show more (${msg.images.length - IMAGE_PREVIEW_COUNT})`}
+                        </Button>
+                      )}
+                    </Box>
                   )}
 
                   {msg.videos?.length > 0 && (
@@ -527,18 +666,18 @@ const Chatbot = () => {
                       {formatTime(msg.timestamp)}
                     </Text>
                   )}
-                  {msg.sender === "bot" && msg.qaId && (
+                  {msg.sender === "bot" && msg.savePayload && (
                     <Flex gap={0.5}>
-                      <Tooltip label={savedIds.has(msg.qaId) ? "Saved" : "Save answer"} hasArrow>
+                      <Tooltip label={msg.saved ? "Saved" : "Save answer"} hasArrow>
                         <IconButton
-                          icon={savedIds.has(msg.qaId) ? <AiOutlineCheckCircle /> : <AiOutlineCheck />}
+                          icon={msg.saved ? <AiOutlineCheckCircle /> : <AiOutlineCheck />}
                           aria-label="Save answer"
                           size="xs"
                           variant="ghost"
                           fontSize="14px"
-                          color={savedIds.has(msg.qaId) ? "green.400" : timestampColor}
-                          isDisabled={savedIds.has(msg.qaId)}
-                          onClick={() => handleSaveMessage(msg.qaId)}
+                          color={msg.saved ? "green.400" : timestampColor}
+                          isDisabled={msg.saved}
+                          onClick={() => handleSaveMessage(msg.savePayload, index)}
                         />
                       </Tooltip>
                       <Tooltip label="Delete answer" hasArrow>
@@ -549,7 +688,7 @@ const Chatbot = () => {
                           variant="ghost"
                           fontSize="14px"
                           color={timestampColor}
-                          onClick={() => handleDeleteMessage(msg.qaId, index)}
+                          onClick={() => handleDeleteMessage(msg.entryId, index)}
                         />
                       </Tooltip>
                     </Flex>
@@ -559,23 +698,31 @@ const Chatbot = () => {
             </Flex>
           ))}
 
-          {isSending && (
-            <Flex gap={2.5} alignItems="flex-end" justifyContent="flex-start">
-              <Avatar size="xs" icon={<BsRobot fontSize="12px" />} bg="custom.accent" color="white" flexShrink={0} />
-              <Box
-                bg={botBubbleBg}
-                px={4}
-                py={3}
-                borderRadius="18px"
-                borderTopLeftRadius="4px"
-              >
-                <TypingDots color={timestampColor} />
-              </Box>
-            </Flex>
-          )}
 
           <div ref={messagesEndRef} />
         </Box>
+
+        <Flex mt={3} gap={2} wrap="wrap">
+          {QUICK_PROMPTS.map((item) => (
+            <Button
+              key={item.label}
+              size="sm"
+              variant="outline"
+              borderColor={inputBorder}
+              borderRadius="full"
+              fontWeight="500"
+              fontSize="13px"
+              px={3}
+              isDisabled={isSending}
+              onClick={() => handleSend(item.prompt)}
+            >
+              <Box as="span" mr={1.5}>
+                {item.emoji}
+              </Box>
+              {item.label}
+            </Button>
+          ))}
+        </Flex>
 
         <Flex
           mt={3}
@@ -605,7 +752,7 @@ const Chatbot = () => {
           <IconButton
             icon={<AiOutlineSend />}
             aria-label="Send message"
-            onClick={handleSend}
+            onClick={() => handleSend()}
             isDisabled={isSending || !input.trim()}
             bg="custom.accent"
             color="white"
@@ -617,6 +764,64 @@ const Chatbot = () => {
           />
         </Flex>
       </Box>
+
+      {/* full-size image viewer; arrows step through that message's images */}
+      <Modal isOpen={!!lightbox} onClose={closeLightbox} isCentered size="4xl">
+        <ModalOverlay bg="blackAlpha.800" />
+        <ModalContent bg="transparent" boxShadow="none" position="relative">
+          <ModalCloseButton color="white" zIndex={2} />
+          <ModalBody p={0}>
+            <Flex justify="center" align="center" minH="60vh">
+              <Image
+                src={getUrl(lightbox?.images?.[lightbox?.index])}
+                alt="Full size"
+                maxH="80vh"
+                maxW="100%"
+                objectFit="contain"
+                borderRadius="8px"
+              />
+            </Flex>
+
+            {lightbox?.images?.length > 1 && (
+              <>
+                <IconButton
+                  icon={<AiOutlineLeft />}
+                  aria-label="Previous image"
+                  size="sm"
+                  isRound
+                  position="absolute"
+                  left="-4px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  bg="blackAlpha.700"
+                  color="white"
+                  _hover={{ bg: "blackAlpha.900" }}
+                  onClick={() => stepLightbox(-1)}
+                  isDisabled={lightbox.index === 0}
+                />
+                <IconButton
+                  icon={<AiOutlineRight />}
+                  aria-label="Next image"
+                  size="sm"
+                  isRound
+                  position="absolute"
+                  right="-4px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  bg="blackAlpha.700"
+                  color="white"
+                  _hover={{ bg: "blackAlpha.900" }}
+                  onClick={() => stepLightbox(1)}
+                  isDisabled={lightbox.index === lightbox.images.length - 1}
+                />
+                <Text textAlign="center" color="white" fontSize="xs" mt={3}>
+                  {lightbox.index + 1} / {lightbox.images.length}
+                </Text>
+              </>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       <Modal isOpen={isSavedOpen} onClose={() => setIsSavedOpen(false)} isCentered size="lg" scrollBehavior="inside">
         <ModalOverlay />
@@ -633,11 +838,11 @@ const Chatbot = () => {
             ) : (
               <Flex direction="column" gap={3}>
                 {savedItems.map((item, i) => {
-                  const qaId = item.qa_id || item.qaId;
+                  const entryId = item.id || item.entry_id;
                   const question = item.question || item.query || item.message;
                   const answer = item.answer || item.response || item.text;
                   return (
-                    <Box key={qaId || i} border="1px solid" borderColor={cardBorder} borderRadius="12px" p={3}>
+                    <Box key={entryId || i} border="1px solid" borderColor={cardBorder} borderRadius="12px" p={3}>
                       <Flex justifyContent="space-between" alignItems="flex-start" gap={2}>
                         <Box>
                           {question && (
@@ -652,7 +857,7 @@ const Chatbot = () => {
                           aria-label="Delete saved answer"
                           size="xs"
                           variant="ghost"
-                          onClick={() => handleDeleteSavedItem(qaId)}
+                          onClick={() => handleDeleteSavedItem(entryId)}
                         />
                       </Flex>
                     </Box>
