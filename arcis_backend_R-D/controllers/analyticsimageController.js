@@ -7,6 +7,10 @@ const { sendMailattachment } = require("../utils/sendEmail");
 const semaphore = require("../utils/semaphore");
 const User = require("../models/userModel");
 // const Settings = require("../models/Settings"); // Assuming Settings model is not used in the provided code
+// Roles allowed to receive live AI-event alerts. Mirrors the frontend's
+// rolePermissions[role]["AI Events"] table in src/components/Sidebar.js.
+const ALERT_ROLES = ["MasterAdmin", "CEO", "DistrictLevel", "AssemblyLevel"];
+
 const messageMapping = {
   1: "Facial recognition",
   2: "Human Detection",

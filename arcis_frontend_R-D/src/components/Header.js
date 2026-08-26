@@ -24,6 +24,14 @@ import {
   Avatar,
   VStack,
   Tooltip,
+  Badge,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverBody,
+  PopoverHeader,
+  PopoverArrow,
+  Center,
 } from "@chakra-ui/react";
 import { CgLogOff } from "react-icons/cg";
 import { BsCameraVideoFill } from "react-icons/bs";
@@ -36,9 +44,10 @@ import theme from "../theme";
 import { FaRegBell, FaRegUser, FaMoon, FaSun } from "react-icons/fa6";
 import { IoPower } from "react-icons/io5";
 import MyProfile from "./Modals/MyProfile";
-import { TimeIcon } from "@chakra-ui/icons";
+import { TimeIcon, CloseIcon } from "@chakra-ui/icons";
 import eciLogo from "../assets/eci-WHITE MODE.png"
 import eciLogo1 from "../assets/eci-DARK MODE.png"
+import { useAlerts } from "./AlertNotifier";
 
 const Header = ({
   toggleTextVisibility,
@@ -50,6 +59,7 @@ const Header = ({
   const [activeModal, setActiveModal] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const { colorMode, toggleColorMode } = useColorMode();
+  const { alerts, unreadCount, markAllRead, removeAlert, clearAlerts } = useAlerts();
   const activeLogo = useColorModeValue(eciLogo, eciLogo1);
 
   // Define widths based on your sidebar design
@@ -188,6 +198,141 @@ const Header = ({
           </Flex>
 
 
+
+          {/* Notifications bell — YouTube-style dropdown anchored to the header */}
+          <Popover placement="bottom-end" isLazy onOpen={markAllRead}>
+            <PopoverTrigger>
+              <Box position="relative" display="inline-flex">
+                <Tooltip label="Notifications" hasArrow>
+                  <IconButton
+                    aria-label="Notifications"
+                    icon={<FaRegBell />}
+                    size="sm"
+                    variant="ghost"
+                    borderRadius="12px"
+                  />
+                </Tooltip>
+                {unreadCount > 0 && (
+                  <Badge
+                    position="absolute"
+                    top="-2px"
+                    right="-2px"
+                    minW="18px"
+                    h="18px"
+                    px="4px"
+                    borderRadius="full"
+                    bg="red.500"
+                    color="white"
+                    fontSize="10px"
+                    fontWeight="700"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    pointerEvents="none"
+                  >
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </Badge>
+                )}
+              </Box>
+            </PopoverTrigger>
+            <PopoverContent
+              w={{ base: "300px", md: "380px" }}
+              borderRadius="12px"
+              boxShadow="0 8px 30px rgba(0,0,0,0.18)"
+              _focus={{ boxShadow: "0 8px 30px rgba(0,0,0,0.18)" }}
+              overflow="hidden"
+            >
+              <PopoverArrow />
+              <PopoverHeader border="0" pb={2}>
+                <Flex alignItems="center" justifyContent="space-between">
+                  <Text fontSize="14px" fontWeight="700">
+                    Notifications
+                  </Text>
+                  {alerts.length > 0 && (
+                    <Button size="xs" variant="ghost" colorScheme="blue" onClick={clearAlerts}>
+                      Clear all
+                    </Button>
+                  )}
+                </Flex>
+              </PopoverHeader>
+              <PopoverBody p={0} maxH="420px" overflowY="auto">
+                {alerts.length === 0 ? (
+                  <Center flexDirection="column" py={10} gap={2}>
+                    <Icon as={FaRegBell} boxSize="22px" color={subText} />
+                    <Text fontSize="13px" color={subText}>
+                      No new notifications
+                    </Text>
+                  </Center>
+                ) : (
+                  alerts.map((alert) => (
+                    <Flex
+                      key={alert.id}
+                      gap={3}
+                      px={4}
+                      py={3}
+                      cursor="pointer"
+                      alignItems="flex-start"
+                      borderBottom="1px solid"
+                      borderColor={pillBorder}
+                      _hover={{ bg: pillBg }}
+                      onClick={() => navigate("/reports")}
+                    >
+                      {/* Missing, still loading, or a dead URL all land on the
+                          camera glyph instead of an empty gap. */}
+                      <Image
+                        src={alert.imgurl}
+                        alt={alert.eventType}
+                        boxSize="56px"
+                        borderRadius="8px"
+                        objectFit="cover"
+                        flexShrink={0}
+                        bg="black"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        fallback={
+                          <Flex
+                            boxSize="56px"
+                            borderRadius="8px"
+                            bg={pillBg}
+                            alignItems="center"
+                            justifyContent="center"
+                            flexShrink={0}
+                          >
+                            <Icon as={BsCameraVideoFill} boxSize="18px" color={subText} />
+                          </Flex>
+                        }
+                      />
+                      <Box minW={0} flex="1">
+                        <Text fontSize="13px" fontWeight="600" noOfLines={1}>
+                          {alert.eventType}
+                        </Text>
+                        <Text fontSize="12px" color={subText} noOfLines={1}>
+                          {alert.location} · {alert.cameradid}
+                        </Text>
+                        <Text fontSize="11px" color={subText} mt={0.5}>
+                          {alert.sendtime ? new Date(alert.sendtime).toLocaleString() : ""}
+                        </Text>
+                      </Box>
+                      <Flex alignItems="center" gap={1} flexShrink={0} mt={1}>
+                        {!alert.read && <Box boxSize="8px" borderRadius="full" bg="blue.400" />}
+                        <IconButton
+                          aria-label="Dismiss notification"
+                          icon={<CloseIcon boxSize="7px" />}
+                          size="xs"
+                          variant="ghost"
+                          borderRadius="full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeAlert(alert.id);
+                          }}
+                        />
+                      </Flex>
+                    </Flex>
+                  ))
+                )}
+              </PopoverBody>
+            </PopoverContent>
+          </Popover>
 
           {/* Theme toggle */}
           <Tooltip label={colorMode === "light" ? "Dark mode" : "Light mode"} hasArrow>

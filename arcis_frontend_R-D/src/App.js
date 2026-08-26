@@ -35,7 +35,7 @@ import Subscription from "./pages/Subscription";
 import Events from "./pages/Events";
 import Others from "./pages/Others";
 import WebSocketComponent from "./components/WebSocketComponent";
-import AlertNotifier from "./components/AlertNotifier";
+import { AlertProvider } from "./components/AlertNotifier";
 import { registerPushNotifications } from "./actions/notification";
 import io from "socket.io-client";
 import ArcisInfo from "./pages/ArcisInfo";
@@ -202,8 +202,8 @@ function MainApp() {
   }, []);
 
   return (
+    <AlertProvider enabled={!isLoginPage}>
     <Container maxW="100vw" p="0" bg={useColorModeValue("white", "#231F1F")}>
-      {!isLoginPage && <AlertNotifier />}
       {/* Fixed background — rendered OUTSIDE <Scrollbars> so it stays anchored
           to the viewport and never scrolls with the page content. */}
       <Image
@@ -365,6 +365,7 @@ function MainApp() {
         </Box>
       </Scrollbars>
     </Container>
+    </AlertProvider>
   );
 }
 
