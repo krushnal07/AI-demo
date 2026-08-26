@@ -39,7 +39,7 @@ import { BsRobot } from "react-icons/bs";
 const getUrl = (item) => (typeof item === "string" ? item : item?.url || item?.href || item?.path || "");
 const getLabel = (item, fallback) => (typeof item === "string" ? fallback : item?.name || item?.filename || fallback);
 
-const CHATBOT_HOST = "http://79.112.108.70:38358";
+const CHATBOT_HOST = "https://vmschatbot.vmukti.com:38358";
 // Streams server-sent events: data: {"content"|"image_url"|"save_prompt"} then data: [DONE]
 const CHATBOT_STREAM_URL = `${CHATBOT_HOST}/api/chat/stream`;
 const CACHE_SAVE_URL = `${CHATBOT_HOST}/api/cache/save`;
