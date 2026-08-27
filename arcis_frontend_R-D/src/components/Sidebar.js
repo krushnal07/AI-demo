@@ -79,7 +79,7 @@ const allMenuItems = [
 export const rolePermissions = {
   MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Alerts": true, "Forensic Report": true, "Analytics Reports": true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Register Face", "Vehicle Logs", "Hardware Service"], "AI Assistant": true, FAQ: true },
   VmuktiAdmin: { Dashboard: true,   "Multi View": true, Cameras: true   },
-  CEO: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Alerts": true, "Forensic Report": true, "AI Assistant": true, FAQ: true },
+  Demo: { "AI Dashboard": true,  "Multi View": true,  "AI Alerts": true, "Forensic Report": true, "AI Assistant": true},
   ECI: { "Multi View": true, "AI Assistant": true, FAQ: true },
   DistrictLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Alerts": true, "Forensic Report": true, Heatmap: true, "AI Assistant": true, FAQ: true },
   AssemblyLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Alerts": true, "Forensic Report": true, Heatmap: true, "AI Assistant": true, FAQ: true },
