@@ -46,7 +46,14 @@ const buildFilter = ({ date, camera_id, q, confidence, gated }) => {
 
   if (q && q.trim()) {
     const rx = { $regex: escapeRegex(q.trim()), $options: "i" };
-    filter.$or = [{ description: rx }, { location: rx }, { camera_id: rx }];
+    // ocr_raw/plate_number included so a plate can actually be searched for
+    filter.$or = [
+      { description: rx },
+      { location: rx },
+      { camera_id: rx },
+      { ocr_raw: rx },
+      { plate_number: rx },
+    ];
   }
 
   return { filter };

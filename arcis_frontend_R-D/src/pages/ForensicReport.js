@@ -90,9 +90,9 @@ const COLUMNS = [
   { key: "camera_id", label: "Camera", sortable: true },
   { key: "location", label: "Location", sortable: true },
   { key: "segment_id", label: "Segment", sortable: true },
-  { key: "video_offset_seconds", label: "Offset in source", sortable: true },
-  { key: "motion_score", label: "Motion", sortable: true },
-  { key: "anchor_confidence", label: "Confidence", sortable: true },
+  { key: "ocr_raw", label: "Plate (OCR)", sortable: true },
+
+ 
   { key: "preview", label: "Preview", sortable: false },
 ];
 
@@ -227,17 +227,21 @@ const ForensicReport = () => {
         if (collected.length >= (data.total || 0)) break;
       }
 
+      // header and row must stay in the same order and length, or every
+      // column in the exported file shifts
       const header = [
         "Date", "Start", "End", "Duration (s)", "Camera", "Location", "Segment",
-        "Source video", "Offset (s)", "Motion score", "Motion gated",
-        "Confidence", "Observation", "Contact sheet", "Frame URLs",
+        "Source video", "Offset (s)", "Motion score",
+        "Plate (OCR)", "OCR confidence", "Recognised plate",
+        "Observation", "Contact sheet", "Frame URLs",
       ];
       const lines = collected.slice(0, EXPORT_MAX).map((r) =>
         [
           fmtDate(r.start_time), fmtTime(r.start_time), fmtTime(r.end_time), durationSec(r),
           r.camera_id, r.location, r.segment_id, r.source_video, r.video_offset_seconds,
-          r.motion_score, r.motion_gated, r.anchor_confidence, r.description,
-          sheetFor(r), (r.frame_urls || []).join(" | "),
+          r.motion_score,
+          r.ocr_raw, r.ocr_confidence, r.plate_number,
+          r.description, sheetFor(r), (r.frame_urls || []).join(" | "),
         ].map(csvCell).join(",")
       );
 
@@ -346,7 +350,7 @@ const ForensicReport = () => {
           </Select>
         </Box>
 
-        <Box minW="160px">
+        {/* <Box minW="160px">
           <Text fontSize="10px" fontWeight="700" letterSpacing="0.08em" color={subText} mb={1}>
             CONFIDENCE
           </Text>
@@ -367,9 +371,9 @@ const ForensicReport = () => {
               </option>
             ))}
           </Select>
-        </Box>
+        </Box> */}
 
-        <Box minW="140px">
+        {/* <Box minW="140px">
           <Text fontSize="10px" fontWeight="700" letterSpacing="0.08em" color={subText} mb={1}>
             MOTION GATED
           </Text>
@@ -387,7 +391,7 @@ const ForensicReport = () => {
             <option value="true">Gated only</option>
             <option value="false">Not gated</option>
           </Select>
-        </Box>
+        </Box> */}
 
         <Box flex="1" minW="200px">
           <Text fontSize="10px" fontWeight="700" letterSpacing="0.08em" color={subText} mb={1}>
@@ -484,21 +488,31 @@ const ForensicReport = () => {
                     <Td fontSize="12px" color={bodyText}>
                       {row.segment_id ?? "—"}
                     </Td>
-                    <Td fontSize="12px" color={bodyText} whiteSpace="nowrap">
-                      <Text>{fmtOffset(row.video_offset_seconds)}</Text>
-                      <Text fontSize="10px" color={subText} noOfLines={1} maxW="150px" title={row.source_video}>
-                        {row.source_video || "—"}
-                      </Text>
+                    <Td whiteSpace="nowrap">
+                      {/* only ANPR rows carry a plate; everything else stays blank */}
+                      {row.ocr_raw ? (
+                        <>
+                          <Text fontSize="12px" fontWeight="600" fontFamily="mono" color={pageHeading}>
+                            {row.ocr_raw}
+                          </Text>
+                          {row.ocr_confidence != null && (
+                            <Text fontSize="10px" color={subText}>
+                              {Math.round(row.ocr_confidence * 100)}%
+                              {row.recognized ? "" : " · unrecognised"}
+                            </Text>
+                          )}
+                        </>
+                      ) : null}
                     </Td>
-                    <Td fontSize="12px" color={bodyText} whiteSpace="nowrap">
+                    {/* <Td fontSize="12px" color={bodyText} whiteSpace="nowrap">
                       {row.motion_score != null ? row.motion_score.toFixed(3) : "—"}
                       {row.motion_gated && (
                         <Badge ml={1.5} colorScheme="purple" fontSize="9px" borderRadius="full" px={1.5}>
                           gated
                         </Badge>
                       )}
-                    </Td>
-                    <Td whiteSpace="nowrap">
+                    </Td> */}
+                    {/* <Td whiteSpace="nowrap">
                       <Badge
                         colorScheme={CONFIDENCE_TONE[row.anchor_confidence] || "gray"}
                         fontSize="9px"
@@ -508,7 +522,7 @@ const ForensicReport = () => {
                       >
                         {row.anchor_confidence || "—"}
                       </Badge>
-                    </Td>
+                    </Td> */}
                     <Td>
                       <Image
                         src={sheetFor(row)}
@@ -604,7 +618,7 @@ const ForensicReport = () => {
                   {durationSec(selected || {}) != null ? ` (${durationSec(selected)}s)` : ""}
                 </Text>
 
-                <Flex gap={2} mt={2} wrap="wrap">
+                {/* <Flex gap={2} mt={2} wrap="wrap">
                   <Badge
                     colorScheme={CONFIDENCE_TONE[selected?.anchor_confidence] || "gray"}
                     fontSize="9px"
@@ -619,12 +633,20 @@ const ForensicReport = () => {
                       motion gated
                     </Badge>
                   )}
-                </Flex>
+                </Flex> */}
 
                 <Box mt={4}>
                   {[
                     ["Segment", selected?.segment_id],
                     ["Location", selected?.location],
+                    ["Plate (OCR)", selected?.ocr_raw],
+                    [
+                      "OCR confidence",
+                      selected?.ocr_raw && selected?.ocr_confidence != null
+                        ? `${Math.round(selected.ocr_confidence * 100)}%`
+                        : null,
+                    ],
+                    ["Recognised plate", selected?.plate_number],
                     ["Source video", selected?.source_video],
                     ["Offset in source", fmtOffset(selected?.video_offset_seconds)],
                     ["Motion score", selected?.motion_score],

@@ -21,7 +21,9 @@ import {
   MdEvent,
   MdOutlineChat,
   MdNotificationsActive,
-  MdDescription
+  MdDescription,
+  MdShield,
+  MdMap
 } from "react-icons/md";
 import { TbDeviceCctv } from "react-icons/tb";
 import { BsCpu } from "react-icons/bs";
@@ -42,6 +44,8 @@ const allMenuItems = [
   { label: "AI Events", icon: <MdEvent />, path: "/events" },
   { label: "AI Alerts", icon: <MdNotificationsActive />, path: "/ai-alerts" },
   { label: "Forensic Report", icon: <MdDescription />, path: "/forensic-report" },
+  { label: "Crime Intelligence", icon: <MdShield />, path: "/crime-intelligence" },
+  { label: "Corridor Analytics", icon: <MdMap />, path: "/corridor-analytics" },
   { label: "Analytics Reports", icon: <RiCheckboxMultipleBlankLine />, path: "/AnalyticsImage" },
   // {
   //   label: "Reports",
@@ -77,12 +81,12 @@ const allMenuItems = [
 ];
 
 export const rolePermissions = {
-  MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Alerts": true, "Forensic Report": true, "Analytics Reports": true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Register Face", "Vehicle Logs", "Hardware Service"], "AI Assistant": true, FAQ: true },
+  MasterAdmin: { Dashboard: true, "AI Dashboard": true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Alerts": true, "Forensic Report": true, "Crime Intelligence": true, "Corridor Analytics": true, "Analytics Reports": true, Reports: ["Consolidated Report", "Installation Report", "Connected Report", "Gps Report", "Mobile App Report"], "Helpdesk": ["Call Activity", "Incidence Master"], "Admin Panel": ["VMS Master", "Register Face", "Vehicle Logs", "Hardware Service"], "AI Assistant": true, FAQ: true },
   VmuktiAdmin: { Dashboard: true,   "Multi View": true, Cameras: true   },
-  Demo: { Dashboard: true,"AI Dashboard": true,  "Multi View": true,  "AI Alerts": true, "Forensic Report": true, "AI Assistant": true},
+  Demo: { Dashboard: true,"AI Dashboard": true,Cameras: true ,  "Multi View": true,  "AI Alerts": true, "Forensic Report": true, "Crime Intelligence": true, "Corridor Analytics": true, "AI Assistant": true},
   ECI: { "Multi View": true, "AI Assistant": true, FAQ: true },
-  DistrictLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Alerts": true, "Forensic Report": true, Heatmap: true, "AI Assistant": true, FAQ: true },
-  AssemblyLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Alerts": true, "Forensic Report": true, Heatmap: true, "AI Assistant": true, FAQ: true },
+  DistrictLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Alerts": true, "Forensic Report": true, "Crime Intelligence": true, "Corridor Analytics": true, Heatmap: true, "AI Assistant": true, FAQ: true },
+  AssemblyLevel: { Dashboard: true, "Camera Status": true, "Multi View": true, Cameras: true, "AI Events": true, "AI Alerts": true, "Forensic Report": true, "Crime Intelligence": true, "Corridor Analytics": true, Heatmap: true, "AI Assistant": true, FAQ: true },
   Guest: { "AI Assistant": true, FAQ: true },
 };
 
