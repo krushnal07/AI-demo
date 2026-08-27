@@ -4,7 +4,18 @@ const AiAlert = require("../models/aiAlert");
 // explicit here too so a schema change can never leak it into a list response.
 const LIST_PROJECTION = "-embedding";
 
-const MAX_LIMIT = 100;
+// Whitelisted so a caller cannot sort by an arbitrary (unindexed) field.
+const SORTABLE = [
+  "timestamp",
+  "camera_id",
+  "location",
+  "segment_id",
+  "motion_score",
+  "anchor_confidence",
+  "video_offset_seconds",
+];
+
+const MAX_LIMIT = 200;
 const DEFAULT_LIMIT = 24;
 
 // user input goes into a $regex, so neutralise the pattern metacharacters
@@ -19,10 +30,13 @@ const dayWindow = (date) => {
   return { $gte: start, $lte: end };
 };
 
-const buildFilter = ({ date, camera_id, q }) => {
+const buildFilter = ({ date, camera_id, q, confidence, gated }) => {
   const filter = {};
 
   if (camera_id && camera_id !== "all") filter.camera_id = camera_id;
+  if (confidence && confidence !== "all") filter.anchor_confidence = confidence;
+  if (gated === "true") filter.motion_gated = true;
+  else if (gated === "false") filter.motion_gated = false;
 
   if (date) {
     const window = dayWindow(date);
@@ -40,7 +54,7 @@ const buildFilter = ({ date, camera_id, q }) => {
 
 /**
  * GET /api/ai-alerts
- * Query: date=YYYY-MM-DD, camera_id, q, page, limit
+ * Query: date=YYYY-MM-DD, camera_id, q, confidence, gated, sort, order, page, limit
  * Omitting `date` gives the newest alerts across every day (the "Live" view).
  */
 const getAiAlerts = async (req, res) => {
@@ -51,10 +65,15 @@ const getAiAlerts = async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || DEFAULT_LIMIT));
 
+    const sortField = SORTABLE.includes(req.query.sort) ? req.query.sort : "timestamp";
+    const sortOrder = req.query.order === "asc" ? 1 : -1;
+    // _id breaks ties so paging stays stable on non-unique sort keys
+    const sort = { [sortField]: sortOrder, _id: sortOrder };
+
     const [data, total] = await Promise.all([
       AiAlert.find(filter)
         .select(LIST_PROJECTION)
-        .sort({ timestamp: -1 })
+        .sort(sort)
         .skip((page - 1) * limit)
         .limit(limit)
         .lean(),
@@ -81,8 +100,9 @@ const getAiAlerts = async (req, res) => {
  */
 const getAiAlertFilters = async (req, res) => {
   try {
-    const [cameras, dates] = await Promise.all([
+    const [cameras, confidences, dates] = await Promise.all([
       AiAlert.distinct("camera_id"),
+      AiAlert.distinct("anchor_confidence"),
       AiAlert.aggregate([
         { $match: { timestamp: { $ne: null } } },
         {
@@ -98,6 +118,7 @@ const getAiAlertFilters = async (req, res) => {
     return res.status(200).json({
       success: true,
       cameras: cameras.filter(Boolean).sort(),
+      confidences: confidences.filter(Boolean).sort(),
       dates: dates.map((d) => ({ date: d._id, count: d.count })),
     });
   } catch (err) {

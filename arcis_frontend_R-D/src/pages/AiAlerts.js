@@ -7,8 +7,6 @@ import {
   FaRegClock,
   FaCircle,
   FaHistory,
-  FaChevronLeft,
-  FaChevronRight,
 } from "react-icons/fa";
 import {
   Box,
@@ -19,7 +17,6 @@ import {
   Button,
   Badge,
   Image,
-  IconButton,
   Spinner,
   SimpleGrid,
   Modal,
@@ -33,10 +30,11 @@ import {
 
 const PAGE_SIZE = 24;
 
-// start_time / end_time are naive ISO strings ("2026-08-08T14:59:58.500000"),
-// so moment parses them as local time and the clock reads exactly as recorded.
-const formatTime = (value) => (value ? moment(value).format("hh:mm:ss A") : "");
-const formatDateTime = (value) => (value ? moment(value).format("DD-MM-YYYY, hh:mm:ss A") : "");
+// Times arrive either as a naive ISO string ("2026-08-08T14:59:58.500000") or,
+// on newer rows, a real Date serialised with a Z. Reading both as UTC shows the
+// recorded wall clock; plain moment() would shift the Z form by the local offset.
+const formatTime = (value) => (value ? moment.utc(value).format("hh:mm:ss A") : "");
+const formatDateTime = (value) => (value ? moment.utc(value).format("DD-MM-YYYY, hh:mm:ss A") : "");
 
 // frame_urls is always [frame1, frame2, contact sheet]
 const captionFor = (index, total) =>
@@ -65,7 +63,6 @@ const AiAlerts = () => {
   const [applied, setApplied] = useState(null);
 
   const [selected, setSelected] = useState(null);
-  const [frameIndex, setFrameIndex] = useState(0);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const baseUrl = process.env.REACT_APP_BASE_URL || process.env.REACT_APP_URL;
@@ -163,12 +160,8 @@ const AiAlerts = () => {
 
   const openAlert = (alert) => {
     setSelected(alert);
-    setFrameIndex(0);
     onOpen();
   };
-
-  const showPrevFrame = () => setFrameIndex((i) => Math.max(0, i - 1));
-  const showNextFrame = () => setFrameIndex((i) => Math.min(frames.length - 1, i + 1));
 
   const closeAlert = () => {
     setSelected(null);
@@ -415,74 +408,29 @@ const AiAlerts = () => {
       </Flex>
 
       {/* ---------------- Detail modal ---------------- */}
-      <Modal isOpen={isOpen} onClose={closeAlert} isCentered size="3xl" scrollBehavior="inside">
+      <Modal isOpen={isOpen} onClose={closeAlert} isCentered size="5xl">
         <ModalOverlay bg="blackAlpha.700" />
         <ModalContent bg={cardBg} borderRadius="14px" overflow="hidden">
           <ModalCloseButton zIndex={2} />
           <ModalBody p={0}>
-            {/* one frame at a time -- the arrows step through them, nothing scrolls */}
-            <Box position="relative" bg="black">
-              <Flex justify="center" align="center" h="380px">
-                <Image
-                  src={frames[frameIndex]}
-                  alt={captionFor(frameIndex, frames.length)}
-                  maxH="380px"
-                  maxW="100%"
-                  objectFit="contain"
-                />
-              </Flex>
-
-              {frames.length > 1 && (
-                <>
-                  <IconButton
-                    aria-label="Previous frame"
-                    icon={<FaChevronLeft />}
-                    size="sm"
-                    isRound
-                    position="absolute"
-                    left="12px"
-                    top="50%"
-                    transform="translateY(-50%)"
-                    bg="blackAlpha.600"
-                    color="white"
-                    _hover={{ bg: "blackAlpha.800" }}
-                    onClick={showPrevFrame}
-                    isDisabled={frameIndex === 0}
-                  />
-                  <IconButton
-                    aria-label="Next frame"
-                    icon={<FaChevronRight />}
-                    size="sm"
-                    isRound
-                    position="absolute"
-                    right="12px"
-                    top="50%"
-                    transform="translateY(-50%)"
-                    bg="blackAlpha.600"
-                    color="white"
-                    _hover={{ bg: "blackAlpha.800" }}
-                    onClick={showNextFrame}
-                    isDisabled={frameIndex === frames.length - 1}
-                  />
-                </>
-              )}
-            </Box>
-
-            <Flex align="center" justify="center" gap={2} py={2.5}>
+            {/* every frame visible at once -- no stepping, no scrolling */}
+            <Flex bg="black" align="stretch" gap="1px">
               {frames.map((url, index) => (
-                <Box
-                  key={url}
-                  as="button"
-                  aria-label={captionFor(index, frames.length)}
-                  boxSize="7px"
-                  borderRadius="full"
-                  bg={index === frameIndex ? accent : cardBorder}
-                  onClick={() => setFrameIndex(index)}
-                />
+                <Box key={url} flex="1 1 0" minW={0} bg="black">
+                  <Flex justify="center" align="center" h={{ base: "180px", md: "320px" }}>
+                    <Image
+                      src={url}
+                      alt={captionFor(index, frames.length)}
+                      maxH="100%"
+                      maxW="100%"
+                      objectFit="contain"
+                    />
+                  </Flex>
+                  <Text fontSize="10px" color={subText} textAlign="center" px={2} pb={2} noOfLines={1}>
+                    {captionFor(index, frames.length)}
+                  </Text>
+                </Box>
               ))}
-              <Text fontSize="11px" color={subText} ml={2}>
-                {captionFor(frameIndex, frames.length)}
-              </Text>
             </Flex>
 
             <Box px={5} py={4}>
