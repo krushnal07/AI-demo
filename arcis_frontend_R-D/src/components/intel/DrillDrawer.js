@@ -20,8 +20,14 @@ import {
   ButtonGroup,
   Spinner,
   SimpleGrid,
+  IconButton,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalBody,
+  ModalCloseButton,
 } from "@chakra-ui/react";
-import { FaChevronDown, FaChevronRight } from "react-icons/fa";
+import { FaChevronDown, FaChevronRight, FaExpand, FaChevronLeft, FaChevronRight as FaNext } from "react-icons/fa";
 import { useIntelTheme, MONO_FONT } from "./IntelKit";
 
 const PAGE = 25;
@@ -84,12 +90,68 @@ const Field = ({ label, value, theme }) => (
   </Box>
 );
 
+/** A frame with a hover-revealed expand control. */
+const Framed = ({ src, alt, label, theme, onExpand, ...rest }) => (
+  <Box position="relative" role="group" flexShrink={0}>
+    <Image
+      src={src}
+      alt={alt}
+      borderRadius="6px"
+      bg="black"
+      cursor="zoom-in"
+      onClick={(e) => {
+        e.stopPropagation();
+        onExpand();
+      }}
+      fallbackSrc="https://via.placeholder.com/240x150?text=Frame+unavailable"
+      {...rest}
+    />
+    {label && (
+      <Badge
+        position="absolute"
+        top="6px"
+        left="6px"
+        bg="blackAlpha.700"
+        color="white"
+        fontSize="9px"
+        borderRadius="full"
+        px={2}
+        textTransform="none"
+        pointerEvents="none"
+      >
+        {label}
+      </Badge>
+    )}
+    <IconButton
+      icon={<FaExpand />}
+      aria-label={`Open ${alt} full screen`}
+      size="xs"
+      position="absolute"
+      top="6px"
+      right="6px"
+      bg="blackAlpha.700"
+      color="white"
+      borderRadius="6px"
+      opacity={0}
+      _groupHover={{ opacity: 1 }}
+      _focusVisible={{ opacity: 1, outline: "2px solid", outlineColor: theme.s1 }}
+      _hover={{ bg: "blackAlpha.900" }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onExpand();
+      }}
+    />
+  </Box>
+);
+
 const DrillDrawer = ({ drill, onClose, baseUrl }) => {
   const [body, setBody] = useState(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [state, setState] = useState(null); // null | observed | negated
   const [openId, setOpenId] = useState(null);
+  // { frames, index } while a frame is open full screen
+  const [lightbox, setLightbox] = useState(null);
   const [error, setError] = useState(null);
 
   const t = useIntelTheme();
@@ -100,6 +162,7 @@ const DrillDrawer = ({ drill, onClose, baseUrl }) => {
     setState(drill?.state || null);
     setBody(null);
     setOpenId(null);
+    setLightbox(null);
   }, [drill]);
 
   const fetchPage = useCallback(async () => {
@@ -213,16 +276,14 @@ const DrillDrawer = ({ drill, onClose, baseUrl }) => {
                       {open ? <FaChevronDown /> : <FaChevronRight />}
                     </Box>
                     {it.frame && (
-                      <Image
+                      <Framed
                         src={it.frame}
                         alt={`${it.camera_id} segment ${it.segment_id}`}
+                        theme={t}
                         w="92px"
                         h="52px"
                         objectFit="cover"
-                        borderRadius="5px"
-                        bg="black"
-                        flexShrink={0}
-                        fallbackSrc="https://via.placeholder.com/92x52?text=—"
+                        onExpand={() => setLightbox({ frames: it.frames?.length ? it.frames : [it.frame], index: 0 })}
                       />
                     )}
                     <Box minW={0} flex="1">
@@ -263,30 +324,16 @@ const DrillDrawer = ({ drill, onClose, baseUrl }) => {
                       {it.frames?.length > 0 && (
                         <Flex gap={2} mb={3} wrap="wrap">
                           {it.frames.map((url, i) => (
-                            <Box key={url} position="relative">
-                              <Image
-                                src={url}
-                                alt={`frame ${i + 1}`}
-                                h="150px"
-                                borderRadius="6px"
-                                objectFit="contain"
-                                bg="black"
-                                fallbackSrc="https://via.placeholder.com/240x150?text=Frame+unavailable"
-                              />
-                              <Badge
-                                position="absolute"
-                                top="6px"
-                                left="6px"
-                                bg="blackAlpha.700"
-                                color="white"
-                                fontSize="9px"
-                                borderRadius="full"
-                                px={2}
-                                textTransform="none"
-                              >
-                                {i === it.frames.length - 1 && it.frames.length > 1 ? "contact sheet" : `frame ${i + 1}`}
-                              </Badge>
-                            </Box>
+                            <Framed
+                              key={url}
+                              src={url}
+                              alt={`frame ${i + 1}`}
+                              label={i === it.frames.length - 1 && it.frames.length > 1 ? "contact sheet" : `frame ${i + 1}`}
+                              theme={t}
+                              h="170px"
+                              objectFit="contain"
+                              onExpand={() => setLightbox({ frames: it.frames, index: i })}
+                            />
                           ))}
                         </Flex>
                       )}
@@ -339,6 +386,71 @@ const DrillDrawer = ({ drill, onClose, baseUrl }) => {
           )}
         </DrawerBody>
       </DrawerContent>
+
+      {/* ---- full-screen frame viewer ---- */}
+      <Modal isOpen={Boolean(lightbox)} onClose={() => setLightbox(null)} isCentered size="full">
+        <ModalOverlay bg="blackAlpha.900" />
+        <ModalContent bg="transparent" boxShadow="none" m={0}>
+          <ModalCloseButton color="white" size="lg" zIndex={3} />
+          <ModalBody p={0} display="flex" alignItems="center" justifyContent="center" position="relative">
+            <Image
+              src={lightbox?.frames?.[lightbox?.index]}
+              alt={`Frame ${(lightbox?.index ?? 0) + 1}`}
+              maxH="92vh"
+              maxW="94vw"
+              objectFit="contain"
+            />
+
+            {lightbox?.frames?.length > 1 && (
+              <>
+                <IconButton
+                  icon={<FaChevronLeft />}
+                  aria-label="Previous frame"
+                  position="absolute"
+                  left="24px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  isRound
+                  bg="blackAlpha.700"
+                  color="white"
+                  _hover={{ bg: "blackAlpha.900" }}
+                  isDisabled={lightbox.index === 0}
+                  onClick={() => setLightbox((l) => ({ ...l, index: Math.max(0, l.index - 1) }))}
+                />
+                <IconButton
+                  icon={<FaNext />}
+                  aria-label="Next frame"
+                  position="absolute"
+                  right="24px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  isRound
+                  bg="blackAlpha.700"
+                  color="white"
+                  _hover={{ bg: "blackAlpha.900" }}
+                  isDisabled={lightbox.index === lightbox.frames.length - 1}
+                  onClick={() => setLightbox((l) => ({ ...l, index: Math.min(l.frames.length - 1, l.index + 1) }))}
+                />
+                <Text
+                  position="absolute"
+                  bottom="20px"
+                  left="50%"
+                  transform="translateX(-50%)"
+                  fontFamily={MONO_FONT}
+                  fontSize="12px"
+                  color="whiteAlpha.800"
+                  bg="blackAlpha.700"
+                  px={3}
+                  py={1}
+                  borderRadius="full"
+                >
+                  {lightbox.index + 1} / {lightbox.frames.length}
+                </Text>
+              </>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Drawer>
   );
 };

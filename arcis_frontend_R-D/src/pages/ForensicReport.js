@@ -96,6 +96,47 @@ const COLUMNS = [
   { key: "preview", label: "Preview", sortable: false },
 ];
 
+/**
+ * Marks every occurrence of the searched term inside a description, so a
+ * keyword hit can be located in a 7,000-character block of prose rather
+ * than hunted for. Case-insensitive; returns the text untouched when there
+ * is nothing to search for.
+ */
+const highlight = (text, term, tone) => {
+  const body = String(text || "");
+  const needle = String(term || "").trim().toLowerCase();
+  if (!needle || !body) return body;
+
+  const haystack = body.toLowerCase();
+  const out = [];
+  let from = 0;
+  let at = haystack.indexOf(needle);
+  let key = 0;
+
+  while (at !== -1) {
+    if (at > from) out.push(<React.Fragment key={key++}>{body.slice(from, at)}</React.Fragment>);
+    out.push(
+      <Box
+        as="mark"
+        key={key++}
+        bg={tone}
+        color="inherit"
+        fontWeight="700"
+        px="2px"
+        borderRadius="3px"
+      >
+        {body.slice(at, at + needle.length)}
+      </Box>
+    );
+    from = at + needle.length;
+    at = haystack.indexOf(needle, from);
+  }
+
+  if (from === 0) return body; // no match, keep it a plain string
+  out.push(<React.Fragment key={key++}>{body.slice(from)}</React.Fragment>);
+  return out;
+};
+
 const csvCell = (value) => {
   const text = value == null ? "" : String(value);
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
@@ -139,6 +180,7 @@ const ForensicReport = () => {
   const subText = useColorModeValue("gray.500", "gray.400");
   const accent = useColorModeValue("#3F77A5", "#63B3ED");
   const bodyText = useColorModeValue("gray.600", "gray.300");
+  const markBg = useColorModeValue("#FEF08A", "#7C6F1E");
 
   // shared query string, used by both the table and the export
   const buildParams = useCallback(
@@ -561,21 +603,30 @@ const ForensicReport = () => {
       )}
 
       {/* ---------------- Row detail ---------------- */}
-      <Modal isOpen={isOpen} onClose={onClose} isCentered size="5xl" scrollBehavior="inside">
+      <Modal isOpen={isOpen} onClose={onClose} isCentered scrollBehavior="inside">
         <ModalOverlay bg="blackAlpha.700" />
-        <ModalContent bg={cardBg} borderRadius="14px" overflow="hidden">
+        <ModalContent
+          bg={cardBg}
+          borderRadius="14px"
+          overflow="hidden"
+          maxW={{ base: "94vw", md: "80vw" }}
+          w={{ base: "94vw", md: "80vw" }}
+          h={{ base: "90vh", md: "80vh" }}
+          my="auto"
+        >
           <ModalCloseButton zIndex={3} color="white" />
-          <ModalBody p={0}>
-            <Flex direction={{ base: "column", md: "row" }} align="stretch">
+          <ModalBody p={0} display="flex" overflow="hidden">
+            <Flex direction={{ base: "column", md: "row" }} align="stretch" w="100%" h="100%" minH={0}>
               {/* ---- left: every frame stacked, scrolling vertically ---- */}
               <Box
                 bg="black"
-                flex={{ base: "none", md: "0 0 62%" }}
-                maxH={{ base: "320px", md: "460px" }}
+                flex={{ base: "0 0 45%", md: "0 0 62%" }}
+                h={{ base: "45%", md: "100%" }}
+                minH={0}
                 overflowY="auto"
               >
                 {frames.length === 0 ? (
-                  <Flex justify="center" align="center" h={{ base: "320px", md: "460px" }}>
+                  <Flex justify="center" align="center" h="100%">
                     <Text fontSize="13px" color="whiteAlpha.700">
                       No frames for this segment
                     </Text>
@@ -609,7 +660,7 @@ const ForensicReport = () => {
               </Box>
 
               {/* ---- right: everything else, scrolls on its own ---- */}
-              <Box flex="1" p={5} maxH={{ base: "none", md: "460px" }} overflowY="auto">
+              <Box flex="1" p={{ base: 5, md: 6 }} h={{ base: "55%", md: "100%" }} minH={0} overflowY="auto">
                 <Text fontSize="15px" fontWeight="700" color={pageHeading} pr={6}>
                   {selected?.camera_id}
                 </Text>
@@ -663,11 +714,18 @@ const ForensicReport = () => {
                   ))}
                 </Box>
 
-                <Text fontSize="10px" fontWeight="700" letterSpacing="0.06em" color={subText} mt={4}>
-                  OBSERVATION
-                </Text>
-                <Text fontSize="13px" color={bodyText} mt={1} whiteSpace="pre-wrap">
-                  {selected?.description}
+                <Flex align="center" gap={2} mt={5} mb={1.5}>
+                  <Text fontSize="10px" fontWeight="700" letterSpacing="0.06em" color={subText}>
+                    OBSERVATION
+                  </Text>
+                  {applied?.keyword && (
+                    <Badge bg={markBg} color={pageHeading} fontSize="9px" borderRadius="full" px={2} textTransform="none">
+                      {applied.keyword}
+                    </Badge>
+                  )}
+                </Flex>
+                <Text fontSize="13.5px" color={bodyText} lineHeight="1.7" whiteSpace="pre-wrap">
+                  {highlight(selected?.description, applied?.keyword, markBg)}
                 </Text>
               </Box>
             </Flex>
