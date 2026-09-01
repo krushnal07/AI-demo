@@ -8,6 +8,7 @@ import {
   FaSort,
   FaSortUp,
   FaSortDown,
+  FaMagic,
 } from "react-icons/fa";
 import {
   Box,
@@ -164,6 +165,11 @@ const ForensicReport = () => {
   const [sort, setSort] = useState("timestamp");
   const [order, setOrder] = useState("desc");
 
+  // AI pass over the current keyword search: which hits are real evidence
+  const [refine, setRefine] = useState(null);
+  const [refining, setRefining] = useState(false);
+  const [onlyRelevant, setOnlyRelevant] = useState(true);
+
   const [selected, setSelected] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -238,7 +244,31 @@ const ForensicReport = () => {
 
   useEffect(() => {
     fetchRows(1);
+    setRefine(null);
   }, [fetchRows]);
+
+  const runRefine = useCallback(async () => {
+    const q = (applied?.keyword || "").trim();
+    if (!q) return;
+    setRefining(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ q, limit: 40 });
+      if (applied.date && applied.date !== "all") params.set("date", applied.date);
+      if (applied.cameraId && applied.cameraId !== "all") params.set("camera_id", applied.cameraId);
+      if (applied.confidence && applied.confidence !== "all") params.set("confidence", applied.confidence);
+      if (applied.gated && applied.gated !== "all") params.set("gated", applied.gated);
+
+      const { data } = await axios.get(`${baseUrl}/api/ai-alerts/intel/refine?${params.toString()}`);
+      if (!data?.success) throw new Error(data?.message || "Refinement failed");
+      setRefine(data);
+      setOnlyRelevant(true);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || "Could not refine the search.");
+    } finally {
+      setRefining(false);
+    }
+  }, [applied, baseUrl]);
 
   const applyFilters = (overrides = {}) =>
     setApplied({ date, cameraId, confidence, gated, keyword: keyword.trim(), ...overrides });
@@ -299,6 +329,18 @@ const ForensicReport = () => {
       setExporting(false);
     }
   };
+
+  const verdictById = useMemo(() => {
+    const map = {};
+    (refine?.verdicts || []).forEach((v) => { map[v.id] = v; });
+    return map;
+  }, [refine]);
+
+  // when the AI pass is on, hide rows it judged not to be evidence
+  const visibleRows = useMemo(() => {
+    if (!refine || !onlyRelevant) return rows;
+    return rows.filter((r) => verdictById[r._id]?.relevant);
+  }, [rows, refine, onlyRelevant, verdictById]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const frames = useMemo(() => selected?.frame_urls || [], [selected]);
@@ -455,7 +497,69 @@ const ForensicReport = () => {
         <Button size="sm" colorScheme="blue" borderRadius="8px" leftIcon={<FaSearch />} onClick={() => applyFilters()}>
           Search
         </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          borderRadius="8px"
+          borderColor={cardBorder}
+          leftIcon={<FaMagic />}
+          onClick={runRefine}
+          isLoading={refining}
+          loadingText="Reading"
+          isDisabled={!applied?.keyword}
+          title={
+            applied?.keyword
+              ? "Read the matches and keep only those that evidence the search"
+              : "Run a keyword search first"
+          }
+        >
+          AI filter
+        </Button>
       </Flex>
+
+      {refine && (
+        <Flex
+          align="center"
+          gap={3}
+          wrap="wrap"
+          bg={cardBg}
+          border="1px solid"
+          borderColor={cardBorder}
+          borderLeft="3px solid"
+          borderLeftColor={accent}
+          borderRadius="10px"
+          px={4}
+          py={3}
+          mb={4}
+        >
+          <Box color={accent} fontSize="13px">
+            <FaMagic />
+          </Box>
+          <Box minW={0} flex="1">
+            <Text fontSize="13px" fontWeight="600" color={pageHeading}>
+              {refine.relevant} of {refine.reviewed} matches evidence &ldquo;{refine.query}&rdquo;
+              {refine.truncated ? " (first 40 checked)" : ""}
+            </Text>
+            {refine.summary && (
+              <Text fontSize="12px" color={subText} mt={0.5}>
+                {refine.summary}
+              </Text>
+            )}
+          </Box>
+          <Button
+            size="xs"
+            variant={onlyRelevant ? "solid" : "outline"}
+            colorScheme="blue"
+            borderRadius="7px"
+            onClick={() => setOnlyRelevant((v) => !v)}
+          >
+            {onlyRelevant ? "Showing evidence only" : "Showing all rows"}
+          </Button>
+          <Button size="xs" variant="ghost" borderRadius="7px" onClick={() => setRefine(null)}>
+            Clear
+          </Button>
+        </Flex>
+      )}
 
       {error && (
         <Box bg="red.50" borderRadius="10px" p={3} mb={4}>
@@ -497,18 +601,20 @@ const ForensicReport = () => {
                     </Flex>
                   </Td>
                 </Tr>
-              ) : rows.length === 0 ? (
+              ) : visibleRows.length === 0 ? (
                 <Tr>
                   <Td colSpan={COLUMNS.length}>
                     <Flex justify="center" py={10}>
                       <Text fontSize="13px" color={subText}>
-                        No segments match these filters.
+                        {refine && onlyRelevant
+                          ? "No rows on this page evidence the search — switch to \"Showing all rows\"."
+                          : "No segments match these filters."}
                       </Text>
                     </Flex>
                   </Td>
                 </Tr>
               ) : (
-                rows.map((row) => (
+                visibleRows.map((row) => (
                   <Tr key={row._id} _hover={{ bg: rowHover }} cursor="pointer" onClick={() => openRow(row)}>
                     <Td whiteSpace="nowrap">
                       <Text fontSize="12px" fontWeight="600" color={pageHeading}>
@@ -531,6 +637,19 @@ const ForensicReport = () => {
                       {row.segment_id ?? "—"}
                     </Td>
                     <Td whiteSpace="nowrap">
+                      {verdictById[row._id] && (
+                        <Badge
+                          colorScheme={verdictById[row._id].relevant ? "green" : "gray"}
+                          fontSize="9px"
+                          borderRadius="full"
+                          px={2}
+                          mb={1}
+                          textTransform="none"
+                          title={verdictById[row._id].reason}
+                        >
+                          {verdictById[row._id].relevant ? "evidence" : "ruled out"}
+                        </Badge>
+                      )}
                       {/* only ANPR rows carry a plate; everything else stays blank */}
                       {row.ocr_raw ? (
                         <>

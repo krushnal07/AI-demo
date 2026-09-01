@@ -7,6 +7,10 @@ import {
   FaRegClock,
   FaCircle,
   FaHistory,
+  FaMagic,
+  FaExpand,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
 import {
   Box,
@@ -17,6 +21,7 @@ import {
   Button,
   Badge,
   Image,
+  IconButton,
   Spinner,
   SimpleGrid,
   Modal,
@@ -62,6 +67,14 @@ const AiAlerts = () => {
   // what is actually being fetched, as opposed to what is typed
   const [applied, setApplied] = useState(null);
 
+  // AI pass over the current keyword search: which hits are real evidence
+  const [refine, setRefine] = useState(null);
+  const [refining, setRefining] = useState(false);
+  const [onlyRelevant, setOnlyRelevant] = useState(true);
+
+  // { frames, index } while a frame is open full screen
+  const [lightbox, setLightbox] = useState(null);
+
   const [selected, setSelected] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -91,10 +104,9 @@ const AiAlerts = () => {
         if (cancelled || !data?.success) return;
         setCameras(data.cameras || []);
         setDates(data.dates || []);
-        // default to the most recent day that actually holds footage
-        const newest = data.dates?.[0]?.date || "";
-        setDate(newest);
-        setApplied({ date: newest, cameraId: "all", keyword: "" });
+        // start across every day; a single day is a deliberate narrowing
+        setDate("all");
+        setApplied({ date: "all", cameraId: "all", keyword: "" });
       } catch (err) {
         if (!cancelled) setError("Could not load filter options.");
       }
@@ -134,7 +146,29 @@ const AiAlerts = () => {
 
   useEffect(() => {
     fetchAlerts(1);
+    setRefine(null);
   }, [fetchAlerts]);
+
+  const runRefine = useCallback(async () => {
+    const q = (applied?.keyword || "").trim();
+    if (!q) return;
+    setRefining(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ q, limit: 40 });
+      if (applied.date && applied.date !== "all" && mode === "archive") params.set("date", applied.date);
+      if (applied.cameraId && applied.cameraId !== "all") params.set("camera_id", applied.cameraId);
+
+      const { data } = await axios.get(`${baseUrl}/api/ai-alerts/intel/refine?${params.toString()}`);
+      if (!data?.success) throw new Error(data?.message || "Refinement failed");
+      setRefine(data);
+      setOnlyRelevant(true);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || "Could not refine the search.");
+    } finally {
+      setRefining(false);
+    }
+  }, [applied, mode, baseUrl]);
 
   const applyFilters = useCallback(
     (overrides = {}) => {
@@ -155,6 +189,18 @@ const AiAlerts = () => {
     setCameraId(value);
     setApplied((prev) => ({ ...prev, cameraId: value }));
   };
+
+  const verdictById = useMemo(() => {
+    const map = {};
+    (refine?.verdicts || []).forEach((v) => { map[v.id] = v; });
+    return map;
+  }, [refine]);
+
+  // with the AI pass on, hide the cards it judged not to be evidence
+  const visibleAlerts = useMemo(() => {
+    if (!refine || !onlyRelevant) return alerts;
+    return alerts.filter((a) => verdictById[a._id]?.relevant);
+  }, [alerts, refine, onlyRelevant, verdictById]);
 
   const frames = useMemo(() => selected?.frame_urls || [], [selected]);
 
@@ -253,6 +299,26 @@ const AiAlerts = () => {
             Search Archive
           </Button>
 
+          <Button
+            mt={2}
+            w="100%"
+            size="sm"
+            variant="outline"
+            borderRadius="8px"
+            leftIcon={<FaMagic />}
+            onClick={runRefine}
+            isLoading={refining}
+            loadingText="Reading"
+            isDisabled={!applied?.keyword}
+            title={
+              applied?.keyword
+                ? "Read the matches and keep only those that evidence the search"
+                : "Run a keyword search first"
+            }
+          >
+            AI filter
+          </Button>
+
           <Flex mt={4} gap={2}>
             <Button
               flex={1}
@@ -315,6 +381,50 @@ const AiAlerts = () => {
             )}
           </Flex>
 
+          {refine && (
+            <Flex
+              align="center"
+              gap={3}
+              wrap="wrap"
+              bg={cardBg}
+              border="1px solid"
+              borderColor={cardBorder}
+              borderLeft="3px solid"
+              borderLeftColor={accent}
+              borderRadius="10px"
+              px={4}
+              py={3}
+              mb={4}
+            >
+              <Box color={accent} fontSize="13px">
+                <FaMagic />
+              </Box>
+              <Box minW={0} flex="1">
+                <Text fontSize="13px" fontWeight="600" color={pageHeading}>
+                  {refine.relevant} of {refine.reviewed} matches evidence &ldquo;{refine.query}&rdquo;
+                  {refine.truncated ? " (first 40 checked)" : ""}
+                </Text>
+                {refine.summary && (
+                  <Text fontSize="12px" color={subText} mt={0.5}>
+                    {refine.summary}
+                  </Text>
+                )}
+              </Box>
+              <Button
+                size="xs"
+                variant={onlyRelevant ? "solid" : "outline"}
+                colorScheme="blue"
+                borderRadius="7px"
+                onClick={() => setOnlyRelevant((v) => !v)}
+              >
+                {onlyRelevant ? "Showing evidence only" : "Showing all"}
+              </Button>
+              <Button size="xs" variant="ghost" borderRadius="7px" onClick={() => setRefine(null)}>
+                Clear
+              </Button>
+            </Flex>
+          )}
+
           {error && (
             <Box bg="red.50" borderRadius="10px" p={4} mb={4}>
               <Text fontSize="13px" color="red.600">
@@ -327,15 +437,17 @@ const AiAlerts = () => {
             <Flex justify="center" py={20}>
               <Spinner size="lg" color={accent} />
             </Flex>
-          ) : alerts.length === 0 ? (
+          ) : visibleAlerts.length === 0 ? (
             <Flex justify="center" py={20}>
               <Text fontSize="14px" color={subText}>
-                No alerts for these filters.
+                {refine && onlyRelevant
+                  ? "No loaded alerts evidence the search — switch to \"Showing all\"."
+                  : "No alerts for these filters."}
               </Text>
             </Flex>
           ) : (
             <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing={5}>
-              {alerts.map((alert) => (
+              {visibleAlerts.map((alert) => (
                 <Box
                   key={alert._id}
                   bg={cardBg}
@@ -349,7 +461,7 @@ const AiAlerts = () => {
                   _hover={{ transform: "translateY(-3px)", boxShadow: hoverShadow }}
                   onClick={() => openAlert(alert)}
                 >
-                  <Box bg="black">
+                  <Box bg="black" position="relative" role="group">
                     <Image
                       src={thumbnailFor(alert)}
                       alt={alert.camera_id}
@@ -358,20 +470,55 @@ const AiAlerts = () => {
                       objectFit="cover"
                       fallbackSrc="https://via.placeholder.com/320x110?text=No+Preview"
                     />
+                    <IconButton
+                      icon={<FaExpand />}
+                      aria-label={`Open ${alert.camera_id} frames full screen`}
+                      size="xs"
+                      position="absolute"
+                      top="8px"
+                      right="8px"
+                      bg="blackAlpha.700"
+                      color="white"
+                      borderRadius="6px"
+                      opacity={0}
+                      _groupHover={{ opacity: 1 }}
+                      _focusVisible={{ opacity: 1 }}
+                      _hover={{ bg: "blackAlpha.900" }}
+                      onClick={(event) => {
+                        // the card itself opens the detail modal - go straight to the frames
+                        event.stopPropagation();
+                        setLightbox({ frames: alert.frame_urls || [], index: 0 });
+                      }}
+                    />
                   </Box>
 
                   <Box px={4} py={3}>
-                    <Badge
-                      bg={accentTint}
-                      color={accent}
-                      borderRadius="full"
-                      px={2.5}
-                      py={0.5}
-                      fontSize="10px"
-                      fontWeight="600"
-                    >
-                      {(alert.camera_id || "").toUpperCase()}
-                    </Badge>
+                    <Flex gap={1.5} wrap="wrap" align="center">
+                      <Badge
+                        bg={accentTint}
+                        color={accent}
+                        borderRadius="full"
+                        px={2.5}
+                        py={0.5}
+                        fontSize="10px"
+                        fontWeight="600"
+                      >
+                        {(alert.camera_id || "").toUpperCase()}
+                      </Badge>
+                      {verdictById[alert._id] && (
+                        <Badge
+                          colorScheme={verdictById[alert._id].relevant ? "green" : "gray"}
+                          borderRadius="full"
+                          px={2}
+                          py={0.5}
+                          fontSize="9px"
+                          textTransform="none"
+                          title={verdictById[alert._id].reason}
+                        >
+                          {verdictById[alert._id].relevant ? "evidence" : "ruled out"}
+                        </Badge>
+                      )}
+                    </Flex>
 
                     <Flex align="center" gap={1.5} mt={2.5}>
                       <Box color={subText} fontSize="11px">
@@ -416,7 +563,7 @@ const AiAlerts = () => {
             {/* every frame visible at once -- no stepping, no scrolling */}
             <Flex bg="black" align="stretch" gap="1px">
               {frames.map((url, index) => (
-                <Box key={url} flex="1 1 0" minW={0} bg="black">
+                <Box key={url} flex="1 1 0" minW={0} bg="black" position="relative" role="group">
                   <Flex justify="center" align="center" h={{ base: "180px", md: "320px" }}>
                     <Image
                       src={url}
@@ -424,8 +571,26 @@ const AiAlerts = () => {
                       maxH="100%"
                       maxW="100%"
                       objectFit="contain"
+                      cursor="zoom-in"
+                      onClick={() => setLightbox({ frames, index })}
                     />
                   </Flex>
+                  <IconButton
+                    icon={<FaExpand />}
+                    aria-label={`Open ${captionFor(index, frames.length)} full screen`}
+                    size="xs"
+                    position="absolute"
+                    top="8px"
+                    right="8px"
+                    bg="blackAlpha.700"
+                    color="white"
+                    borderRadius="6px"
+                    opacity={0}
+                    _groupHover={{ opacity: 1 }}
+                    _focusVisible={{ opacity: 1 }}
+                    _hover={{ bg: "blackAlpha.900" }}
+                    onClick={() => setLightbox({ frames, index })}
+                  />
                   <Text fontSize="10px" color={subText} textAlign="center" px={2} pb={2} noOfLines={1}>
                     {captionFor(index, frames.length)}
                   </Text>
@@ -462,6 +627,70 @@ const AiAlerts = () => {
                 </Text>
               </Flex>
             </Box>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* ---- full-screen frame viewer ---- */}
+      <Modal isOpen={Boolean(lightbox)} onClose={() => setLightbox(null)} isCentered size="full">
+        <ModalOverlay bg="blackAlpha.900" />
+        <ModalContent bg="transparent" boxShadow="none" m={0}>
+          <ModalCloseButton color="white" size="lg" zIndex={3} />
+          <ModalBody p={0} display="flex" alignItems="center" justifyContent="center" position="relative">
+            <Image
+              src={lightbox?.frames?.[lightbox?.index]}
+              alt={`Frame ${(lightbox?.index ?? 0) + 1}`}
+              maxH="92vh"
+              maxW="94vw"
+              objectFit="contain"
+            />
+
+            {lightbox?.frames?.length > 1 && (
+              <>
+                <IconButton
+                  icon={<FaChevronLeft />}
+                  aria-label="Previous frame"
+                  position="absolute"
+                  left="24px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  isRound
+                  bg="blackAlpha.700"
+                  color="white"
+                  _hover={{ bg: "blackAlpha.900" }}
+                  isDisabled={lightbox.index === 0}
+                  onClick={() => setLightbox((l) => ({ ...l, index: Math.max(0, l.index - 1) }))}
+                />
+                <IconButton
+                  icon={<FaChevronRight />}
+                  aria-label="Next frame"
+                  position="absolute"
+                  right="24px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  isRound
+                  bg="blackAlpha.700"
+                  color="white"
+                  _hover={{ bg: "blackAlpha.900" }}
+                  isDisabled={lightbox.index === lightbox.frames.length - 1}
+                  onClick={() => setLightbox((l) => ({ ...l, index: Math.min(l.frames.length - 1, l.index + 1) }))}
+                />
+                <Text
+                  position="absolute"
+                  bottom="20px"
+                  left="50%"
+                  transform="translateX(-50%)"
+                  fontSize="12px"
+                  color="whiteAlpha.800"
+                  bg="blackAlpha.700"
+                  px={3}
+                  py={1}
+                  borderRadius="full"
+                >
+                  {captionFor(lightbox.index, lightbox.frames.length)}
+                </Text>
+              </>
+            )}
           </ModalBody>
         </ModalContent>
       </Modal>

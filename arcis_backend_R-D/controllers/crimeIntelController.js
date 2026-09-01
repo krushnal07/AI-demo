@@ -469,4 +469,132 @@ function shapeItem(d, terms) {
   };
 }
 
-module.exports = { getSummary, getConcordance, getDrill };
+/* ---------------------------------------------------------------------------
+ * AI-assisted search refinement.
+ *
+ * A keyword search over these descriptions is mostly noise: "accident" matches
+ * 94 documents but ~73 are the describer RULING IT OUT, and others are the
+ * prompt template listing what it checked for. This asks a model to read the
+ * excerpt around each hit and say whether it actually evidences the thing.
+ *
+ * The key lives only in the backend env - it is never sent to the browser.
+ * GET /api/ai-alerts/intel/refine?q=&date=&camera_id=&confidence=&gated=&limit=
+ * ------------------------------------------------------------------------- */
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const REFINE_MAX = 40;
+
+/** A window around the first hit, so we send excerpts rather than 7k blobs. */
+const excerptAround = (text, term, width) => {
+  const body = String(text || "").replace(/\s+/g, " ");
+  const span = width || 340;
+  const at = body.toLowerCase().indexOf(String(term).toLowerCase());
+  if (at === -1) return body.slice(0, span);
+  const from = Math.max(0, at - Math.floor(span / 2));
+  return (from > 0 ? "..." : "") + body.slice(from, from + span) + "...";
+};
+
+const refineSearch = async (req, res) => {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    return res.status(503).json({
+      success: false,
+      message: "AI refinement is not configured - set OPENROUTER_API_KEY in the backend env.",
+    });
+  }
+
+  const q = String(req.query.q || "").trim();
+  if (!q) return res.status(400).json({ success: false, message: "q is required" });
+
+  try {
+    const limit = Math.min(REFINE_MAX, Math.max(1, parseInt(req.query.limit, 10) || REFINE_MAX));
+
+    const filter = { description: { $regex: escapeRegex(q), $options: "i" } };
+    if (req.query.camera_id && req.query.camera_id !== "all") filter.camera_id = req.query.camera_id;
+    if (req.query.confidence && req.query.confidence !== "all") filter.anchor_confidence = req.query.confidence;
+    if (req.query.gated === "true") filter.motion_gated = true;
+    else if (req.query.gated === "false") filter.motion_gated = false;
+    if (req.query.date && req.query.date !== "all") {
+      const start = new Date(req.query.date + "T00:00:00.000Z");
+      const end = new Date(req.query.date + "T23:59:59.999Z");
+      if (!isNaN(start.getTime())) filter.timestamp = { $gte: start, $lte: end };
+    }
+
+    const docs = await AiAlert.find(filter, {
+      description: 1, camera_id: 1, location: 1, start_time: 1, timestamp: 1, segment_id: 1,
+    }).sort({ timestamp: -1 }).limit(limit).lean();
+
+    if (!docs.length) {
+      return res.status(200).json({ success: true, query: q, reviewed: 0, relevant: 0, verdicts: [], summary: "Nothing matched that search." });
+    }
+
+    const items = docs.map((d, i) => ({ n: i + 1, id: String(d._id), text: excerptAround(d.description, q) }));
+
+    const prompt =
+      'A user searched CCTV scene descriptions for: "' + q + '"\n\n' +
+      "For each excerpt decide whether it actually EVIDENCES that thing at the scene. " +
+      "Many descriptions mention a term only to rule it out (\"no accidents observed\") or " +
+      "because the describer is listing what it checked for - neither is evidence.\n\n" +
+      "Return ONLY a JSON object:\n" +
+      '{"summary":"<one sentence>","verdicts":[{"n":1,"relevant":true,"reason":"<8 words max>"}]}\n\n' +
+      items.map((it) => "[" + it.n + "] " + it.text).join("\n\n");
+
+    const started = Date.now();
+    const upstream = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-4.5",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0,
+        max_tokens: 1600,
+      }),
+    });
+
+    const payload = await upstream.json();
+    if (!upstream.ok || payload.error) {
+      console.error("refine upstream failed:", payload.error || upstream.status);
+      return res.status(502).json({
+        success: false,
+        message: payload.error?.message || ("Model request failed (" + upstream.status + ")"),
+      });
+    }
+
+    const raw = payload.choices?.[0]?.message?.content || "";
+    const slice = raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1);
+
+    let parsed;
+    try {
+      parsed = JSON.parse(slice);
+    } catch (err) {
+      // the model is asked for strict JSON; if it drifts, say so rather than guess
+      return res.status(502).json({ success: false, message: "Model did not return usable JSON." });
+    }
+
+    const byN = new Map(items.map((it) => [it.n, it]));
+    const verdicts = (parsed.verdicts || [])
+      .filter((v) => byN.has(v.n))
+      .map((v) => ({
+        id: byN.get(v.n).id,
+        relevant: Boolean(v.relevant),
+        reason: String(v.reason || "").slice(0, 90),
+      }));
+
+    return res.status(200).json({
+      success: true,
+      query: q,
+      model: payload.model,
+      ms: Date.now() - started,
+      cost: payload.usage?.cost ?? null,
+      reviewed: verdicts.length,
+      relevant: verdicts.filter((v) => v.relevant).length,
+      truncated: docs.length === limit,
+      summary: String(parsed.summary || "").slice(0, 300),
+      verdicts,
+    });
+  } catch (err) {
+    console.error("refine failed:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = { getSummary, getConcordance, getDrill, refineSearch };
