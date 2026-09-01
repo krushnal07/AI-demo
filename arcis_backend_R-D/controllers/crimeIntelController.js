@@ -1,4 +1,5 @@
 const AiAlert = require("../models/aiAlert");
+const { coordsFor } = require("../constants/siteCoordinates");
 
 /* ---------------------------------------------------------------------------
  * Crime-intelligence aggregations over activities_hackathon.
@@ -597,4 +598,118 @@ const refineSearch = async (req, res) => {
   }
 };
 
-module.exports = { getSummary, getConcordance, getDrill, refineSearch };
+/* ---------------------------------------------------------------------------
+ * Movement trace: where a subject was seen, in time order.
+ *
+ * Two modes, because the data supports them very differently today:
+ *   plate=  exact ANPR read. Precise, but only cam_pakwan produces plates,
+ *           so a plate currently never appears at a second location.
+ *   q=      a phrase from the description ("white bus", "GSRTC"). Not identity
+ *           evidence - it is every scene matching that wording - but it does
+ *           span locations, so it is what makes a route today.
+ * GET /api/ai-alerts/intel/trace?plate=&q=&limit=
+ * ------------------------------------------------------------------------- */
+const TRACE_MAX = 200;
+
+const getTrace = async (req, res) => {
+  try {
+    const plate = String(req.query.plate || "").trim();
+    const q = String(req.query.q || "").trim();
+    const limit = Math.min(TRACE_MAX, Math.max(1, parseInt(req.query.limit, 10) || 80));
+
+    // Sites always come back, so the map can draw the estate before any search.
+    const siteCounts = await AiAlert.aggregate([
+      { $group: { _id: "$location", segments: { $sum: 1 }, camera_id: { $first: "$camera_id" } } },
+    ]);
+
+    const sites = siteCounts
+      .map((row) => {
+        const c = coordsFor(row._id);
+        if (!c) return null;
+        return {
+          location: row._id,
+          camera_id: row.camera_id,
+          segments: row.segments,
+          lat: c.lat,
+          lng: c.lng,
+          label: c.label,
+          spread: c.spread,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.segments - a.segments);
+
+    const unmapped = siteCounts.filter((r) => !coordsFor(r._id)).map((r) => r._id);
+
+    if (!plate && !q) {
+      return res.status(200).json({ success: true, mode: null, sites, unmapped, sightings: [], legs: [] });
+    }
+
+    const filter = plate
+      ? { $or: [
+          { ocr_raw: { $regex: escapeRegex(plate), $options: "i" } },
+          { plate_number: { $regex: escapeRegex(plate), $options: "i" } },
+        ] }
+      : { description: { $regex: escapeRegex(q), $options: "i" } };
+
+    const docs = await AiAlert.find(filter, {
+      camera_id: 1, location: 1, description: 1, start_time: 1, timestamp: 1,
+      segment_id: 1, frame_urls: 1, ocr_raw: 1, source_video: 1, video_offset_seconds: 1,
+    }).sort({ timestamp: 1 }).limit(limit).lean();
+
+    const term = plate || q;
+    const sightings = docs.map((d) => {
+      const c = coordsFor(d.location) || {};
+      return {
+        id: d._id,
+        location: d.location,
+        label: c.label || d.location,
+        camera_id: d.camera_id,
+        segment_id: d.segment_id,
+        lat: c.lat ?? null,
+        lng: c.lng ?? null,
+        spread: c.spread || null,
+        timestamp: d.timestamp,
+        start_time: d.start_time,
+        source_video: d.source_video || null,
+        video_offset_seconds: d.video_offset_seconds,
+        ocr_raw: d.ocr_raw || null,
+        frame: (d.frame_urls || [])[0] || null,
+        frames: d.frame_urls || [],
+        excerpt: excerptAround(d.description, term, 220),
+      };
+    });
+
+    // Consecutive hops between DIFFERENT sites - the route worth drawing.
+    const legs = [];
+    for (let i = 1; i < sightings.length; i++) {
+      const from = sightings[i - 1];
+      const to = sightings[i];
+      if (!from.lat || !to.lat || from.location === to.location) continue;
+      const minutes =
+        from.timestamp && to.timestamp
+          ? Math.round((new Date(to.timestamp) - new Date(from.timestamp)) / 60000)
+          : null;
+      legs.push({ from: from.location, to: to.location, minutes, at: to.timestamp });
+    }
+
+    const visited = [...new Set(sightings.map((x) => x.location))];
+
+    return res.status(200).json({
+      success: true,
+      mode: plate ? "plate" : "phrase",
+      term,
+      sites,
+      unmapped,
+      sightings,
+      legs,
+      visited,
+      truncated: docs.length === limit,
+    });
+  } catch (err) {
+    console.error("trace failed:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = { getSummary, getConcordance, getDrill, refineSearch, getTrace };

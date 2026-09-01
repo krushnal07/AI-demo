@@ -37,6 +37,7 @@ import AiAlerts from "./pages/AiAlerts";
 import ForensicReport from "./pages/ForensicReport";
 import CrimeIntelligence from "./pages/CrimeIntelligence";
 import CorridorAnalytics from "./pages/CorridorAnalytics";
+import MovementMap from "./pages/MovementMap";
 import Others from "./pages/Others";
 import WebSocketComponent from "./components/WebSocketComponent";
 import { AlertProvider } from "./components/AlertNotifier";
@@ -326,6 +327,7 @@ function MainApp() {
                   <Route path="/forensic-report" element={<ForensicReport />} />
                   <Route path="/crime-intelligence" element={<CrimeIntelligence />} />
                   <Route path="/corridor-analytics" element={<CorridorAnalytics />} />
+                  <Route path="/movement-map" element={<MovementMap />} />
                   <Route path="/verify/:id" element={<Verify />} />
                   <Route path="/otp" element={<Otp />} />
                   <Route path="/dashboard" element={<Dashboard />} />
