@@ -1,220 +1,155 @@
 const AiAlert = require("../models/aiAlert");
 const { coordsFor } = require("../constants/siteCoordinates");
+const {
+  VIOLATION_CATEGORIES,
+  CATEGORY_BY_KEY,
+  classify,
+  plateReadable,
+  sectionOf,
+  reportsNothing,
+} = require("../constants/trafficRules");
 
 /* ---------------------------------------------------------------------------
- * Crime-intelligence aggregations over activities_hackathon.
+ * Crime Branch intelligence over activities_hackathon.
  *
- * Every figure here comes from scanning the `description` text, so the whole
- * corpus is walked ONCE per refresh and the result cached. Doing it per-request
- * would mean ~60 regex countDocuments calls against 5k long documents.
+ * Traffic-enforcement oriented throughout. The describer writes numbered
+ * sections; "7. TRAFFIC VIOLATIONS" and "5. NOTABLE EVENTS" are the two with
+ * charging value. Both are heavily negated - 249 of 256 raw "collision" hits
+ * were "No collisions observed" - so counts come from trafficRules.classify(),
+ * never from a keyword match against the whole description.
+ *
+ * The corpus is walked once per refresh and cached; a per-request scan of every
+ * description would be far too slow.
  * ------------------------------------------------------------------------- */
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 let cache = { at: 0, data: null, building: null };
 
-/* Signals the console tracks, grouped the way an officer would read them. */
-const SIGNALS = [
-  ["Traffic offence", "red light"],
-  ["Traffic offence", "helmet"],
-  ["Traffic offence", "illegal parking"],
-  ["Traffic offence", "speeding"],
-  ["Traffic offence", "wrong-side"],
-  ["Hazard", "debris"],
-  ["Hazard", "puddle"],
-  ["Hazard", "smoke"],
-  ["Hazard", "fire"],
-  ["Hazard", "flood"],
-  ["Hazard", "pothole"],
-  ["Hazard", "obstruction"],
-  ["Person behaviour", "loiter"],
-  ["Person behaviour", "fight"],
-  ["Person behaviour", "altercation"],
-  ["Person behaviour", "following"],
-  ["Person behaviour", "gathering"],
-  ["Person behaviour", "running"],
-  ["Property & weapon", "theft"],
-  ["Property & weapon", "snatch"],
-  ["Property & weapon", "robbery"],
-  ["Property & weapon", "weapon"],
-  ["Property & weapon", "knife"],
-  ["Property & weapon", "stick"],
-  ["Property & weapon", "unattended"],
-  ["Property & weapon", "abandoned"],
-  ["Incident", "accident"],
-  ["Incident", "collision"],
-  ["Incident", "injur"],
-  ["Incident", "ambulance"],
-  ["Response", "police"],
-];
+const NIGHT_HOURS = [21, 22, 23, 0, 1, 2, 3, 4];
+const escapeRegex = (v) => String(v).replace(/[^a-zA-Z0-9 _-]/g, (m) => "\\" + m);
 
-const ENTITIES = [
-  "car", "motorcycle", "pedestrian", "auto-rickshaw", "bus", "crowd",
-  "signal", "scooter", "helmet", "number plate", "bicycle", "truck",
-  "police", "traffic jam",
-];
-
-const SECTIONS = [
-  ["PERSON-OBJECT", "person-object"],
-  ["VEHICLES:", "vehicles:"],
-  ["TEXT:", "text:"],
-  ["PEOPLE:", "people:"],
-  ["ANOMALY:", "anomaly:"],
-  ["ENVIRONMENT & LOCATION", "environment & location"],
-  ["ALERTS & ANOMALIES", "alerts & anomalies"],
-  ["TEMPORAL CHANGES", "temporal changes"],
-];
-
-const MIX_TERMS = ["car", "motorcycle", "auto-rickshaw", "bus"];
-
-const NEG_WORDS = ["no ", "none", "not ", "nothing", "without", "absent", "no-"];
-const NEG_WINDOW = 45;
-
-const STOP = new Set((
-  "the a an and or of in on at to is are was were be been being with for from by as it its this that these those " +
-  "there here no not none any some all both each few more most other such only own same so than too very can will " +
-  "just don should now camera cameras scene frame frames image images video visible appears appear seen see shows " +
-  "show observed observe recorded record time times area areas location locations text overlay indicated suggests " +
-  "typical general individuals individual person persons people activities activity detected detection their they " +
-  "them his her he she we you i also however but which who whom whose what when where why how one two three four " +
-  "five six seven eight nine ten multiple several various numerous many left right moving move parked stationary " +
-  "near front background foreground due making mostly appears"
-).split(/\s+/));
-
-/** True when a negation sits just before the match - "no accident", "nothing suggesting a collision". */
-const isNegated = (text, index) => {
-  const start = Math.max(0, index - NEG_WINDOW);
-  const before = text.slice(start, index);
-  return NEG_WORDS.some((w) => before.includes(w));
+const excerptAround = (text, term, width) => {
+  const body = String(text || "").replace(/\s+/g, " ");
+  const span = width || 340;
+  if (!term) return body.slice(0, span);
+  const at = body.toLowerCase().indexOf(String(term).toLowerCase());
+  if (at === -1) return body.slice(0, span);
+  const from = Math.max(0, at - Math.floor(span / 2));
+  return (from > 0 ? "..." : "") + body.slice(from, from + span) + "...";
 };
 
-const flaggedAnomaly = (text) => {
-  const i = text.indexOf("anomaly:");
-  if (i === -1) return false;
-  const after = text.slice(i + 8, i + 40).trim();
-  return !/^(none|no\b|nothing|n\/a)/.test(after);
-};
-
-const topN = (map, n) =>
-  [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => ({ term: k, count: v }));
-
-const bump = (map, key, by) => map.set(key, (map.get(key) || 0) + (by || 1));
+/** The most serious offence in a segment, for a one-chip summary. */
+const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, watch: 3 };
+const primaryOffence = (keys) =>
+  keys.length
+    ? [...keys].sort(
+        (a, b) => SEVERITY_ORDER[CATEGORY_BY_KEY[a].severity] - SEVERITY_ORDER[CATEGORY_BY_KEY[b].severity]
+      )[0]
+    : null;
 
 async function build() {
   const docs = await AiAlert.find(
     {},
-    { description: 1, location: 1, camera_id: 1, timestamp: 1, motion_score: 1, motion_gated: 1, ocr_raw: 1 }
+    { description: 1, location: 1, camera_id: 1, timestamp: 1, start_time: 1, motion_score: 1 }
   ).lean();
 
-  const register = SIGNALS.map(([group, term]) => ({ group, term, total: 0, negated: 0 }));
-  const entities = new Map();
-  const sections = new Map();
-  const vocab = new Map();
-  const phrases = new Map();
+  const offences = VIOLATION_CATEGORIES.map((c) => ({
+    key: c.key,
+    label: c.label,
+    severity: c.severity,
+    segments: 0,
+    sites: new Set(),
+  }));
+  const byKey = offences.reduce((acc, o) => { acc[o.key] = o; return acc; }, {});
+
   const sites = new Map();
   const hours = new Array(24).fill(0);
-  const motionBuckets = new Array(10).fill(0);
-  let flaggedTotal = 0;
-  let plateCount = 0;
+  const violationHours = new Array(24).fill(0);
+
+  let withViolation = 0;
+  let withNotable = 0;
+  let plateAttempted = 0;
+  let plateLegible = 0;
 
   for (const d of docs) {
-    const raw = String(d.description || "");
-    const text = raw.toLowerCase();
     const loc = d.location || d.camera_id || "Unknown";
+    const verdict = classify(d.description);
 
-    if (d.ocr_raw) plateCount += 1;
-
-    /* --- signals, with a negation window --- */
-    for (let i = 0; i < register.length; i++) {
-      const hit = text.indexOf(register[i].term);
-      if (hit === -1) continue;
-      register[i].total += 1;
-      if (isNegated(text, hit)) register[i].negated += 1;
-    }
-
-    /* --- entities & sections --- */
-    for (const e of ENTITIES) if (text.includes(e)) bump(entities, e);
-    for (const [label, needle] of SECTIONS) if (text.includes(needle)) bump(sections, label);
-
-    /* --- vocabulary + bigrams --- */
-    const words = text.replace(/[^a-z0-9\s-]/g, " ").split(/\s+/).filter(Boolean);
-    const kept = words.filter((w) => w.length > 3 && !STOP.has(w));
-    for (let i = 0; i < kept.length; i++) {
-      bump(vocab, kept[i]);
-      if (i < kept.length - 1) bump(phrases, kept[i] + " " + kept[i + 1]);
-    }
-
-    /* --- per-site rollup --- */
     let s = sites.get(loc);
     if (!s) {
-      s = { location: loc, camera_id: d.camera_id, total: 0, flagged: 0, night: 0, mix: [0, 0, 0, 0] };
+      s = { location: loc, camera_id: d.camera_id, segments: 0, violations: 0, night: 0, offences: {} };
       sites.set(loc, s);
     }
-    s.total += 1;
+    s.segments += 1;
 
-    const isFlagged = flaggedAnomaly(text);
-    if (isFlagged) { s.flagged += 1; flaggedTotal += 1; }
+    if (verdict.hasViolation) { withViolation += 1; s.violations += 1; }
+    if (verdict.hasNotable) withNotable += 1;
+
+    const reg = sectionOf(d.description, "REGISTRATIONS READ");
+    if (!reportsNothing(reg)) {
+      plateAttempted += 1;
+      if (plateReadable(d.description)) plateLegible += 1;
+    }
+
+    for (const key of verdict.categories) {
+      byKey[key].segments += 1;
+      byKey[key].sites.add(loc);
+      s.offences[key] = (s.offences[key] || 0) + 1;
+    }
 
     if (d.timestamp instanceof Date && !isNaN(d.timestamp)) {
       const h = d.timestamp.getUTCHours();
       hours[h] += 1;
-      if (h >= 21 || h <= 4) s.night += 1;
-    }
-
-    MIX_TERMS.forEach((t, i) => { if (text.includes(t)) s.mix[i] += 1; });
-
-    if (typeof d.motion_score === "number") {
-      const b = Math.min(9, Math.max(0, Math.floor(d.motion_score * 10)));
-      motionBuckets[b] += 1;
+      if (verdict.categories.length) violationHours[h] += 1;
+      if (NIGHT_HOURS.includes(h)) s.night += 1;
     }
   }
 
   const siteList = [...sites.values()]
     .map((s) => {
-      const mixTotal = s.mix.reduce((a, b) => a + b, 0) || 1;
+      const ranked = Object.entries(s.offences).sort((a, b) => b[1] - a[1]);
+      const geo = coordsFor(s.location);
       return {
         ...s,
-        rate: s.total ? +((s.flagged / s.total) * 100).toFixed(1) : 0,
-        mixPct: s.mix.map((v) => Math.round((v / mixTotal) * 100)),
+        rate: s.segments ? +((s.violations / s.segments) * 100).toFixed(1) : 0,
+        topOffence: ranked.length
+          ? { key: ranked[0][0], label: CATEGORY_BY_KEY[ranked[0][0]].label, n: ranked[0][1] }
+          : null,
+        lat: geo ? geo.lat : null,
+        lng: geo ? geo.lng : null,
+        label: geo ? geo.label : s.location,
+        spread: geo ? geo.spread : null,
       };
     })
-    .sort((a, b) => b.total - a.total);
+    .sort((a, b) => b.violations - a.violations);
 
-  const withNet = register
-    .map((r) => ({ ...r, net: r.total - r.negated }))
-    .filter((r) => r.total > 0)
-    .sort((a, b) => b.net - a.net);
-
-  const groups = {};
-  for (const r of withNet) {
-    if (!groups[r.group]) groups[r.group] = { group: r.group, net: 0, total: 0 };
-    groups[r.group].net += r.net;
-    groups[r.group].total += r.total;
-  }
+  const register = offences
+    .map((o) => ({ ...o, sites: o.sites.size }))
+    .filter((o) => o.segments > 0)
+    .sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] || b.segments - a.segments);
 
   return {
     generatedAt: new Date().toISOString(),
     totals: {
       segments: docs.length,
       sites: siteList.length,
-      flagged: flaggedTotal,
-      flagRate: docs.length ? +((flaggedTotal / docs.length) * 100).toFixed(1) : 0,
-      night: hours.reduce((a, v, i) => a + (i >= 21 || i <= 4 ? v : 0), 0),
-      plates: plateCount,
-      signals: withNet.length,
+      withViolation,
+      violationRate: docs.length ? +((withViolation / docs.length) * 100).toFixed(1) : 0,
+      withNotable,
+      chargeable: register
+        .filter((r) => r.severity === "high" || r.severity === "critical")
+        .reduce((n, r) => n + r.segments, 0),
+      plateAttempted,
+      plateLegible,
     },
-    register: withNet,
-    registerGroups: Object.values(groups).sort((a, b) => b.net - a.net),
-    entities: topN(entities, 20),
-    sections: [...sections.entries()].map(([term, count]) => ({ term, count })).sort((a, b) => b.count - a.count),
-    vocabulary: topN(vocab, 24),
-    phrases: topN(phrases, 12),
+    register,
     sites: siteList,
     hours,
-    motionBuckets,
+    violationHours,
   };
 }
 
-/** GET /api/crime-intel/summary  (?refresh=1 to bypass the cache) */
+/** GET /api/ai-alerts/intel/summary (?refresh=1) */
 const getSummary = async (req, res) => {
   try {
     const fresh = req.query.refresh === "1";
@@ -223,7 +158,6 @@ const getSummary = async (req, res) => {
     if (!fresh && cache.data && !stale) {
       return res.status(200).json({ success: true, cached: true, ...cache.data });
     }
-    // collapse concurrent misses onto one build
     if (!cache.building) {
       cache.building = build()
         .then((data) => { cache = { at: Date.now(), data, building: null }; return data; })
@@ -232,214 +166,58 @@ const getSummary = async (req, res) => {
     const data = await cache.building;
     return res.status(200).json({ success: true, cached: false, ...data });
   } catch (err) {
-    console.error("crime-intel summary failed:", err);
+    console.error("intel summary failed:", err);
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-/** GET /api/crime-intel/concordance?term=loiter&limit=20 */
-const getConcordance = async (req, res) => {
-  try {
-    const term = String(req.query.term || "").trim();
-    if (!term) return res.status(400).json({ success: false, message: "term is required" });
-
-    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
-    const safe = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-    const docs = await AiAlert.find(
-      { description: { $regex: safe, $options: "i" } },
-      { description: 1, location: 1, camera_id: 1, start_time: 1, timestamp: 1 }
-    ).limit(limit * 2).lean();
-
-    const needle = term.toLowerCase();
-    const hits = [];
-    for (const d of docs) {
-      const raw = String(d.description || "").replace(/\s+/g, " ");
-      const at = raw.toLowerCase().indexOf(needle);
-      if (at === -1) continue;
-      hits.push({
-        location: d.location,
-        camera_id: d.camera_id,
-        timestamp: d.timestamp,
-        negated: isNegated(raw.toLowerCase(), at),
-        before: raw.slice(Math.max(0, at - 90), at),
-        match: raw.slice(at, at + term.length),
-        after: raw.slice(at + term.length, at + term.length + 120),
-      });
-      if (hits.length >= limit) break;
-    }
-
-    return res.status(200).json({
-      success: true,
-      term,
-      count: hits.length,
-      observed: hits.filter((h) => !h.negated).length,
-      hits,
-    });
-  } catch (err) {
-    console.error("crime-intel concordance failed:", err);
-    return res.status(500).json({ success: false, message: err.message });
-  }
-};
+/** GET /intel/offences - the taxonomy, for filter controls. */
+const getOffences = (req, res) =>
+  res.status(200).json({
+    success: true,
+    offences: VIOLATION_CATEGORIES.map((c) => ({ key: c.key, label: c.label, severity: c.severity })),
+  });
 
 /* ---------------------------------------------------------------------------
- * Drill-down: every headline figure on the consoles resolves back to the
- * documents behind it, so a number can always be opened and read.
- * GET /api/ai-alerts/intel/drill?facet=<facet>&value=<v>&state=&page=&limit=
+ * Drill-down: every figure resolves back to the segments behind it.
+ * GET /intel/drill?facet=offence|site|violations|notable|hour|night|segments|phrase
  * ------------------------------------------------------------------------- */
-const SIGNAL_GROUPS = SIGNALS.reduce((acc, [group, term]) => {
-  (acc[group] = acc[group] || []).push(term);
-  return acc;
-}, {});
-
-const escapeRegex = (v) => String(v).replace(/[^a-zA-Z0-9 _-]/g, (m) => "\\" + m);
-
-const NIGHT_HOURS = [21, 22, 23, 0, 1, 2, 3, 4];
-
 const buildDrillQuery = (facet, value, only) => {
   switch (facet) {
+    case "offence":
+      return { query: {}, offence: value };
+    case "violations":
+      return { query: {}, requires: "violation" };
+    case "notable":
+      return { query: {}, requires: "notable" };
+    case "site": {
+      const base = { location: value };
+      if (only === "violations") return { query: base, requires: "violation" };
+      if (only === "night") {
+        return { query: { ...base, $expr: { $or: NIGHT_HOURS.map((h) => ({ $eq: [{ $hour: "$timestamp" }, h] })) } } };
+      }
+      return { query: base };
+    }
     case "hour": {
       const h = parseInt(value, 10);
       if (!(h >= 0 && h <= 23)) return null;
-      return { query: { $expr: { $eq: [{ $hour: "$timestamp" }, h] } }, terms: [] };
+      return { query: { $expr: { $eq: [{ $hour: "$timestamp" }, h] } } };
     }
-    case "motion": {
-      const b = parseInt(value, 10);
-      if (!(b >= 0 && b <= 9)) return null;
-      const lo = b / 10;
-      return {
-        query: { motion_score: b === 9 ? { $gte: lo } : { $gte: lo, $lt: (b + 1) / 10 } },
-        terms: [],
-      };
-    }
-    case "section":
-      return { query: { description: { $regex: escapeRegex(value), $options: "i" } }, terms: [] };
-    case "sites": {
-      const list = String(value || "").split("|").filter(Boolean);
-      if (!list.length) return null;
-      return { query: { location: { $in: list } }, terms: [] };
-    }
-    case "signal":
-      return { query: { description: { $regex: escapeRegex(value), $options: "i" } }, terms: [String(value).toLowerCase()] };
-    case "group": {
-      const terms = SIGNAL_GROUPS[value];
-      if (!terms) return null;
-      return {
-        query: { $or: terms.map((t) => ({ description: { $regex: escapeRegex(t), $options: "i" } })) },
-        terms: terms.map((t) => t.toLowerCase()),
-      };
-    }
-    case "site": {
-      const base = { location: value };
-      if (only === "flagged") {
-        return {
-          query: { ...base, description: { $regex: "anomaly:", $options: "i" } },
-          terms: [],
-          postFilter: (t) => flaggedAnomaly(t),
-        };
-      }
-      if (only === "night") {
-        return { query: { ...base, $expr: { $or: NIGHT_HOURS.map((h) => ({ $eq: [{ $hour: "$timestamp" }, h] })) } }, terms: [] };
-      }
-      return { query: base, terms: [] };
-    }
-    case "flagged":
-      return { query: { description: { $regex: "anomaly:", $options: "i" } }, terms: [], postFilter: (t) => flaggedAnomaly(t) };
     case "night":
-      // $hour on the stored UTC instant - exact, and pageable in Mongo
-      return {
-        query: {
-          $expr: {
-            $or: NIGHT_HOURS.map((h) => ({ $eq: [{ $hour: "$timestamp" }, h] })),
-          },
-        },
-        terms: [],
-      };
-    case "plates":
-      return { query: { ocr_raw: { $nin: [null, ""] } }, terms: [] };
+      return { query: { $expr: { $or: NIGHT_HOURS.map((h) => ({ $eq: [{ $hour: "$timestamp" }, h] })) } } };
     case "segments":
-      return { query: {}, terms: [] };
+      return { query: {} };
+    case "phrase":
+      return { query: { description: { $regex: escapeRegex(value), $options: "i" } }, term: value };
     default:
       return null;
   }
 };
 
-const getDrill = async (req, res) => {
-  try {
-    const facet = String(req.query.facet || "");
-    const value = req.query.value;
-    const state = req.query.state; // observed | negated | undefined
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 25));
-
-    const spec = buildDrillQuery(facet, value, req.query.only);
-    if (!spec) return res.status(400).json({ success: false, message: "Unknown facet: " + facet });
-
-    // Facets needing text inspection are filtered in JS, so pull a working set
-    // and page it there; the plain ones page in Mongo.
-    const needsScan = Boolean(spec.postFilter) || spec.terms.length > 0;
-
-    const projection = {
-      camera_id: 1, location: 1, description: 1, start_time: 1, end_time: 1, timestamp: 1,
-      segment_id: 1, frame_urls: 1, ocr_raw: 1, plate_number: 1, ocr_confidence: 1,
-      recognized: 1, motion_score: 1, motion_gated: 1, anchor_confidence: 1,
-      source_video: 1, video_offset_seconds: 1, cumulative_minutes: 1,
-    };
-
-    if (!needsScan) {
-      const [docs, total] = await Promise.all([
-        AiAlert.find(spec.query, projection).sort({ timestamp: -1 }).skip((page - 1) * limit).limit(limit).lean(),
-        AiAlert.countDocuments(spec.query),
-      ]);
-      return res.status(200).json({
-        success: true, facet, value, total, page, limit,
-        items: docs.map((d) => shapeItem(d, [])),
-      });
-    }
-
-    // Cap guards memory; every text facet pre-filters in Mongo first, so the
-    // working set is far smaller than the corpus.
-    const docs = await AiAlert.find(spec.query, projection).sort({ timestamp: -1 }).limit(20000).lean();
-    const matched = [];
-    for (const d of docs) {
-      const text = String(d.description || "").toLowerCase();
-      if (spec.postFilter && !spec.postFilter(text)) continue;
-      const item = shapeItem(d, spec.terms);
-      if (state === "observed" && item.negated) continue;
-      if (state === "negated" && !item.negated) continue;
-      matched.push(item);
-    }
-
-    const start = (page - 1) * limit;
-    return res.status(200).json({
-      success: true, facet, value, state: state || null,
-      total: matched.length,
-      observed: matched.filter((m) => !m.negated).length,
-      page, limit,
-      items: matched.slice(start, start + limit),
-    });
-  } catch (err) {
-    console.error("crime-intel drill failed:", err);
-    return res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-/** Trim a document to what a drill-down list needs, with the match located. */
-function shapeItem(d, terms) {
+const shapeItem = (d, verdict, term) => {
   const raw = String(d.description || "").replace(/\s+/g, " ");
-  const lower = raw.toLowerCase();
-
-  let at = -1;
-  let hit = "";
-  for (const t of terms) {
-    const i = lower.indexOf(t);
-    if (i !== -1 && (at === -1 || i < at)) { at = i; hit = t; }
-  }
-
-  const negated = at !== -1 ? isNegated(lower, at) : false;
-  const from = at === -1 ? 0 : Math.max(0, at - 90);
-  const snippet = raw.slice(from, from + (at === -1 ? 220 : 260));
-
+  // lead with the enforcement text, not the scene description
+  const lead = verdict.violationText || verdict.notableText || verdict.alertText;
   return {
     id: d._id,
     camera_id: d.camera_id,
@@ -449,50 +227,107 @@ function shapeItem(d, terms) {
     end_time: d.end_time,
     timestamp: d.timestamp,
     motion_score: d.motion_score,
-    motion_gated: d.motion_gated,
-    anchor_confidence: d.anchor_confidence,
     source_video: d.source_video || null,
     video_offset_seconds: d.video_offset_seconds,
-    cumulative_minutes: d.cumulative_minutes,
-    ocr_raw: d.ocr_raw || null,
-    plate_number: d.plate_number || null,
-    ocr_confidence: d.ocr_confidence,
-    recognized: d.recognized,
     frame: (d.frame_urls || [])[0] || null,
     frames: d.frame_urls || [],
-    match: hit || null,
-    matchAt: at,
-    negated,
-    truncatedStart: from > 0,
-    snippet,
-    // full text so a row can be opened without a second request
+    offences: verdict.categories.map((k) => ({
+      key: k, label: CATEGORY_BY_KEY[k].label, severity: CATEGORY_BY_KEY[k].severity,
+    })),
+    primary: primaryOffence(verdict.categories),
+    violationText: verdict.violationText,
+    notableText: verdict.notableText,
+    snippet: term ? excerptAround(raw, term, 260) : lead ? lead.slice(0, 260) : raw.slice(0, 220),
     description: raw,
   };
-}
+};
+
+const getDrill = async (req, res) => {
+  try {
+    const facet = String(req.query.facet || "");
+    const spec = buildDrillQuery(facet, req.query.value, req.query.only);
+    if (!spec) return res.status(400).json({ success: false, message: "Unknown facet: " + facet });
+
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 25));
+
+    const projection = {
+      camera_id: 1, location: 1, description: 1, start_time: 1, end_time: 1, timestamp: 1,
+      segment_id: 1, frame_urls: 1, motion_score: 1, source_video: 1, video_offset_seconds: 1,
+    };
+
+    const docs = await AiAlert.find(spec.query, projection).sort({ timestamp: -1 }).limit(20000).lean();
+
+    const matched = [];
+    for (const d of docs) {
+      const verdict = classify(d.description);
+      if (spec.offence && !verdict.categories.includes(spec.offence)) continue;
+      if (spec.requires === "violation" && !verdict.hasViolation) continue;
+      if (spec.requires === "notable" && !verdict.hasNotable) continue;
+      matched.push(shapeItem(d, verdict, spec.term));
+    }
+
+    const start = (page - 1) * limit;
+    return res.status(200).json({
+      success: true,
+      facet,
+      value: req.query.value || null,
+      total: matched.length,
+      page,
+      limit,
+      items: matched.slice(start, start + limit),
+    });
+  } catch (err) {
+    console.error("drill failed:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/** GET /intel/concordance?term=&limit= - the sentence, so a reader can judge it. */
+const getConcordance = async (req, res) => {
+  try {
+    const term = String(req.query.term || "").trim();
+    if (!term) return res.status(400).json({ success: false, message: "term is required" });
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
+
+    const docs = await AiAlert.find(
+      { description: { $regex: escapeRegex(term), $options: "i" } },
+      { description: 1, location: 1, camera_id: 1, start_time: 1, timestamp: 1 }
+    ).limit(limit * 2).lean();
+
+    const needle = term.toLowerCase();
+    const hits = [];
+    for (const d of docs) {
+      const raw = String(d.description || "").replace(/\s+/g, " ");
+      const at = raw.toLowerCase().indexOf(needle);
+      if (at === -1) continue;
+      const before = raw.slice(Math.max(0, at - 90), at);
+      hits.push({
+        location: d.location,
+        camera_id: d.camera_id,
+        timestamp: d.timestamp,
+        negated: /\b(no|not|nothing|without|cannot|unable)\b[^.]{0,45}$/i.test(before),
+        before,
+        match: raw.slice(at, at + term.length),
+        after: raw.slice(at + term.length, at + term.length + 120),
+      });
+      if (hits.length >= limit) break;
+    }
+
+    return res.status(200).json({
+      success: true, term, count: hits.length,
+      observed: hits.filter((h) => !h.negated).length, hits,
+    });
+  } catch (err) {
+    console.error("concordance failed:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 /* ---------------------------------------------------------------------------
- * AI-assisted search refinement.
- *
- * A keyword search over these descriptions is mostly noise: "accident" matches
- * 94 documents but ~73 are the describer RULING IT OUT, and others are the
- * prompt template listing what it checked for. This asks a model to read the
- * excerpt around each hit and say whether it actually evidences the thing.
- *
- * The key lives only in the backend env - it is never sent to the browser.
- * GET /api/ai-alerts/intel/refine?q=&date=&camera_id=&confidence=&gated=&limit=
+ * AI-assisted refinement. The key lives only in the backend env.
  * ------------------------------------------------------------------------- */
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const REFINE_MAX = 40;
-
-/** A window around the first hit, so we send excerpts rather than 7k blobs. */
-const excerptAround = (text, term, width) => {
-  const body = String(text || "").replace(/\s+/g, " ");
-  const span = width || 340;
-  const at = body.toLowerCase().indexOf(String(term).toLowerCase());
-  if (at === -1) return body.slice(0, span);
-  const from = Math.max(0, at - Math.floor(span / 2));
-  return (from > 0 ? "..." : "") + body.slice(from, from + span) + "...";
-};
 
 const refineSearch = async (req, res) => {
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -502,39 +337,40 @@ const refineSearch = async (req, res) => {
       message: "AI refinement is not configured - set OPENROUTER_API_KEY in the backend env.",
     });
   }
-
   const q = String(req.query.q || "").trim();
   if (!q) return res.status(400).json({ success: false, message: "q is required" });
 
   try {
-    const limit = Math.min(REFINE_MAX, Math.max(1, parseInt(req.query.limit, 10) || REFINE_MAX));
-
+    const limit = Math.min(40, Math.max(1, parseInt(req.query.limit, 10) || 40));
     const filter = { description: { $regex: escapeRegex(q), $options: "i" } };
     if (req.query.camera_id && req.query.camera_id !== "all") filter.camera_id = req.query.camera_id;
-    if (req.query.confidence && req.query.confidence !== "all") filter.anchor_confidence = req.query.confidence;
-    if (req.query.gated === "true") filter.motion_gated = true;
-    else if (req.query.gated === "false") filter.motion_gated = false;
     if (req.query.date && req.query.date !== "all") {
       const start = new Date(req.query.date + "T00:00:00.000Z");
       const end = new Date(req.query.date + "T23:59:59.999Z");
       if (!isNaN(start.getTime())) filter.timestamp = { $gte: start, $lte: end };
     }
 
+    // Callers that pair this with /intel/trace (which reads oldest-first) pass
+    // order=asc so both cover the same 40 segments; default stays newest-first.
+    const order = req.query.order === "asc" ? 1 : -1;
+
     const docs = await AiAlert.find(filter, {
-      description: 1, camera_id: 1, location: 1, start_time: 1, timestamp: 1, segment_id: 1,
-    }).sort({ timestamp: -1 }).limit(limit).lean();
+      description: 1, camera_id: 1, location: 1, start_time: 1,
+    }).sort({ timestamp: order }).limit(limit).lean();
 
     if (!docs.length) {
-      return res.status(200).json({ success: true, query: q, reviewed: 0, relevant: 0, verdicts: [], summary: "Nothing matched that search." });
+      return res.status(200).json({
+        success: true, query: q, reviewed: 0, relevant: 0, verdicts: [],
+        summary: "Nothing matched that search.",
+      });
     }
 
     const items = docs.map((d, i) => ({ n: i + 1, id: String(d._id), text: excerptAround(d.description, q) }));
-
     const prompt =
-      'A user searched CCTV scene descriptions for: "' + q + '"\n\n' +
-      "For each excerpt decide whether it actually EVIDENCES that thing at the scene. " +
-      "Many descriptions mention a term only to rule it out (\"no accidents observed\") or " +
-      "because the describer is listing what it checked for - neither is evidence.\n\n" +
+      'A traffic-enforcement officer searched CCTV scene descriptions for: "' + q + '"\n\n' +
+      "For each excerpt decide whether it actually EVIDENCES that at the scene. Descriptions " +
+      'frequently mention a thing only to rule it out ("No collisions or near-misses observed") ' +
+      "or to list what was checked for - neither is evidence.\n\n" +
       "Return ONLY a JSON object:\n" +
       '{"summary":"<one sentence>","verdicts":[{"n":1,"relevant":true,"reason":"<8 words max>"}]}\n\n' +
       items.map((it) => "[" + it.n + "] " + it.text).join("\n\n");
@@ -553,21 +389,18 @@ const refineSearch = async (req, res) => {
 
     const payload = await upstream.json();
     if (!upstream.ok || payload.error) {
-      console.error("refine upstream failed:", payload.error || upstream.status);
       return res.status(502).json({
         success: false,
-        message: payload.error?.message || ("Model request failed (" + upstream.status + ")"),
+        message: payload.error?.message || "Model request failed (" + upstream.status + ")",
       });
     }
 
     const raw = payload.choices?.[0]?.message?.content || "";
     const slice = raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1);
-
     let parsed;
     try {
       parsed = JSON.parse(slice);
     } catch (err) {
-      // the model is asked for strict JSON; if it drifts, say so rather than guess
       return res.status(502).json({ success: false, message: "Model did not return usable JSON." });
     }
 
@@ -581,10 +414,7 @@ const refineSearch = async (req, res) => {
       }));
 
     return res.status(200).json({
-      success: true,
-      query: q,
-      model: payload.model,
-      ms: Date.now() - started,
+      success: true, query: q, model: payload.model, ms: Date.now() - started,
       cost: payload.usage?.cost ?? null,
       reviewed: verdicts.length,
       relevant: verdicts.filter((v) => v.relevant).length,
@@ -599,68 +429,50 @@ const refineSearch = async (req, res) => {
 };
 
 /* ---------------------------------------------------------------------------
- * Movement trace: where a subject was seen, in time order.
- *
- * Two modes, because the data supports them very differently today:
- *   plate=  exact ANPR read. Precise, but only cam_pakwan produces plates,
- *           so a plate currently never appears at a second location.
- *   q=      a phrase from the description ("white bus", "GSRTC"). Not identity
- *           evidence - it is every scene matching that wording - but it does
- *           span locations, so it is what makes a route today.
- * GET /api/ai-alerts/intel/trace?plate=&q=&limit=
+ * Movement trace. GET /intel/trace?q=&offence=&limit=
  * ------------------------------------------------------------------------- */
-const TRACE_MAX = 200;
-
 const getTrace = async (req, res) => {
   try {
-    const plate = String(req.query.plate || "").trim();
     const q = String(req.query.q || "").trim();
-    const limit = Math.min(TRACE_MAX, Math.max(1, parseInt(req.query.limit, 10) || 80));
+    const offence = String(req.query.offence || "").trim();
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 80));
 
-    // Sites always come back, so the map can draw the estate before any search.
-    const siteCounts = await AiAlert.aggregate([
+    const counts = await AiAlert.aggregate([
       { $group: { _id: "$location", segments: { $sum: 1 }, camera_id: { $first: "$camera_id" } } },
     ]);
 
-    const sites = siteCounts
+    const sites = counts
       .map((row) => {
         const c = coordsFor(row._id);
         if (!c) return null;
         return {
-          location: row._id,
-          camera_id: row.camera_id,
-          segments: row.segments,
-          lat: c.lat,
-          lng: c.lng,
-          label: c.label,
-          spread: c.spread,
+          location: row._id, camera_id: row.camera_id, segments: row.segments,
+          lat: c.lat, lng: c.lng, label: c.label, spread: c.spread,
         };
       })
       .filter(Boolean)
       .sort((a, b) => b.segments - a.segments);
 
-    const unmapped = siteCounts.filter((r) => !coordsFor(r._id)).map((r) => r._id);
+    const unmapped = counts.filter((r) => !coordsFor(r._id)).map((r) => r._id);
 
-    if (!plate && !q) {
-      return res.status(200).json({ success: true, mode: null, sites, unmapped, sightings: [], legs: [] });
+    if (!q && !offence) {
+      return res.status(200).json({
+        success: true, mode: null, sites, unmapped, sightings: [], legs: [], visited: [],
+      });
     }
 
-    const filter = plate
-      ? { $or: [
-          { ocr_raw: { $regex: escapeRegex(plate), $options: "i" } },
-          { plate_number: { $regex: escapeRegex(plate), $options: "i" } },
-        ] }
-      : { description: { $regex: escapeRegex(q), $options: "i" } };
-
+    const filter = q ? { description: { $regex: escapeRegex(q), $options: "i" } } : {};
     const docs = await AiAlert.find(filter, {
       camera_id: 1, location: 1, description: 1, start_time: 1, timestamp: 1,
-      segment_id: 1, frame_urls: 1, ocr_raw: 1, source_video: 1, video_offset_seconds: 1,
-    }).sort({ timestamp: 1 }).limit(limit).lean();
+      segment_id: 1, frame_urls: 1, source_video: 1, video_offset_seconds: 1,
+    }).sort({ timestamp: 1 }).limit(offence ? 20000 : limit).lean();
 
-    const term = plate || q;
-    const sightings = docs.map((d) => {
+    const sightings = [];
+    for (const d of docs) {
+      const verdict = classify(d.description);
+      if (offence && !verdict.categories.includes(offence)) continue;
       const c = coordsFor(d.location) || {};
-      return {
+      sightings.push({
         id: d._id,
         location: d.location,
         label: c.label || d.location,
@@ -673,14 +485,17 @@ const getTrace = async (req, res) => {
         start_time: d.start_time,
         source_video: d.source_video || null,
         video_offset_seconds: d.video_offset_seconds,
-        ocr_raw: d.ocr_raw || null,
         frame: (d.frame_urls || [])[0] || null,
         frames: d.frame_urls || [],
-        excerpt: excerptAround(d.description, term, 220),
-      };
-    });
+        offences: verdict.categories.map((k) => ({
+          key: k, label: CATEGORY_BY_KEY[k].label, severity: CATEGORY_BY_KEY[k].severity,
+        })),
+        primary: primaryOffence(verdict.categories),
+        excerpt: verdict.violationText || verdict.notableText || excerptAround(d.description, q, 200),
+      });
+      if (sightings.length >= limit) break;
+    }
 
-    // Consecutive hops between DIFFERENT sites - the route worth drawing.
     const legs = [];
     for (let i = 1; i < sightings.length; i++) {
       const from = sightings[i - 1];
@@ -693,18 +508,13 @@ const getTrace = async (req, res) => {
       legs.push({ from: from.location, to: to.location, minutes, at: to.timestamp });
     }
 
-    const visited = [...new Set(sightings.map((x) => x.location))];
-
     return res.status(200).json({
       success: true,
-      mode: plate ? "plate" : "phrase",
-      term,
-      sites,
-      unmapped,
-      sightings,
-      legs,
-      visited,
-      truncated: docs.length === limit,
+      mode: offence ? "offence" : "phrase",
+      term: offence ? CATEGORY_BY_KEY[offence]?.label || offence : q,
+      sites, unmapped, sightings, legs,
+      visited: [...new Set(sightings.map((x) => x.location))],
+      truncated: sightings.length === limit,
     });
   } catch (err) {
     console.error("trace failed:", err);
@@ -712,4 +522,4 @@ const getTrace = async (req, res) => {
   }
 };
 
-module.exports = { getSummary, getConcordance, getDrill, refineSearch, getTrace };
+module.exports = { getSummary, getConcordance, getDrill, refineSearch, getTrace, getOffences };

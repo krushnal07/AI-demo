@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import moment from "moment";
-import { FaMapMarkedAlt, FaSearch, FaExpand, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaMapMarkedAlt, FaSearch, FaExpand, FaChevronLeft, FaChevronRight, FaMagic } from "react-icons/fa";
 import {
   Box,
   Flex,
@@ -34,6 +34,9 @@ const MovementMap = () => {
   const [term, setTerm] = useState("");
   const [active, setActive] = useState(null); // highlighted sighting id
   const [lightbox, setLightbox] = useState(null);
+  // AI read of the traced sightings, run alongside Trace
+  const [refine, setRefine] = useState(null);
+  const [refining, setRefining] = useState(false);
 
   const t = useIntelTheme();
   const baseUrl = process.env.REACT_APP_BASE_URL || process.env.REACT_APP_URL;
@@ -69,7 +72,40 @@ const MovementMap = () => {
 
   const activeSighting = sightings.find((s) => s.id === active) || null;
 
-  const runSearch = () => load(term, mode);
+  /* Reuses /intel/refine: the model reads the excerpt around each hit and
+     says whether it actually evidences the search, rather than merely
+     mentioning it. Runs alongside the trace when Trace is pressed. */
+  const runRefine = useCallback(
+    async (searchTerm) => {
+      const q = (searchTerm ?? "").trim();
+      if (!q) { setRefine(null); return; }
+      setRefining(true);
+      try {
+        const params = new URLSearchParams({ q, limit: 40, order: "asc" });
+        const { data: body } = await axios.get(`${baseUrl}/api/ai-alerts/intel/refine?${params.toString()}`);
+        if (body?.success) setRefine(body);
+        else setRefine(null);
+      } catch (err) {
+        // a failed AI pass must not lose the trace itself
+        setRefine({ failed: true, message: err.response?.data?.message || err.message });
+      } finally {
+        setRefining(false);
+      }
+    },
+    [baseUrl]
+  );
+
+  const verdictById = useMemo(() => {
+    const map = {};
+    (refine?.verdicts || []).forEach((v) => { map[v.id] = v; });
+    return map;
+  }, [refine]);
+
+  const runSearch = () => {
+    setRefine(null);
+    load(term, mode);
+    runRefine(term);
+  };
 
   return (
     <Box bg={t.page} minH="100vh" pt={{ base: "70px", md: 4 }} pb={{ base: "100px", md: 8 }} px={{ base: 3, md: 6 }}>
@@ -137,7 +173,7 @@ const MovementMap = () => {
             Trace
           </Button>
           {data?.term && (
-            <Button size="sm" variant="ghost" borderRadius="8px" onClick={() => { setTerm(""); load("", mode); }}>
+            <Button size="sm" variant="ghost" borderRadius="8px" onClick={() => { setTerm(""); setRefine(null); load("", mode); }}>
               Clear
             </Button>
           )}
@@ -148,6 +184,50 @@ const MovementMap = () => {
         <Panel mb={4}>
           <Text fontSize="13px" color={t.critical}>{error}</Text>
         </Panel>
+      )}
+
+      {(refining || refine) && (
+        <Flex
+          align="center"
+          gap={3}
+          wrap="wrap"
+          bg={t.panel}
+          border="1px solid"
+          borderColor={t.border}
+          borderLeft="3px solid"
+          borderLeftColor={refine?.failed ? t.critical : t.s1}
+          borderRadius="10px"
+          boxShadow={t.shadow}
+          px={4}
+          py={3}
+          mb={4}
+        >
+          <Box color={refine?.failed ? t.critical : t.s1} fontSize="13px">
+            {refining ? <Spinner size="sm" /> : <FaMagic />}
+          </Box>
+          <Box minW={0} flex="1">
+            {refining ? (
+              <Text fontSize="13px" color={t.body}>Reading the matched segments&hellip;</Text>
+            ) : refine?.failed ? (
+              <Text fontSize="13px" color={t.critical}>{refine.message}</Text>
+            ) : (
+              <>
+                <Text fontSize="13px" fontWeight="600" color={t.heading}>
+                  {refine.relevant} of {refine.reviewed} matches evidence &ldquo;{refine.query}&rdquo;
+                  {refine.truncated ? " (first 40 read)" : ""}
+                </Text>
+                {refine.summary && (
+                  <Text fontSize="12px" color={t.muted} mt={0.5}>{refine.summary}</Text>
+                )}
+              </>
+            )}
+          </Box>
+          {refine && !refine.failed && refine.model && (
+            <Text fontFamily={MONO_FONT} fontSize="10px" color={t.muted} display={{ base: "none", md: "block" }}>
+              {refine.model}
+            </Text>
+          )}
+        </Flex>
       )}
 
       {data?.term && (
@@ -279,6 +359,18 @@ const MovementMap = () => {
                     <Box minW={0} flex="1">
                       <Flex gap={2} align="center" wrap="wrap">
                         <Text fontSize="12px" fontWeight="600" color={t.heading}>{s.label}</Text>
+                        {verdictById[s.id] && (
+                          <Badge
+                            colorScheme={verdictById[s.id].relevant ? "green" : "gray"}
+                            fontSize="9px"
+                            borderRadius="full"
+                            px={2}
+                            textTransform="none"
+                            title={verdictById[s.id].reason}
+                          >
+                            {verdictById[s.id].relevant ? "evidence" : "ruled out"}
+                          </Badge>
+                        )}
                         {s.ocr_raw && (
                           <Badge colorScheme="blue" fontSize="9px" borderRadius="full" px={2} textTransform="none">
                             {s.ocr_raw}

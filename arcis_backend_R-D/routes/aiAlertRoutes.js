@@ -1,6 +1,6 @@
 const express = require("express");
 const { getAiAlerts, getAiAlertFilters } = require("../controllers/aiAlertController");
-const { getSummary, getConcordance, getDrill, refineSearch, getTrace } = require("../controllers/crimeIntelController");
+const { getSummary, getConcordance, getDrill, refineSearch, getTrace, getOffences } = require("../controllers/crimeIntelController");
 
 const router = express.Router();
 
@@ -12,6 +12,7 @@ router.route("/intel/concordance").get(getConcordance);
 router.route("/intel/drill").get(getDrill);
 router.route("/intel/refine").get(refineSearch);
 router.route("/intel/trace").get(getTrace);
+router.route("/intel/offences").get(getOffences);
 router.route("/").get(getAiAlerts);
 
 module.exports = router;

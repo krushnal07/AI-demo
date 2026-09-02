@@ -17,7 +17,6 @@ import {
   Image,
   Badge,
   Button,
-  ButtonGroup,
   Spinner,
   SimpleGrid,
   IconButton,
@@ -31,6 +30,9 @@ import { FaChevronDown, FaChevronRight, FaExpand, FaChevronLeft, FaChevronRight 
 import { useIntelTheme, MONO_FONT } from "./IntelKit";
 
 const PAGE = 25;
+
+/* Chip colour by enforcement weight, matching the register page. */
+const SEVERITY_SCHEME = { critical: "red", high: "orange", medium: "yellow", watch: "blue" };
 
 const fmtTime = (value) => {
   if (!value) return "";
@@ -189,7 +191,7 @@ const DrillDrawer = ({ drill, onClose, baseUrl }) => {
 
   const total = body?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / PAGE));
-  const canSplit = drill?.facet === "signal" || drill?.facet === "group";
+  // the classifier only returns affirmative matches, so there is no split to offer
 
   return (
     <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="xl">
@@ -205,26 +207,6 @@ const DrillDrawer = ({ drill, onClose, baseUrl }) => {
               {loading && !body ? "loading…" : `${total.toLocaleString()} record${total === 1 ? "" : "s"}`}
               {body?.observed != null && state === null ? ` · ${body.observed} observed` : ""}
             </Text>
-            {canSplit && (
-              <ButtonGroup size="xs" isAttached variant="outline" ml="auto">
-                {[
-                  [null, "All"],
-                  ["observed", "Observed"],
-                  ["negated", "Ruled out"],
-                ].map(([k, label]) => (
-                  <Button
-                    key={label}
-                    borderColor={t.border}
-                    fontWeight="500"
-                    bg={state === k ? t.panelAlt : "transparent"}
-                    color={state === k ? t.heading : t.muted}
-                    onClick={() => { setState(k); setPage(1); setOpenId(null); }}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </ButtonGroup>
-            )}
           </Flex>
         </DrawerHeader>
 
@@ -294,22 +276,18 @@ const DrillDrawer = ({ drill, onClose, baseUrl }) => {
                         <Text fontFamily={MONO_FONT} fontSize="10.5px" color={t.muted}>
                           {fmtTime(it.start_time || it.timestamp)}
                         </Text>
-                        {it.match && (
+                        {(it.offences || []).map((o) => (
                           <Badge
-                            colorScheme={it.negated ? "gray" : "orange"}
+                            key={o.key}
+                            colorScheme={SEVERITY_SCHEME[o.severity] || "gray"}
                             fontSize="9px"
                             borderRadius="full"
                             px={2}
                             textTransform="none"
                           >
-                            {it.match} · {it.negated ? "ruled out" : "observed"}
+                            {o.label}
                           </Badge>
-                        )}
-                        {it.ocr_raw && (
-                          <Badge colorScheme="blue" fontSize="9px" borderRadius="full" px={2} textTransform="none">
-                            {it.ocr_raw}
-                          </Badge>
-                        )}
+                        ))}
                       </Flex>
                       <Text fontSize="12px" color={t.body} noOfLines={open ? undefined : 2}>
                         {it.truncatedStart ? "…" : ""}
@@ -346,22 +324,35 @@ const DrillDrawer = ({ drill, onClose, baseUrl }) => {
                         <Field label="Start" value={fmtTime(it.start_time)} theme={t} />
                         <Field label="End" value={fmtTime(it.end_time)} theme={t} />
                         <Field label="Motion score" value={it.motion_score} theme={t} />
-                        <Field label="Anchor" value={it.anchor_confidence} theme={t} />
-                        {it.ocr_raw && <Field label="Plate (OCR)" value={it.ocr_raw} theme={t} />}
-                        {it.ocr_raw && (
-                          <Field
-                            label="OCR confidence"
-                            value={it.ocr_confidence != null ? `${Math.round(it.ocr_confidence * 100)}%` : null}
-                            theme={t}
-                          />
-                        )}
                       </SimpleGrid>
+
+                      {it.violationText && (
+                        <>
+                          <Text fontSize="9.5px" letterSpacing="0.06em" textTransform="uppercase" color={t.muted} mb={1}>
+                            Traffic violations reported
+                          </Text>
+                          <Box bg={t.panelAlt} border="1px solid" borderColor={t.border} borderLeft="3px solid" borderLeftColor={t.s2} borderRadius="7px" p={3} mb={3}>
+                            <Text fontSize="12.5px" color={t.heading}>{it.violationText}</Text>
+                          </Box>
+                        </>
+                      )}
+
+                      {it.notableText && (
+                        <>
+                          <Text fontSize="9.5px" letterSpacing="0.06em" textTransform="uppercase" color={t.muted} mb={1}>
+                            Notable events
+                          </Text>
+                          <Box bg={t.panelAlt} border="1px solid" borderColor={t.border} borderLeft="3px solid" borderLeftColor={t.s4} borderRadius="7px" p={3} mb={3}>
+                            <Text fontSize="12.5px" color={t.body}>{it.notableText}</Text>
+                          </Box>
+                        </>
+                      )}
 
                       <Text fontSize="9.5px" letterSpacing="0.06em" textTransform="uppercase" color={t.muted} mb={1}>
                         Full description
                       </Text>
                       <Box bg={t.panelAlt} border="1px solid" borderColor={t.border} borderRadius="7px" p={3}>
-                        <Described text={it.description || it.snippet} match={it.match} theme={t} />
+                        <Described text={it.description || it.snippet} match={null} theme={t} />
                       </Box>
                     </Box>
                   )}
