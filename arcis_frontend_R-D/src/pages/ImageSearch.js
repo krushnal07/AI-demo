@@ -35,7 +35,7 @@ import { FaSearch, FaUpload, FaTimes, FaRedo, FaExclamationTriangle, FaUserCheck
 import { MdImageSearch } from "react-icons/md";
 import { Panel, SectionLabel, useIntelTheme, MONO_FONT } from "../components/intel/IntelKit";
 
-const API_URL = process.env.REACT_APP_FACE_SEARCH_URL || "https://vmschatbot.vmukti.com:21143/api/search";
+const API_URL = process.env.REACT_APP_FACE_SEARCH_URL || "https://vmschatbot.vmukti.com:21883/api/search";
 
 // Stored images may come back as a path rather than an absolute URL. The
 // service's own page can use them as-is because it is same-origin; we are not,
