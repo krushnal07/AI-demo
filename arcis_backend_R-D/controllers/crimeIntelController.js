@@ -38,6 +38,17 @@ const excerptAround = (text, term, width) => {
   return (from > 0 ? "..." : "") + body.slice(from, from + span) + "...";
 };
 
+/*
+ * Registrations are written many ways - "GJ41NK2785", "GJ 01 KA 4521",
+ * "GJ-18-CN-1559" - so a plate search has to tolerate separators between every
+ * character rather than matching the string the user typed literally.
+ */
+const plateRegex = (plate) => {
+  const chars = String(plate).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!chars) return null;
+  return new RegExp(chars.split("").join("[\\s.-]*"), "i");
+};
+
 /** The most serious offence in a segment, for a one-chip summary. */
 const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, watch: 3 };
 const primaryOffence = (keys) =>
@@ -449,8 +460,10 @@ const refineSearch = async (req, res) => {
 const getTrace = async (req, res) => {
   try {
     const q = String(req.query.q || "").trim();
+    const plate = String(req.query.plate || "").trim();
     const offence = String(req.query.offence || "").trim();
     const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 80));
+    const plateRe = plate ? plateRegex(plate) : null;
 
     const counts = await AiAlert.aggregate([
       { $group: { _id: "$location", segments: { $sum: 1 }, camera_id: { $first: "$camera_id" } } },
@@ -470,22 +483,46 @@ const getTrace = async (req, res) => {
 
     const unmapped = counts.filter((r) => !coordsFor(r._id)).map((r) => r._id);
 
-    if (!q && !offence) {
+    if (!q && !plate && !offence) {
       return res.status(200).json({
         success: true, mode: null, sites, unmapped, sightings: [], legs: [], visited: [],
       });
     }
 
-    const filter = q ? { description: { $regex: escapeRegex(q), $options: "i" } } : {};
+    let filter = {};
+    if (plateRe) {
+      filter = {
+        $or: [
+          { ocr_raw: { $regex: plateRe } },
+          { plate_number: { $regex: plateRe } },
+          { description: { $regex: plateRe } },
+        ],
+      };
+    } else if (q) {
+      filter = { description: { $regex: escapeRegex(q), $options: "i" } };
+    }
     const docs = await AiAlert.find(filter, {
       camera_id: 1, location: 1, description: 1, start_time: 1, timestamp: 1,
       segment_id: 1, frame_urls: 1, source_video: 1, video_offset_seconds: 1,
-    }).sort({ timestamp: 1 }).limit(offence ? 20000 : limit).lean();
+      ocr_raw: 1, plate_number: 1,
+    }).sort({ timestamp: 1 }).limit(offence || plateRe ? 20000 : limit).lean();
 
     const sightings = [];
     for (const d of docs) {
       const verdict = classify(d.description);
       if (offence && !verdict.categories.includes(offence)) continue;
+
+      let plateHit = null;
+      if (plateRe) {
+        const reg = sectionOf(d.description, "REGISTRATIONS READ");
+        const inSection = reg && plateRe.test(reg);
+        const inOcr = (d.ocr_raw && plateRe.test(d.ocr_raw)) || (d.plate_number && plateRe.test(d.plate_number));
+        // a plate mentioned in the prose but absent from the read section is
+        // not a sighting of that vehicle
+        if (!inSection && !inOcr) continue;
+        plateHit = (reg && reg.match(plateRe)?.[0]) || d.ocr_raw || d.plate_number || plate;
+      }
+
       const c = coordsFor(d.location) || {};
       sightings.push({
         id: d._id,
@@ -506,7 +543,10 @@ const getTrace = async (req, res) => {
           key: k, label: CATEGORY_BY_KEY[k].label, severity: CATEGORY_BY_KEY[k].severity,
         })),
         primary: primaryOffence(verdict.categories),
-        excerpt: verdict.violationText || verdict.notableText || excerptAround(d.description, q, 200),
+        plateHit,
+        excerpt: plateRe
+          ? excerptAround(sectionOf(d.description, "REGISTRATIONS READ") || d.description, plateHit, 220)
+          : verdict.violationText || verdict.notableText || excerptAround(d.description, q, 200),
       });
       if (sightings.length >= limit) break;
     }
@@ -525,8 +565,8 @@ const getTrace = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      mode: offence ? "offence" : "phrase",
-      term: offence ? CATEGORY_BY_KEY[offence]?.label || offence : q,
+      mode: plate ? "plate" : offence ? "offence" : "phrase",
+      term: plate || (offence ? CATEGORY_BY_KEY[offence]?.label || offence : q),
       sites, unmapped, sightings, legs,
       visited: [...new Set(sightings.map((x) => x.location))],
       truncated: sightings.length === limit,
