@@ -28,6 +28,7 @@ const gpsRoutes = require('./routes/gpsRoutes');
 const playbackRoutes = require('./routes/playbackRoutes');
 const faceRoutes = require('./routes/faceRoutes');
 const aiAlertRoutes = require('./routes/aiAlertRoutes');
+const imageSearchRoutes = require('./routes/imageSearchRoutes');
 
 const app = express();
 app.set('trust proxy', true);
@@ -72,6 +73,7 @@ app.use('/api/gps', gpsRoutes);
 app.use('/api/playback', playbackRoutes);
 app.use('/api/face', faceRoutes);
 app.use('/api/ai-alerts', aiAlertRoutes);
+app.use('/api/image-search', imageSearchRoutes);
 
 // Database Connection
 mongoose

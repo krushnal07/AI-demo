@@ -38,6 +38,7 @@ import ForensicReport from "./pages/ForensicReport";
 import CrimeIntelligence from "./pages/CrimeIntelligence";
 import CorridorAnalytics from "./pages/CorridorAnalytics";
 import MovementMap from "./pages/MovementMap";
+import ImageSearch from "./pages/ImageSearch";
 import Others from "./pages/Others";
 import WebSocketComponent from "./components/WebSocketComponent";
 import { AlertProvider } from "./components/AlertNotifier";
@@ -328,6 +329,7 @@ function MainApp() {
                   <Route path="/crime-intelligence" element={<CrimeIntelligence />} />
                   <Route path="/corridor-analytics" element={<CorridorAnalytics />} />
                   <Route path="/movement-map" element={<MovementMap />} />
+                  <Route path="/image-search" element={<ImageSearch />} />
                   <Route path="/verify/:id" element={<Verify />} />
                   <Route path="/otp" element={<Otp />} />
                   <Route path="/dashboard" element={<Dashboard />} />
