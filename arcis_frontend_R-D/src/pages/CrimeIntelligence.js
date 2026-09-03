@@ -172,6 +172,7 @@ const CrimeIntelligence = () => {
           value={totals.plateLegible}
           note={`of ${totals.plateAttempted} attempted`}
           color={totals.plateLegible === 0 ? t.critical : t.good}
+          onClick={() => setDrill({ facet: "plates", title: "Segments with a readable registration" })}
         />
       </SimpleGrid>
 
@@ -188,6 +189,24 @@ const CrimeIntelligence = () => {
             Every violation below is observable but <strong>unattributable</strong> &mdash; there is no plate to
             issue a notice against. Until plate capture works, this register supports deployment decisions and
             camera siting, not prosecutions.
+          </Insight>
+        )}
+        {totals.plateAttempted > totals.plateLegible && (
+          <Insight
+            tone="warn"
+            kicker={"PLATE\nQUALITY"}
+            title={`${totals.plateAttempted - totals.plateLegible} of ${totals.plateAttempted} registration reads were not legible.`}
+            source="segments where a plate was attempted but could not be resolved"
+            onClick={() =>
+              setDrill({
+                facet: "plates",
+                only: "unreadable",
+                title: "Registrations attempted but not legible",
+              })
+            }
+          >
+            Those segments show an offence with no attributable vehicle. Camera angle, resolution or lighting
+            is the limiting factor on whether any of this becomes a notice.
           </Insight>
         )}
         {topOffence && (

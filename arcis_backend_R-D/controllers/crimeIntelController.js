@@ -190,6 +190,10 @@ const buildDrillQuery = (facet, value, only) => {
       return { query: {}, requires: "violation" };
     case "notable":
       return { query: {}, requires: "notable" };
+    case "plates":
+      // only=unreadable gives the failures, which are the useful half for
+      // deciding whether a camera can support a prosecution
+      return { query: {}, requires: only === "unreadable" ? "plate_unreadable" : "plate_readable" };
     case "site": {
       const base = { location: value };
       if (only === "violations") return { query: base, requires: "violation" };
@@ -237,6 +241,10 @@ const shapeItem = (d, verdict, term) => {
     primary: primaryOffence(verdict.categories),
     violationText: verdict.violationText,
     notableText: verdict.notableText,
+    plateText: (() => {
+      const reg = sectionOf(d.description, "REGISTRATIONS READ");
+      return reportsNothing(reg) ? null : reg;
+    })(),
     snippet: term ? excerptAround(raw, term, 260) : lead ? lead.slice(0, 260) : raw.slice(0, 220),
     description: raw,
   };
@@ -264,6 +272,13 @@ const getDrill = async (req, res) => {
       if (spec.offence && !verdict.categories.includes(spec.offence)) continue;
       if (spec.requires === "violation" && !verdict.hasViolation) continue;
       if (spec.requires === "notable" && !verdict.hasNotable) continue;
+      if (spec.requires === "plate_readable" || spec.requires === "plate_unreadable") {
+        const reg = sectionOf(d.description, "REGISTRATIONS READ");
+        if (reportsNothing(reg)) continue; // no attempt recorded at all
+        const readable = plateReadable(d.description);
+        if (spec.requires === "plate_readable" && !readable) continue;
+        if (spec.requires === "plate_unreadable" && readable) continue;
+      }
       matched.push(shapeItem(d, verdict, spec.term));
     }
 

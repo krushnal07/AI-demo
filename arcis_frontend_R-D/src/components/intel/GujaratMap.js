@@ -22,6 +22,8 @@ const GUJARAT_BOUNDS = [
  * (~400 m) so all of them stay visible and clickable at city zoom, instead of
  * one marker hiding four cameras.
  */
+const hasCoords = (s) => Number.isFinite(s?.lat) && Number.isFinite(s?.lng);
+
 const nudge = (lat, lng, spread) => {
   if (!spread || spread.of < 2) return [lat, lng];
   const angle = (spread.index / spread.of) * Math.PI * 2 - Math.PI / 2;
@@ -56,15 +58,18 @@ const siteIcon = ({ hits, size, colour, ring, label }) =>
 const FitTo = ({ points }) => {
   const map = useMap();
   useEffect(() => {
-    if (!points.length) {
+    const valid = (points || []).filter(
+      (p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1])
+    );
+    if (!valid.length) {
       map.fitBounds(GUJARAT_BOUNDS, { padding: [20, 20] });
       return;
     }
-    if (points.length === 1) {
-      map.setView(points[0], 13);
+    if (valid.length === 1) {
+      map.setView(valid[0], 13);
       return;
     }
-    map.fitBounds(L.latLngBounds(points), { padding: [50, 50], maxZoom: 13 });
+    map.fitBounds(L.latLngBounds(valid), { padding: [50, 50], maxZoom: 13 });
   }, [points, map]);
   return null;
 };
@@ -78,10 +83,14 @@ const GujaratMap = ({ sites = [], sightings = [], onSelect, height = "560px" }) 
     return map;
   }, [sightings]);
 
+  // A site with no coordinates is simply not drawn; it is still counted in
+  // every table on the page, and the caller is told how many were skipped.
   const positioned = useMemo(
-    () => sites.map((s) => ({ ...s, pos: nudge(s.lat, s.lng, s.spread) })),
+    () => sites.filter(hasCoords).map((s) => ({ ...s, pos: nudge(s.lat, s.lng, s.spread) })),
     [sites]
   );
+
+  const skipped = useMemo(() => sites.filter((s) => !hasCoords(s)), [sites]);
 
   const posByLocation = useMemo(() => {
     const map = {};
@@ -183,6 +192,15 @@ const GujaratMap = ({ sites = [], sightings = [], onSelect, height = "560px" }) 
           );
         })}
       </MapContainer>
+
+      {skipped.length > 0 && (
+        <Flex align="center" gap={2} px={3} py={2} bg={t.panelAlt} borderTop="1px solid" borderColor={t.border}>
+          <Text fontSize="11px" color={t.muted}>
+            {skipped.length} site{skipped.length === 1 ? "" : "s"} not plotted &mdash; no coordinates for{" "}
+            {skipped.map((s) => s.camera_id || s.location).join(", ")}. Still counted in the tables below.
+          </Text>
+        </Flex>
+      )}
     </Box>
   );
 };

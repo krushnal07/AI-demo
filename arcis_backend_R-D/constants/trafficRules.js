@@ -204,11 +204,52 @@ const classify = (description) => {
   };
 };
 
-/** Was a registration actually readable in this segment? */
+/*
+ * Registration legibility.
+ *
+ * The describer is verbose about failure and phrases it many ways - "None
+ * legible", "too small or blurred to read reliably", "beyond legible
+ * resolution", "characters are not reliably readable". Matching a couple of
+ * spellings of "not legible" wrongly passed most of those as readable, so a
+ * plate only counts as READ when the text actually offers characters and does
+ * not disclaim them.
+ */
+const PLATE_FAIL = new RegExp(
+  [
+    "no(?:ne|t)? (?:\\w+ ){0,2}legible",
+    "il+egible",
+    "un-?readable",
+    "not (?:\\w+ ){0,2}read(?:able)?",
+    "cannot be (?:read|resolved|determined|made out)",
+    "could not be (?:read|resolved|determined)",
+    "unable to (?:read|resolve|determine)",
+    "beyond (?:\\w+ ){0,2}(?:legible|readable) resolution",
+    "too (?:small|blurred|distant|low)",
+    "blurred",
+    "motion blur",
+    "not (?:clearly |reliably )?(?:visible|discernible|resolvable|readable)",
+    "characters (?:are |cannot|could not)",
+    "no plates? (?:were )?read",
+    "not confirmed",
+    "low confidence",
+  ].join("|"),
+  "i"
+);
+
+/** An Indian-format registration with actual characters, e.g. GJ 01 AB 1234. */
+const PLATE_SHAPE = /\b[A-Z]{2}[\s-]?\d{1,2}[\s-]?[A-Z]{1,3}[\s-]?\d{1,4}\b/;
+
+/**
+ * True only when the section gives readable characters. Partial reads that the
+ * describer itself hedges ("approximately", "partial") are NOT counted - an
+ * unusable plate is worse than none on an enforcement console.
+ */
 const plateReadable = (description) => {
   const reg = sectionOf(description, "REGISTRATIONS READ");
   if (reportsNothing(reg)) return false;
-  return !/not legible|illegible|cannot be read|unreadable|not readable|no plates? (were )?read/i.test(reg);
+  if (PLATE_FAIL.test(reg)) return false;
+  if (/partial|approximately|appears to read|possibly|unsure/i.test(reg)) return false;
+  return PLATE_SHAPE.test(reg.toUpperCase());
 };
 
 const CATEGORY_BY_KEY = VIOLATION_CATEGORIES.reduce((acc, c) => { acc[c.key] = c; return acc; }, {});

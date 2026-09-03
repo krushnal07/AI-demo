@@ -348,6 +348,17 @@ const DrillDrawer = ({ drill, onClose, baseUrl }) => {
                         </>
                       )}
 
+                      {it.plateText && (
+                        <>
+                          <Text fontSize="9.5px" letterSpacing="0.06em" textTransform="uppercase" color={t.muted} mb={1}>
+                            Registrations read
+                          </Text>
+                          <Box bg={t.panelAlt} border="1px solid" borderColor={t.border} borderLeft="3px solid" borderLeftColor={t.s1} borderRadius="7px" p={3} mb={3}>
+                            <Text fontSize="12.5px" color={t.body} fontFamily={MONO_FONT}>{it.plateText}</Text>
+                          </Box>
+                        </>
+                      )}
+
                       <Text fontSize="9.5px" letterSpacing="0.06em" textTransform="uppercase" color={t.muted} mb={1}>
                         Full description
                       </Text>
