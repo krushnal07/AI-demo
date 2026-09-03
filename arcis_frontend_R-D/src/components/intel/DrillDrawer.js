@@ -48,39 +48,6 @@ const fmtOffset = (seconds) => {
     .join(":");
 };
 
-/** Full description with the matched term marked, so the reader can judge it. */
-const Described = ({ text, match, theme }) => {
-  if (!match) {
-    return (
-      <Text fontSize="12.5px" color={theme.body} whiteSpace="pre-wrap">
-        {text}
-      </Text>
-    );
-  }
-  const lower = text.toLowerCase();
-  const needle = match.toLowerCase();
-  const parts = [];
-  let from = 0;
-  let at = lower.indexOf(needle);
-  let key = 0;
-  while (at !== -1) {
-    if (at > from) parts.push(<React.Fragment key={key++}>{text.slice(from, at)}</React.Fragment>);
-    parts.push(
-      <Box as="mark" key={key++} bg={theme.panelAlt} color={theme.heading} fontWeight="700" px="2px" borderRadius="2px">
-        {text.slice(at, at + needle.length)}
-      </Box>
-    );
-    from = at + needle.length;
-    at = lower.indexOf(needle, from);
-  }
-  parts.push(<React.Fragment key={key++}>{text.slice(from)}</React.Fragment>);
-  return (
-    <Text fontSize="12.5px" color={theme.body} whiteSpace="pre-wrap">
-      {parts}
-    </Text>
-  );
-};
-
 const Field = ({ label, value, theme }) => (
   <Box>
     <Text fontSize="9.5px" letterSpacing="0.06em" textTransform="uppercase" color={theme.muted}>
@@ -359,12 +326,6 @@ const DrillDrawer = ({ drill, onClose, baseUrl }) => {
                         </>
                       )}
 
-                      <Text fontSize="9.5px" letterSpacing="0.06em" textTransform="uppercase" color={t.muted} mb={1}>
-                        Full description
-                      </Text>
-                      <Box bg={t.panelAlt} border="1px solid" borderColor={t.border} borderRadius="7px" p={3}>
-                        <Described text={it.description || it.snippet} match={null} theme={t} />
-                      </Box>
                     </Box>
                   )}
                 </Box>
