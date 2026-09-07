@@ -53,6 +53,8 @@ const messageMapping = {
   40: "Max Person",
   41: "Box Detection",
   42:"Idle WorkStation",
+  43:"Intruder",
+  100:"Heatmap",
   104:"vacant booth",
   103:"evm proximity violation",
   101:"crowd detection (outdoor)",
@@ -297,9 +299,13 @@ const getAnalyticsImages = async (req, res) => {
 
     // Step 5: Manually attach the camera details to each analytics image
     // This replicates what the $lookup was supposed to do.
+    // `msg` is only stored on records saved after that field was introduced, so
+    // resolve it here for the rest. The UI shows the event name and falls back to
+    // the id only when the mapping has no entry at all.
     const responseData = analyticsImages.map(image => {
         return {
             ...image,
+            msg: image.msg || messageMapping[image.an_id] || null,
             cameraDetails: cameraDetailsMap.get(image.cameradid) || null // Get details from map
         };
     });

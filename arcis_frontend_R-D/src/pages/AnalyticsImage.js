@@ -31,6 +31,20 @@ import {
 } from "@chakra-ui/react";
 import moment from "moment";
 
+// Names for the few event ids the API's own mapping does not cover. Everything
+// else arrives as `msg` on the record, so this stays deliberately short.
+const DEFAULT_EVENT_MAP = {
+  40: "Max Person",
+  1: "facial recognition",
+  43: "Intruder",
+  42: "Idle WorkStation",
+  17: "line crossing",
+  100: "Heatmap",
+};
+// These accounts see counting events only, with no name overrides.
+const COUNT_EMAIL_EVENT_MAP = {};
+const COUNT_EMAILS = ["count@vmukti.com", "maheshwara@gmail.com", "Lakshmi@gmail.com", "roopa@gmail.com"];
+
 const AnalyticsImage = () => {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
@@ -220,22 +234,16 @@ const AnalyticsImage = () => {
     }
   }, [data, selectedDate, selectedEvent, selectedCamera, selectedZone, filterData, selectedSubEvent, selectedPersonName]);
 
-  const defaultEventMap = {
-    40: "Max Person",
-    
-    1:"facial recognition",
-    
-    43:"Intruder",
-    42:"Idle WorkStation",
-    17:"line crossing",
-    100:"Heatmap"
-  };
-  const countEmailEventMap = {};
-  const countEmails = ["count@vmukti.com", "maheshwara@gmail.com", "Lakshmi@gmail.com", "roopa@gmail.com"];
-  const fullZoneEventMap = {
-    default: countEmails.includes(email) ? countEmailEventMap : defaultEventMap,
-  };
-  const currentEventMap = selectedZone ? zoneEventMap[selectedZone] : fullZoneEventMap.default;
+  // Memoised so it is a stable reference - `availableEvents` depends on it.
+  const currentEventMap = useMemo(
+    () =>
+      selectedZone
+        ? zoneEventMap[selectedZone]
+        : COUNT_EMAILS.includes(email)
+        ? COUNT_EMAIL_EVENT_MAP
+        : DEFAULT_EVENT_MAP,
+    [selectedZone, zoneEventMap, email]
+  );
 
   // Event types actually present in the data for the selected date (+ camera, if chosen).
   // Labels come from the API (`msg`, resolved server-side from messageMapping) so the UI
@@ -246,10 +254,11 @@ const AnalyticsImage = () => {
       if (item?.an_id === undefined || item?.an_id === null) return;
       if (selectedCamera && item.cameradid !== selectedCamera) return;
       const key = item.an_id.toString();
-      if (!found.has(key)) found.set(key, item.msg || `Event ${key}`);
+      // same fallback chain as labelFor, so the filter and the rows agree
+      if (!found.has(key)) found.set(key, item.msg || currentEventMap[item.an_id] || `Event ${key}`);
     });
     return found;
-  }, [data, selectedCamera]);
+  }, [data, selectedCamera, currentEventMap]);
 
   // In zone mode the zone map decides which events belong to the zone; otherwise the
   // dropdown is driven purely by what the DB returned for this date.
