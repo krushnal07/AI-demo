@@ -49,17 +49,30 @@ const DATA_COVERAGE_URL = `${CHATBOT_HOST}/api/camera_coverage`;
 const QUICK_PROMPTS = [
   { emoji: "📋", label: "Cameras", prompt: "List all cameras" },
   { emoji: "🎥", label: "Camera Summary", prompt: "Provide me a summary of Janpath on 2026-06-13" },
+  {
+    emoji: "🕐",
+    label: "Time Window",
+    prompt: "what happened on cam10 between 2025-08-28T10:30:00 and 2025-08-28T11:00:00",
+  },
   { emoji: "🚌", label: "White Bus", prompt: "have you seen any white bus at Rajkot Bus Port" },
   { emoji: "🚍", label: "GSRTC Bus", prompt: "have you seen any GSRTC bus anywhere?" },
   { emoji: "🚛", label: "Truck", prompt: "have you seen any truck at Chiman bhai Bridge on 2026-06-13" },
   { emoji: "🏗️", label: "Cement Mixer", prompt: "have you seen cement mixer truck anywhere?" },
   { emoji: "🛺", label: "Auto-rickshaw", prompt: "have you seen any auto-rickshaw at Janpath on 2026-06-13" },
+  {
+    emoji: "🛺",
+    label: "Auto at O.N.G.C.",
+    prompt: "any auto rickshaw on cam03_03_O.N.G.C._Office on 2026-06-14",
+  },
   { emoji: "🚦", label: "Traffic Jam", prompt: "have you seen a traffic jam at Janpath on 2026-06-13" },
+  {
+    emoji: "💥",
+    label: "Accident / Crash",
+    prompt: "have you seen any accident or crash on cam16_stream-16 on 2026-06-13",
+  },
   { emoji: "🚶", label: "Pedestrians", prompt: "were there pedestrians at O.N.G.C. Office on 2026-06-13" },
   { emoji: "👥", label: "Crowd", prompt: "was there a crowd at Rajkot Bus Port" },
   { emoji: "🔢", label: "Number Plates", prompt: "have you seen any number plate starting with GJ in cam10" },
- 
- 
 ];
 const GREETING = { sender: "bot", text: "Hi, how can I help you today?", timestamp: null };
 const MAX_INPUT_HEIGHT = 120;
