@@ -59,8 +59,7 @@ const QUICK_PROMPTS = [
   { emoji: "👥", label: "Crowd", prompt: "was there a crowd at Rajkot Bus Port" },
   { emoji: "🔢", label: "Number Plates", prompt: "have you seen any number plate starting with GJ in cam10" },
   { emoji: "🚘", label: "Trace a Plate", prompt: "have you seen GJ27EA8879 in cam10 on 2025-08-28" },
-  { emoji: "🔢", label: "Vehicle Count", prompt: "how many vehicles were detected at cam10 on 2025-08-28" },
-  { emoji: "🛑", label: "Vehicle Stopped", prompt: "did any vehicle stop at cam10 on 2025-08-28" },
+ 
 ];
 const GREETING = { sender: "bot", text: "Hi, how can I help you today?", timestamp: null };
 const MAX_INPUT_HEIGHT = 120;
