@@ -566,7 +566,7 @@ const ImageSearch = () => {
               )}
             </Flex>
             <Text fontSize="10.5px" color={t.muted} fontFamily={MONO_FONT}>
-              POST {API_URL}
+              {/* POST {API_URL} */}
             </Text>
           </Flex>
         </Panel>
