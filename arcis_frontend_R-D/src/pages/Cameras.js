@@ -200,7 +200,10 @@ const Cameras = () => {
   const titleColor = useColorModeValue("#1A2E3D", "#FFFFFF");
   const placeholderColor = useColorModeValue("#1A2E3D80", "#94A3B8");
   const imageContainerBg = useColorModeValue("#E8EFF7", "#1E293B");
-  const cameraPlaceholderLogo = useColorModeValue("/images/Vlogodark.png", "/images/Vlogo.png");
+  const cameraPlaceholderLogo = useColorModeValue(
+    (process.env.PUBLIC_URL || "") + "/images/VlogoDark.png",
+    (process.env.PUBLIC_URL || "") + "/images/Vlogo.png"
+  );
   const radioButtonColor = useColorModeValue("black", "white");
   //const grid_view_icon = useColorModeValue("/images/grid_view_icon_light.png", "/images/grid_view_icon.png");
   //const list_view_icon = useColorModeValue("/images/list_view_icon_light.png", "/images/list_view_icon.png");
@@ -1384,6 +1387,7 @@ const Cameras = () => {
                     <Flex direction="column" align="center" justify="center" w="100%" h="100%">
                       <Image
                         src={cameraPlaceholderLogo}
+                        fallbackSrc={(process.env.PUBLIC_URL || "") + "/images/VlogoDark.png"}
                         alt="Camera Logo"
                         w="96px"
                         h="auto"

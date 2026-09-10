@@ -95,14 +95,26 @@ function MainApp() {
     matchPath("/resetPassword/:token", location.pathname) ||
     matchPath("/verify/:id", location.pathname);
 
+  // Use Chakra UI's `useBreakpointValue` to determine screen size
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
+  const isDesktop = useBreakpointValue({ base: false, lg: true });
+
+  const isDashboardPage =
+    location.pathname === "/dash" ||
+    location.pathname === "/dashboard";
+
   const isFixedViewportPage =
     location.pathname === "/multiple" ||
     location.pathname.startsWith("/camera/") ||
-    location.pathname === "/ai-alerts";
+    location.pathname === "/ai-alerts" ||
+    (isDesktop && isDashboardPage);
 
-  // Use Chakra UI's `useBreakpointValue` to determine if the screen is small (tab/mobile)
-  const isMobile = useBreakpointValue({ base: true, md: false });
-  const isTablet = useBreakpointValue({ base: false, md: true, lg: false });
+  const isNoScrollPage =
+    isLoginPage ||
+    location.pathname === "/multiple" ||
+    location.pathname === "/ai-alerts" ||
+    (isDesktop && isDashboardPage);
 
   const isDeleteAccountPage = location.pathname === "/deleteAccount";
 
@@ -220,20 +232,20 @@ function MainApp() {
         autoHideTimeout={1000}
         autoHideDuration={200}
         style={{
-          width: "100vw",
-          height: "100vh",
-          overflow: location.pathname === "/multiple" || isLoginPage ? "hidden" : "auto",
+          width: "100%",
+          height: isLoginPage ? "100vh" : "100vh",
+          overflow: isNoScrollPage ? "hidden" : "auto",
         }}
         renderView={({ style, ...props }) => (
           <div
             {...props}
             style={{
               ...style,
-              overflow: location.pathname === "/multiple" || isLoginPage ? "hidden" : "auto",
+              overflow: isNoScrollPage ? "hidden" : "auto",
               overflowX: "hidden",
-              overflowY: location.pathname === "/multiple" || isLoginPage ? "hidden" : "auto",
-              marginBottom: location.pathname === "/multiple" || isLoginPage ? 0 : style.marginBottom,
-              marginRight: location.pathname === "/multiple" || isLoginPage ? 0 : style.marginRight,
+              overflowY: isNoScrollPage ? "hidden" : "auto",
+              marginBottom: isNoScrollPage ? 0 : style.marginBottom,
+              marginRight: isNoScrollPage ? 0 : style.marginRight,
             }}
           />
         )}
@@ -242,12 +254,7 @@ function MainApp() {
             {...props}
             style={{
               ...style,
-              display:
-                location.pathname === "/multiple" ||
-                location.pathname === "/ai-alerts" ||
-                isLoginPage
-                  ? "none"
-                  : "block",
+              display: isNoScrollPage ? "none" : "block",
             }}
           />
         )}
@@ -261,12 +268,7 @@ function MainApp() {
               borderRadius: "6px",
               width: "7px",
               zIndex: "9999",
-              display:
-                location.pathname === "/multiple" ||
-                location.pathname === "/ai-alerts" ||
-                isLoginPage
-                  ? "none"
-                  : "block",
+              display: isNoScrollPage ? "none" : "block",
             }}
           />
         )}

@@ -1,6 +1,6 @@
 // src/components/intel/GujaratMap.js
 // A real slippy map of Gujarat with the camera estate on it.
-// Uses reliable CartoDB / OpenStreetMap tile layer with auto-resizing.
+// Uses reliable OpenStreetMap tile layer (no API key required) with auto-resizing.
 import React, { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -187,6 +187,9 @@ const GujaratMap = ({ sites = [], sightings = [], onSelect, height = "560px" }) 
           color: `${t.muted} !important`,
         },
         ".leaflet-popup-content": { margin: "10px 12px", minWidth: "200px" },
+        ".dark-map-tiles": {
+          filter: "invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) !important",
+        },
       }}
     >
       <MapContainer
@@ -198,13 +201,11 @@ const GujaratMap = ({ sites = [], sightings = [], onSelect, height = "560px" }) 
         <MapResizer />
         <TileLayer
           key={isDark ? "dark-tiles" : "light-tiles"}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url={
-            isDark
-              ? "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png"
-              : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          }
-          subdomains={["a", "b", "c", "d"]}
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          subdomains={["a", "b", "c"]}
+          className={isDark ? "dark-map-tiles" : "light-map-tiles"}
+          maxZoom={19}
         />
 
         <FitTo points={fitPoints} />

@@ -524,7 +524,7 @@ const Login = () => {
                   fontFamily="'Manrope', sans-serif"
                   mb={1.5}
                 >
-                  Email ID or Registered Mobile <Box as="span" color="#EF4444">*</Box>
+                  Email ID or Registered Mobile
                 </FormLabel>
                 <InputGroup size="md">
                   <InputLeftElement pointerEvents="none" color={iconColor} h="46px">
@@ -564,7 +564,7 @@ const Login = () => {
                       fontFamily="'Manrope', sans-serif"
                       m={0}
                     >
-                      Enter 6-digit OTP <Box as="span" color="#EF4444">*</Box>
+                      Enter 6-digit OTP
                     </FormLabel>
                     <Button
                       variant="link"
@@ -615,7 +615,7 @@ const Login = () => {
                       fontFamily="'Manrope', sans-serif"
                       m={0}
                     >
-                      Password <Box as="span" color="#EF4444">*</Box>
+                      Password
                     </FormLabel>
                     {isMobileNumber && (
                       <Button

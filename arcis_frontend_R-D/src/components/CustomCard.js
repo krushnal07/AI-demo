@@ -9,6 +9,7 @@ const CustomCard = ({
   subtextColor,
   IconComponent,
   subtitle,
+  minH,
 }) => {
   const cardBg = useColorModeValue('#FFFFFF', '#1C222D');
   const borderColor = useColorModeValue('#E2E8EF', 'rgba(255, 255, 255, 0.08)');
@@ -21,13 +22,14 @@ const CustomCard = ({
   return (
     <Box
       w="100%"
-      minH="175px"
+      minH={minH || { base: "auto", md: "120px", lg: "125px", "2xl": "145px" }}
       bg={cardBg}
-      p="20px"
+      p={{ base: "12px", sm: "14px", md: "14px", lg: "16px", "2xl": "18px" }}
       borderRadius="14px"
       borderWidth="3px 1px 1px 1px"
       borderStyle="solid"
       borderColor={borderColor}
+      borderTopColor={color}
       boxShadow={shadow}
       display="flex"
       flexDirection="column"
@@ -36,23 +38,23 @@ const CustomCard = ({
       transition="transform 0.2s ease, box-shadow 0.2s ease"
       _hover={{ transform: 'translateY(-2px)', boxShadow: '0px 4px 12px 0px rgba(26, 46, 61, 0.1)' }}
     >
-      {/* Top Row: Icon Container (42x42, border-radius: 11px) */}
+      {/* Top Row: Icon Container */}
       <Flex
-        w="42px"
-        h="42px"
-        minW="42px"
-        borderRadius="11px"
+        w={{ base: "34px", sm: "38px", "2xl": "42px" }}
+        h={{ base: "34px", sm: "38px", "2xl": "42px" }}
+        minW={{ base: "34px", sm: "38px", "2xl": "42px" }}
+        borderRadius="10px"
         bg={defaultIconBg}
         color={color}
         align="center"
         justify="center"
       >
-        {IconComponent && <Icon as={IconComponent} boxSize="20px" />}
+        {IconComponent && <Icon as={IconComponent} boxSize={{ base: "16px", sm: "18px", "2xl": "20px" }} />}
       </Flex>
 
       {/* Content Section */}
-      <Box pt="14px">
-        {/* Title (Manrope 600 SemiBold, 10px, line-height 15px, letter-spacing 0.8px, uppercase) */}
+      <Box pt="8px">
+        {/* Title */}
         <Text
           fontFamily="'Manrope', sans-serif"
           fontWeight="600"
@@ -65,29 +67,29 @@ const CustomCard = ({
           {title}
         </Text>
 
-        {/* Number / Value (Manrope 800 ExtraBold, 36px, line-height 36px) */}
+        {/* Number / Value */}
         <Text
           fontFamily="'Manrope', sans-serif"
           fontWeight="800"
-          fontSize="36px"
-          lineHeight="36px"
+          fontSize={{ base: "22px", sm: "24px", md: "28px", lg: "30px", "2xl": "34px" }}
+          lineHeight="32px"
           letterSpacing="0px"
           color={valueColor}
-          mt="4px"
+          mt="2px"
         >
           {value}
         </Text>
 
-        {/* Subtitle / Region / Percentage (Manrope 600 SemiBold, 11px, line-height 16.5px) */}
+        {/* Subtitle / Region / Percentage */}
         {subtitle && (
           <Text
             fontFamily="'Manrope', sans-serif"
             fontWeight="600"
             fontSize="11px"
-            lineHeight="16.5px"
+            lineHeight="15px"
             letterSpacing="0px"
             color={subtextColor || color}
-            mt="4px"
+            mt="2px"
           >
             {subtitle}
           </Text>

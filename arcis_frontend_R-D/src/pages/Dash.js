@@ -129,10 +129,10 @@ const Dash = () => {
   return (
     <Box
       w="100%"
-      maxW="1440px"
+      maxW={{ base: "100%", "2xl": "1920px" }}
       mx="auto"
-      px={{ base: 4, sm: 6 }}
-      py={{ base: 4, md: 6 }}
+      px={{ base: 3, sm: 4, md: 5, lg: 6, xl: 8, "2xl": 10 }}
+      py={{ base: 3, md: 3, lg: 4, "2xl": 5 }}
       fontFamily="'Manrope', sans-serif"
     >
       <MobileHeader title="Dashboard" />
@@ -140,18 +140,18 @@ const Dash = () => {
       {/* 1. VMS DASHBOARD CONTAINER (Header Row) */}
       <Flex
         justify="space-between"
-        align={{ base: "flex-start", sm: "center" }}
-        direction={{ base: "column", sm: "row" }}
-        gap="10px"
-        mb="20px"
+        align="center"
+        wrap="wrap"
+        gap="8px"
+        mb={{ base: "10px", md: "12px", lg: "14px", xl: "16px" }}
       >
         {/* Titles */}
         <Box>
           <Text
             fontFamily="'Manrope', sans-serif"
             fontWeight="800"
-            fontSize="22px"
-            lineHeight="26.4px"
+            fontSize={{ base: "18px", sm: "20px", md: "22px", xl: "24px", "2xl": "26px" }}
+            lineHeight="1.2"
             letterSpacing="0px"
             color={headingColor}
           >
@@ -160,8 +160,8 @@ const Dash = () => {
           <Text
             fontFamily="'Manrope', sans-serif"
             fontWeight="400"
-            fontSize="13px"
-            lineHeight="19.5px"
+            fontSize={{ base: "11px", sm: "12px", xl: "13px" }}
+            lineHeight="1.4"
             letterSpacing="0px"
             color={subtextColor}
             mt="2px"
@@ -174,15 +174,15 @@ const Dash = () => {
         <Flex
           align="center"
           gap="6px"
-          px="10px"
-          py="3px"
+          px={{ base: "8px", sm: "10px" }}
+          py={{ base: "2px", sm: "3px" }}
           borderRadius="999px"
           bg={liveBadgeBg}
           userSelect="none"
         >
           <Box
             as="span"
-            boxSize="6px"
+            boxSize={{ base: "5px", sm: "6px" }}
             borderRadius="full"
             bg="#10B981"
             boxShadow="0 0 0 2px rgba(16, 185, 129, 0.25)"
@@ -190,7 +190,7 @@ const Dash = () => {
           <Text
             fontFamily="'Manrope', sans-serif"
             fontWeight="700"
-            fontSize="11px"
+            fontSize={{ base: "10px", sm: "11px" }}
             lineHeight="16.5px"
             letterSpacing="0.33px"
             color="#10B981"
@@ -202,7 +202,11 @@ const Dash = () => {
       </Flex>
 
       {/* 2. KPI CONTAINER (4 Cards Grid) */}
-      <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing="16px" mb="24px">
+      <SimpleGrid
+        columns={{ base: 1, sm: 2, lg: 4 }}
+        spacing={{ base: "10px", sm: "12px", md: "14px", lg: "16px", "2xl": "20px" }}
+        mb={{ base: "12px", md: "14px", lg: "16px", "2xl": "20px" }}
+      >
         <CustomCard
           title="TOTAL CAMERAS"
           value={totalCameras}
@@ -225,7 +229,7 @@ const Dash = () => {
           title="OFFLINE CAMERAS"
           value={offlineCameras}
           color="#DB7B3A"
-          iconBg="#EF444416"
+          iconBg="#DB7B3A16"
           subtextColor="#DB7B3A"
           IconComponent={TbWifiOff}
           subtitle={`${pct(offlineCameras)}% of total`}
@@ -242,11 +246,15 @@ const Dash = () => {
       </SimpleGrid>
 
       {/* 3. ANALYTICS CONTAINER (2 Column Grid) */}
-      <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap="24px" alignItems="stretch">
+      <Grid
+        templateColumns={{ base: "1fr", lg: "1fr 1fr" }}
+        gap={{ base: "12px", md: "14px", lg: "16px", "2xl": "20px" }}
+        alignItems="stretch"
+      >
         {/* CARD 1: CAMERA STATUS (Horizontal Bar Chart) */}
         <Box
           bg={cardBg}
-          p="20px"
+          p={{ base: "14px", md: "16px", "2xl": "20px" }}
           borderRadius="14px"
           borderWidth="1px"
           borderStyle="solid"
@@ -259,7 +267,7 @@ const Dash = () => {
             <Text
               fontFamily="'Manrope', sans-serif"
               fontWeight="700"
-              fontSize="15px"
+              fontSize={{ base: "14px", md: "15px", "2xl": "17px" }}
               lineHeight="22.5px"
               letterSpacing="0px"
               color={headingColor}
@@ -269,7 +277,7 @@ const Dash = () => {
             <Text
               fontFamily="'Manrope', sans-serif"
               fontWeight="400"
-              fontSize="12px"
+              fontSize={{ base: "11px", md: "12px", "2xl": "13px" }}
               lineHeight="18px"
               letterSpacing="0px"
               color={subtextColor}
@@ -279,7 +287,7 @@ const Dash = () => {
             </Text>
           </Box>
 
-          <Box width="100%" height="240px">
+          <Box width="100%" height={{ base: "180px", sm: "190px", md: "200px", lg: "215px", "2xl": "260px" }}>
             <ReactApexChart
               type="bar"
               height="100%"
@@ -322,7 +330,7 @@ const Dash = () => {
                   decimalsInFloat: 0,
                   labels: {
                     style: {
-                      colors: "#64748B",
+                      colors: axisColor,
                       fontSize: "11px",
                       fontFamily: "'Manrope', sans-serif",
                     },
@@ -340,7 +348,7 @@ const Dash = () => {
                 yaxis: {
                   labels: {
                     style: {
-                      colors: ["#64748B", "#64748B", "#64748B"],
+                      colors: [axisColor, axisColor, axisColor],
                       fontSize: "12px",
                       fontWeight: 600,
                       fontFamily: "'Manrope', sans-serif",
@@ -367,13 +375,24 @@ const Dash = () => {
                   fontSize: "12px",
                   fontWeight: 600,
                   fontFamily: "'Manrope', sans-serif",
-                  labels: { colors: "#64748B" },
+                  labels: { colors: axisColor },
                   itemMargin: { horizontal: 10, vertical: 4 },
                 },
                 tooltip: {
                   theme: chartTheme,
                   y: { formatter: (v) => (v ?? 0).toLocaleString("en-IN") },
                 },
+                responsive: [
+                  {
+                    breakpoint: 600,
+                    options: {
+                      plotOptions: { bar: { barHeight: "52%" } },
+                      xaxis: { labels: { style: { fontSize: "10px" } } },
+                      yaxis: { labels: { style: { fontSize: "11px" } } },
+                      legend: { fontSize: "11px", itemMargin: { horizontal: 6, vertical: 2 } },
+                    },
+                  },
+                ],
               }}
             />
           </Box>
@@ -382,7 +401,7 @@ const Dash = () => {
         {/* CARD 2: OFFLINE / ONLINE CAMERAS LIST */}
         <Box
           bg={cardBg}
-          p="20px"
+          p={{ base: "14px", md: "16px", "2xl": "20px" }}
           borderRadius="14px"
           borderWidth="1px"
           borderStyle="solid"
@@ -392,11 +411,11 @@ const Dash = () => {
           flexDirection="column"
         >
           {/* Header Row with Toggle Badges */}
-          <Flex justify="space-between" align="center" mb="14px" wrap="wrap" gap="8px">
+          <Flex justify="space-between" align="center" mb={{ base: "8px", md: "10px", "2xl": "12px" }} wrap="wrap" gap="8px">
             <Text
               fontFamily="'Manrope', sans-serif"
               fontWeight="700"
-              fontSize="15px"
+              fontSize={{ base: "14px", md: "15px", "2xl": "17px" }}
               lineHeight="22.5px"
               letterSpacing="0px"
               color={headingColor}
@@ -410,8 +429,8 @@ const Dash = () => {
               <Box
                 as="button"
                 onClick={() => setCamView("offline")}
-                px="10px"
-                py="3px"
+                px={{ base: "8px", sm: "10px" }}
+                py={{ base: "2px", sm: "3px" }}
                 borderRadius="999px"
                 cursor="pointer"
                 transition="all 0.15s ease"
@@ -421,7 +440,7 @@ const Dash = () => {
                 color="#DB7B3A"
                 fontFamily="'Manrope', sans-serif"
                 fontWeight="700"
-                fontSize="11px"
+                fontSize={{ base: "10px", sm: "11px" }}
                 lineHeight="16.5px"
                 letterSpacing="0.33px"
                 _hover={{ bg: "rgba(239, 68, 68, 0.15)" }}
@@ -433,8 +452,8 @@ const Dash = () => {
               <Box
                 as="button"
                 onClick={() => setCamView("online")}
-                px="10px"
-                py="3px"
+                px={{ base: "8px", sm: "10px" }}
+                py={{ base: "2px", sm: "3px" }}
                 borderRadius="999px"
                 cursor="pointer"
                 transition="all 0.15s ease"
@@ -444,7 +463,7 @@ const Dash = () => {
                 color="#10B981"
                 fontFamily="'Manrope', sans-serif"
                 fontWeight="700"
-                fontSize="11px"
+                fontSize={{ base: "10px", sm: "11px" }}
                 lineHeight="16.5px"
                 letterSpacing="0.33px"
                 _hover={{ bg: "rgba(16, 185, 129, 0.15)" }}
@@ -456,11 +475,11 @@ const Dash = () => {
 
           {/* Locations List (Scrollable if more than 5 cameras) */}
           <Box
-            maxH="346px"
+            maxH={{ base: "220px", sm: "240px", md: "250px", lg: "215px", xl: "225px", "2xl": "280px" }}
             overflowY="auto"
             display="flex"
             flexDirection="column"
-            gap="8px"
+            gap={{ base: "6px", md: "8px" }}
             pr="4px"
             css={{
               "&::-webkit-scrollbar": { width: "4px" },
@@ -475,7 +494,7 @@ const Dash = () => {
                 direction="column"
                 align="center"
                 justify="center"
-                h="180px"
+                h="130px"
                 gap={2}
                 color={subtextColor}
               >
@@ -494,9 +513,9 @@ const Dash = () => {
               activeList.map((cam, i) => (
                 <Flex
                   key={`${cam.deviceId}-${i}`}
-                  minH="58px"
-                  px="14px"
-                  py="10px"
+                  minH={{ base: "44px", md: "48px", "2xl": "52px" }}
+                  px={{ base: "10px", md: "12px", "2xl": "14px" }}
+                  py={{ base: "6px", md: "7px" }}
                   borderRadius="9px"
                   borderWidth="1px"
                   borderStyle="solid"
@@ -514,8 +533,8 @@ const Dash = () => {
                     <Text
                       fontFamily="'Manrope', sans-serif"
                       fontWeight="600"
-                      fontSize="13px"
-                      lineHeight="19.5px"
+                      fontSize={{ base: "12px", md: "13px", "2xl": "14px" }}
+                      lineHeight="1.3"
                       letterSpacing="0px"
                       color={headingColor}
                       isTruncated
@@ -526,8 +545,8 @@ const Dash = () => {
                     <Text
                       fontFamily="'Manrope', sans-serif"
                       fontWeight="400"
-                      fontSize="11px"
-                      lineHeight="16.5px"
+                      fontSize={{ base: "10px", md: "11px", "2xl": "12px" }}
+                      lineHeight="1.3"
                       letterSpacing="0px"
                       color={subtextColor}
                       isTruncated
@@ -538,17 +557,17 @@ const Dash = () => {
                   </Box>
 
                   {/* Right Column: Status Dot & Badge */}
-                  <Flex align="center" gap="5px" flexShrink={0}>
+                  <Flex align="center" gap={{ base: "4px", md: "5px" }} flexShrink={0} ml={2}>
                     <Box
-                      boxSize="8px"
-                      borderRadius="4px"
+                      boxSize={{ base: "7px", md: "8px" }}
+                      borderRadius="full"
                       bg={camView === "online" ? "#10B981" : "#DB7B3A"}
                     />
                     <Text
                       fontFamily="'Manrope', sans-serif"
                       fontWeight="700"
-                      fontSize="10px"
-                      lineHeight="15px"
+                      fontSize={{ base: "9px", md: "10px", "2xl": "11px" }}
+                      lineHeight="1"
                       letterSpacing="0px"
                       color={camView === "online" ? "#10B981" : "#DB7B3A"}
                     >
