@@ -37,17 +37,63 @@ const LOCATION_COLORS = [
 ];
 
 const ANALYTICS_PALETTE = [
-  "#0284C7",
-  "#DB7B3A",
-  "#10B981",
-  "#8B5CF6",
-  "#F59E0B",
-  "#EC4899",
-  "#14B8A6",
-  "#6366F1",
-  "#EAB308",
-  "#06B6D4",
+  "#0284C7", // Sky Blue (Intruder)
+  "#EC4899", // Pink (Event 49)
+  "#F59E0B", // Amber / Golden Yellow (Facial recognition)
+  "#10B981", // Emerald Green (Line Crossing)
+  "#8B5CF6", // Purple (Heatmap)
+  "#DB7B3A", // Warm Orange (Box Detection / Object Detection)
+  "#14B8A6", // Teal (Human Detection)
+  "#6366F1", // Indigo (ANPR)
+  "#06B6D4", // Cyan (Max Person)
+  "#EAB308", // Yellow
 ];
+
+const KNOWN_EVENT_COLORS = {
+  intruder: "#0284C7", // Sky Blue
+  event49: "#EC4899", // Pink
+  facialrecognition: "#F59E0B", // Amber / Yellow
+  linecrossing: "#10B981", // Emerald Green
+  heatmap: "#8B5CF6", // Purple
+  heatmapforcrowd: "#8B5CF6",
+  humandetection: "#14B8A6", // Teal
+  fireandsmokedetection: "#EF4444", // Red
+  firesmokedetection: "#EF4444",
+  automaticnumberplaterecognition: "#6366F1", // Indigo
+  anpr: "#6366F1",
+  boxdetection: "#DB7B3A", // Orange
+  cameraofflinedetected: "#64748B", // Slate
+  cameratamperingdetected: "#DC2626", // Dark Red
+  crowdunusualgatheringdetected: "#D97706", // Amber
+  loiteringatpassage: "#A855F7", // Purple
+  maxperson: "#06B6D4", // Cyan
+  maxpersondetectedinquestionpaperroom: "#06B6D4",
+  movementdetectedinclassroombeforeafterexamhours: "#EAB308",
+  movementatentryexitgate: "#10B981",
+  suspeciousmovement: "#F43F5E",
+  suspiciousmovement: "#F43F5E",
+  unauthorizeditemsdetected: "#F472B6",
+  unauthorizedentrydetection: "#F97316",
+  objectdetection: "#DB7B3A",
+  noeventoccurred: "#94A3B8",
+};
+
+const normalizeEventKey = (s) =>
+  s ? s.toString().toLowerCase().trim().replace(/[^a-z0-9]/g, "") : "";
+
+const getEventColor = (eventName, fallbackIdx = 0) => {
+  if (!eventName) return "#94A3B8";
+  const key = normalizeEventKey(eventName);
+  if (KNOWN_EVENT_COLORS[key]) return KNOWN_EVENT_COLORS[key];
+
+  let hash = 0;
+  for (let i = 0; i < eventName.length; i++) {
+    hash = (hash << 5) - hash + eventName.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % ANALYTICS_PALETTE.length;
+  return ANALYTICS_PALETTE[idx] || ANALYTICS_PALETTE[fallbackIdx % ANALYTICS_PALETTE.length];
+};
 
 const AiDashboard = () => {
   const email = localStorage.getItem("email") || "";
@@ -129,7 +175,8 @@ const AiDashboard = () => {
   const byAnalytics = dd.byAnalytics || [];
   const analyticsLabels = dd.analyticsLabels || [];
   const timeline = dd.timeline || [];
-  const topCameras = dd.topCameras || [];
+  const topCameras = dd.topCameras || dd.topLocations || [];
+  const topLocations = dd.topLocations || [];
   const matrix = dd.matrix || [];
   const liveFeed = dd.liveFeed || [];
   const insights = dd.insights || [];
@@ -147,6 +194,7 @@ const AiDashboard = () => {
     const seriesData = byAnalytics.map((a) => a.count);
     const maxVal = Math.max(...seriesData, 4);
     const count = categories.length || 1;
+    const colors = categories.map((cat, idx) => getEventColor(cat, idx));
 
     return {
       options: {
@@ -166,7 +214,7 @@ const AiDashboard = () => {
             distributed: true,
           },
         },
-        colors: ANALYTICS_PALETTE,
+        colors: colors.length ? colors : ANALYTICS_PALETTE,
         dataLabels: { enabled: false },
         xaxis: {
           categories,
@@ -177,7 +225,7 @@ const AiDashboard = () => {
             trim: true,
             maxHeight: 50,
             style: {
-              colors: "#64748B",
+              colors: subtextColor,
               fontSize: count > 5 ? "10px" : "11px",
               fontFamily: "'Manrope', sans-serif",
             },
@@ -193,7 +241,7 @@ const AiDashboard = () => {
           decimalsInFloat: 0,
           labels: {
             style: {
-              colors: "#64748B",
+              colors: subtextColor,
               fontSize: "11px",
               fontFamily: "'Manrope', sans-serif",
             },
@@ -217,7 +265,7 @@ const AiDashboard = () => {
       },
       series: [{ name: "Alerts", data: seriesData }],
     };
-  }, [byAnalytics, chartTheme, gridColor]);
+  }, [byAnalytics, chartTheme, gridColor, subtextColor]);
 
   // Chart 2: Alerts by Locations (Circular Pie / Donut Chart)
   const districtPie = useMemo(() => {
@@ -247,7 +295,7 @@ const AiDashboard = () => {
                 total: {
                   show: true,
                   label: "Total",
-                  color: "#64748B",
+                  color: subtextColor,
                   fontSize: "12px",
                   fontFamily: "'Manrope', sans-serif",
                   fontWeight: 500,
@@ -273,7 +321,7 @@ const AiDashboard = () => {
       },
       series: series.length > 0 ? series : [0],
     };
-  }, [byDistrict, totals.totalAlerts, chartTheme, headingColor]);
+  }, [byDistrict, totals.totalAlerts, chartTheme, headingColor, subtextColor]);
 
   // Chart 3: Alert Timeline 24H (Area Chart)
   const TIMELINE_HOUR_OFFSET = 6;
@@ -314,7 +362,7 @@ const AiDashboard = () => {
           categories: timeline.map((t) => t.label),
           labels: {
             style: {
-              colors: "#64748B",
+              colors: subtextColor,
               fontSize: "10px",
               fontFamily: "'Manrope', sans-serif",
             },
@@ -333,7 +381,7 @@ const AiDashboard = () => {
           decimalsInFloat: 0,
           labels: {
             style: {
-              colors: "#64748B",
+              colors: subtextColor,
               fontSize: "10px",
               fontFamily: "'Manrope', sans-serif",
             },
@@ -356,41 +404,79 @@ const AiDashboard = () => {
       },
       series: [{ name: "Alerts", data: correctedTimelineCounts }],
     };
-  }, [timeline, correctedTimelineCounts, chartTheme, gridColor]);
+  }, [timeline, correctedTimelineCounts, chartTheme, gridColor, subtextColor]);
 
-  // Chart 4: Top Cameras Alerts (Horizontal Bar Chart)
+  // Chart 4: Top 10 Locations · Alerts divided by Event (Stacked Horizontal Bar Chart)
   const topCamBar = useMemo(() => {
-    const categories = topCameras.map((c) => c.deviceId);
-    const seriesData = topCameras.map((c) => {
-      return Object.values(c.byAnalytics || {}).reduce((a, b) => a + b, 0);
+    // Prefer topLocations if available, otherwise fall back to topCameras
+    const locations = (topLocations.length ? topLocations : topCameras).slice(0, 10);
+
+    // Format categories: e.g. "sindhubhavan · Ahmedabad", "ambawadi · surat"
+    const categories = locations.map((loc) => {
+      const locationName =
+        loc.location && loc.location !== "Unknown"
+          ? loc.location.trim()
+          : (loc.deviceId || "");
+      const districtName =
+        loc.district && loc.district !== "Unknown" ? loc.district.trim() : "";
+      if (locationName && districtName) {
+        if (locationName.toLowerCase().includes(districtName.toLowerCase())) {
+          return locationName;
+        }
+        return `${locationName} · ${districtName}`;
+      }
+      return locationName || districtName || loc.deviceId || "Unknown";
     });
-    const maxVal = Math.max(...seriesData, 4);
+
+    // Find all distinct event types across these locations with positive counts
+    const eventTotals = {};
+    locations.forEach((loc) => {
+      const byAn = loc.byAnalytics || {};
+      Object.entries(byAn).forEach(([event, count]) => {
+        if (count > 0) {
+          eventTotals[event] = (eventTotals[event] || 0) + count;
+        }
+      });
+    });
+
+    // Sort events following byAnalytics order so the series and colors align 1:1
+    const analyticsOrder = byAnalytics.map((a) => a.label);
+    const activeEvents = Object.keys(eventTotals).sort((a, b) => {
+      const idxA = analyticsOrder.indexOf(a);
+      const idxB = analyticsOrder.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return (eventTotals[b] || 0) - (eventTotals[a] || 0);
+    });
+
+    // Build stacked series: one series per event type
+    const series = activeEvents.map((eventName) => ({
+      name: eventName,
+      data: locations.map((loc) => loc.byAnalytics?.[eventName] || 0),
+    }));
+
+    // Exact same colors for each event as in "Alerts by AI Analytics"
+    const colors = activeEvents.map((eventName, idx) => getEventColor(eventName, idx));
+
+    const maxTotal = Math.max(...locations.map((l) => l.total || 0), 4);
+    const maxVal = maxTotal <= 100 ? 100 : Math.ceil(maxTotal / 10) * 10;
 
     return {
       options: {
         chart: {
           type: "bar",
+          stacked: true,
           background: "transparent",
           toolbar: { show: false },
           fontFamily: "'Manrope', sans-serif",
           parentHeightOffset: 0,
         },
         theme: { mode: chartTheme },
-        colors: [
-          "#3F77A5",
-          "#0284C7",
-          "#06B6D4",
-          "#6366F1",
-          "#8B5CF6",
-          "#10B981",
-          "#14B8A6",
-          "#EC4899",
-        ],
-        legend: { show: false },
+        colors: colors.length ? colors : ["#0284C7"],
         plotOptions: {
           bar: {
             horizontal: true,
-            distributed: true,
             barHeight: "55%",
             borderRadius: 4,
             borderRadiusApplication: "end",
@@ -401,12 +487,12 @@ const AiDashboard = () => {
           categories,
           min: 0,
           max: maxVal,
-          tickAmount: Math.min(Math.max(maxVal, 2), 6),
+          tickAmount: Math.min(Math.max(Math.round(maxVal / 10), 2), 10),
           forceNiceScale: true,
           decimalsInFloat: 0,
           labels: {
             style: {
-              colors: "#64748B",
+              colors: subtextColor,
               fontSize: "10px",
               fontFamily: "'Manrope', sans-serif",
             },
@@ -420,10 +506,10 @@ const AiDashboard = () => {
         },
         yaxis: {
           labels: {
-            maxWidth: 100,
+            maxWidth: 170,
             trim: true,
             style: {
-              colors: "#64748B",
+              colors: subtextColor,
               fontSize: "10px",
               fontFamily: "'Manrope', sans-serif",
             },
@@ -431,18 +517,41 @@ const AiDashboard = () => {
         },
         grid: {
           borderColor: gridColor,
-          strokeDashArray: 3,
-          xaxis: { lines: { show: true } },
-          yaxis: { lines: { show: false } },
+          strokeDashArray: 0,
+          xaxis: { lines: { show: false } },
+          yaxis: { lines: { show: true } },
+        },
+        legend: {
+          show: true,
+          position: "bottom",
+          horizontalAlign: "center",
+          fontSize: "11px",
+          fontFamily: "'Manrope', sans-serif",
+          labels: {
+            colors: subtextColor,
+          },
+          markers: {
+            radius: 3,
+            width: 12,
+            height: 12,
+          },
+          itemMargin: {
+            horizontal: 8,
+            vertical: 4,
+          },
         },
         tooltip: {
           theme: chartTheme,
-          y: { formatter: (v) => fmt(v) },
+          shared: true,
+          intersect: false,
+          y: {
+            formatter: (v) => fmt(v),
+          },
         },
       },
-      series: [{ name: "Alerts", data: seriesData }],
+      series: series.length > 0 ? series : [{ name: "Alerts", data: [0] }],
     };
-  }, [topCameras, chartTheme, gridColor]);
+  }, [topLocations, topCameras, byAnalytics, analyticsLabels, chartTheme, gridColor, subtextColor]);
 
   // Matrix Totals
   const matrixTotals = useMemo(() => {
@@ -457,12 +566,13 @@ const AiDashboard = () => {
 
   return (
     <Box
-      w="100%"
       maxW="1440px"
+      w="100%"
       mx="auto"
-      px={{ base: 4, sm: 6 }}
-      py={{ base: 4, md: 6 }}
+      px={{ base: "12px", sm: "16px", md: "20px", lg: "24px" }}
+      py={{ base: "12px", md: "16px" }}
       fontFamily="'Manrope', sans-serif"
+      mb={{ base: "20", md: "6" }}
     >
       {/* CSS for marquee ticker */}
       <style>{`
@@ -545,12 +655,12 @@ const AiDashboard = () => {
                   fontSize="12px"
                   lineHeight="18px"
                   letterSpacing="0px"
-                  color="#64748B"
+                  color={subtextColor}
                   userSelect="none"
                 >
                   {displayDate}
                 </Text>
-                <TbCalendar size="15px" color="#64748B" />
+                <TbCalendar size="15px" color={subtextColor} />
                 <Input
                   ref={dateInputRef}
                   type="date"
@@ -613,7 +723,7 @@ const AiDashboard = () => {
           h="34.5px"
           minH="34.5px"
           borderRadius="9px"
-          bg="#3F77A5"
+          bg={tickerBg}
           align="center"
           px="16px"
           py="9px"
@@ -982,14 +1092,14 @@ const AiDashboard = () => {
                       </Text>
                     </Flex>
 
-                    {/* Right: Percentage (Manrope 600 SemiBold, 12px, line-height 18px, color #64748B) */}
+                    {/* Right: Percentage (Manrope 600 SemiBold, 12px, line-height 18px, color subtextColor) */}
                     <Text
                       fontFamily="'Manrope', sans-serif"
                       fontWeight="600"
                       fontSize="12px"
                       lineHeight="18px"
                       letterSpacing="0px"
-                      color="#64748B"
+                      color={subtextColor}
                     >
                       {d.pct}%
                     </Text>
@@ -1039,7 +1149,7 @@ const AiDashboard = () => {
               <Box flex="1" h="182px" pt="12px" minW="0" w="100%">
                 {byAnalytics.length ? (
                   <ReactApexChart
-                    key={`bar-${date}-${byAnalytics.length}`}
+                    key={`bar-${date}-${byAnalytics.map((a) => a.label).join("_")}`}
                     options={analyticsBar.options}
                     series={analyticsBar.series}
                     type="bar"
@@ -1309,13 +1419,13 @@ const AiDashboard = () => {
                 letterSpacing="0px"
                 color={headingColor}
               >
-                Top Cameras · Alerts
+                TOP 10 LOCATIONS · LOCATION · DISTRICT · ALERTS
               </Text>
-              {/* Bar Chart (Height: 182px, Padding-top: 12px) */}
-              <Box flex="1" h="182px" pt="12px" minW="0" w="100%">
-                {topCameras.length ? (
+              {/* Bar Chart (Height: 182px, Padding-top: 8px) */}
+              <Box flex="1" h="182px" pt="8px" minW="0" w="100%">
+                {(topLocations.length || topCameras.length) ? (
                   <ReactApexChart
-                    key={`topcam-${date}-${topCameras.length}`}
+                    key={`toploc-${date}-${topLocations.length || topCameras.length}-${topCamBar.series.map((s) => s.name).join("_")}`}
                     options={topCamBar.options}
                     series={topCamBar.series}
                     type="bar"
@@ -1323,7 +1433,7 @@ const AiDashboard = () => {
                   />
                 ) : (
                   <Flex justify="center" align="center" h="100%" color={subtextColor}>
-                    <Text fontSize="12px">No camera alerts data</Text>
+                    <Text fontSize="12px">No location alerts data</Text>
                   </Flex>
                 )}
               </Box>
@@ -1384,7 +1494,7 @@ const AiDashboard = () => {
                 >
                   <Box as="thead">
                     <Box as="tr" color={subtextColor} textAlign="left">
-                      <Box as="th" py={2} pr={3} fontWeight="600" fontSize="10px" color="#64748B" whiteSpace="nowrap">
+                      <Box as="th" py={2} pr={3} fontWeight="600" fontSize="10px" color={subtextColor} whiteSpace="nowrap">
                         Location
                       </Box>
                       {analyticsLabels.map((l) => (
@@ -1396,13 +1506,13 @@ const AiDashboard = () => {
                           textAlign="center"
                           fontWeight="600"
                           fontSize="10px"
-                          color="#64748B"
+                          color={subtextColor}
                           whiteSpace="nowrap"
                         >
                           {l}
                         </Box>
                       ))}
-                      <Box as="th" py={2} pl={2} textAlign="right" fontWeight="600" fontSize="10px" color="#64748B" whiteSpace="nowrap">
+                      <Box as="th" py={2} pl={2} textAlign="right" fontWeight="600" fontSize="10px" color={subtextColor} whiteSpace="nowrap">
                         Total
                       </Box>
                     </Box>

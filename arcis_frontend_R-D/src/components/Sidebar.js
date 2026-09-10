@@ -27,6 +27,12 @@ import {
   MdKeyboardArrowUp,
   MdKeyboardArrowLeft,
   MdKeyboardArrowRight,
+  MdNotificationsActive,
+  MdDescription,
+  MdShield,
+  MdMap,
+  MdTimeline,
+  MdImageSearch,
 } from "react-icons/md";
 import { RiDashboardLine } from "react-icons/ri";
 import { BsLightningCharge, BsStack, BsCalendarEvent } from "react-icons/bs";
@@ -38,6 +44,12 @@ const mainMenuItems = [
   { label: "Multi View", icon: <BsStack />, path: "/multiple" },
   { label: "Cameras", icon: <TbCamera />, path: "/Cameras" },
   { label: "AI Events", icon: <BsCalendarEvent />, path: "/events" },
+  { label: "AI Alerts", icon: <MdNotificationsActive />, path: "/ai-alerts" },
+  { label: "Forensic Report", icon: <MdDescription />, path: "/forensic-report" },
+  { label: "Crime Intelligence", icon: <MdShield />, path: "/crime-intelligence" },
+  { label: "Corridor Analytics", icon: <MdMap />, path: "/corridor-analytics" },
+  { label: "Movement Map", icon: <MdTimeline />, path: "/movement-map" },
+  { label: "Image Search", icon: <MdImageSearch />, path: "/image-search" },
   { label: "Analytics Reports", icon: <MdOutlineBarChart />, path: "/AnalyticsImage" },
   {
     label: "Admin Panel",
@@ -54,7 +66,7 @@ const bottomMenuItems = [
   { label: "FAQ", icon: <MdOutlineHelpOutline />, path: "/faq" },
 ];
 
-const rolePermissions = {
+export const rolePermissions = {
   MasterAdmin: {
     Dashboard: true,
     "AI Dashboard": true,
@@ -62,6 +74,12 @@ const rolePermissions = {
     "Multi View": true,
     Cameras: true,
     "AI Events": true,
+    "AI Alerts": true,
+    "Forensic Report": true,
+    "Crime Intelligence": true,
+    "Corridor Analytics": true,
+    "Movement Map": true,
+    "Image Search": true,
     "Analytics Reports": true,
     Reports: [
       "Consolidated Report",
@@ -86,6 +104,18 @@ const rolePermissions = {
     "Multi View": true,
     Cameras: true,
   },
+  Demo: {
+    Dashboard: true,
+    Cameras: true,
+    "Multi View": true,
+    "AI Alerts": true,
+    "Forensic Report": true,
+    "Crime Intelligence": true,
+    "Corridor Analytics": true,
+    "Movement Map": true,
+    "Image Search": true,
+    "AI Assistant": true,
+  },
   CEO: {
     Dashboard: true,
     "AI Dashboard": true,
@@ -93,6 +123,13 @@ const rolePermissions = {
     "Multi View": true,
     Cameras: true,
     "AI Events": true,
+    "AI Alerts": true,
+    "Forensic Report": true,
+    "Crime Intelligence": true,
+    "Corridor Analytics": true,
+    "Movement Map": true,
+    "Image Search": true,
+    "Analytics Reports": true,
     "AI Assistant": true,
     FAQ: true,
   },
@@ -103,6 +140,12 @@ const rolePermissions = {
     "Multi View": true,
     Cameras: true,
     "AI Events": true,
+    "AI Alerts": true,
+    "Forensic Report": true,
+    "Crime Intelligence": true,
+    "Corridor Analytics": true,
+    "Movement Map": true,
+    "Image Search": true,
     Heatmap: true,
     "AI Assistant": true,
     FAQ: true,
@@ -113,11 +156,27 @@ const rolePermissions = {
     "Multi View": true,
     Cameras: true,
     "AI Events": true,
+    "AI Alerts": true,
+    "Forensic Report": true,
+    "Crime Intelligence": true,
+    "Corridor Analytics": true,
+    "Movement Map": true,
+    "Image Search": true,
     Heatmap: true,
     "AI Assistant": true,
     FAQ: true,
   },
   Guest: { "AI Assistant": true, FAQ: true },
+};
+
+// True when the role may see the given menu label. A sub-item list counts as
+// access to the parent label.
+export const hasPermission = (role, label) => {
+  const permissions = rolePermissions[role];
+  if (!permissions) return false;
+  if (permissions === "all") return true;
+  const allowed = permissions[label];
+  return allowed === true || (Array.isArray(allowed) && allowed.length > 0);
 };
 
 const filterMenuByRole = (items, role) => {

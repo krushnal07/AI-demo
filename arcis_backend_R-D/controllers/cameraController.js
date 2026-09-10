@@ -1688,27 +1688,49 @@ exports.getStreamDetails = async (req, res) => {
     }
 };
 
-// Update a camera by id
+// Update a camera by id or deviceId
 exports.updateCamera = async (req, res) => {
     try {
         const { name } = req.body;
         const { id } = req.params;
 
-        const updatedCamera = await Camera.findByIdAndUpdate(
-            id,
-            { name },
-            { new: true }
-        );
+        let updatedCamera = null;
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            updatedCamera = await Camera.findByIdAndUpdate(
+                id,
+                { name },
+                { new: true }
+            );
+        }
+        if (!updatedCamera) {
+            updatedCamera = await Camera.findOneAndUpdate(
+                { deviceId: id },
+                { name },
+                { new: true }
+            );
+        }
+
+        const devId = updatedCamera ? updatedCamera.deviceId : id;
+        if (devId) {
+            await Stream.updateMany(
+                { deviceId: devId },
+                { $set: { name, cameraName: name } }
+            );
+        }
 
         if (!updatedCamera) {
-            return res.status(404).json({
-                success: false,
-                message: "Camera not found",
-            });
+            const streamDoc = await Stream.findOne({ deviceId: id });
+            if (!streamDoc) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Camera not found",
+                });
+            }
         }
+
         res.status(200).json({
             success: true,
-            data: updatedCamera,
+            data: updatedCamera || { name, deviceId: id },
         });
     } catch (error) {
         res.status(500).json({

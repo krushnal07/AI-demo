@@ -33,8 +33,15 @@ import Faq from "./pages/Faq";
 import theme from "./theme";
 import Subscription from "./pages/Subscription";
 import Events from "./pages/Events";
+import AiAlerts from "./pages/AiAlerts";
+import ForensicReport from "./pages/ForensicReport";
+import CrimeIntelligence from "./pages/CrimeIntelligence";
+import CorridorAnalytics from "./pages/CorridorAnalytics";
+import MovementMap from "./pages/MovementMap";
+import ImageSearch from "./pages/ImageSearch";
 import Others from "./pages/Others";
 import WebSocketComponent from "./components/WebSocketComponent";
+import { AlertProvider } from "./components/AlertNotifier";
 import { registerPushNotifications } from "./actions/notification";
 import io from "socket.io-client";
 import ArcisInfo from "./pages/ArcisInfo";
@@ -87,6 +94,11 @@ function MainApp() {
     location.pathname === "/deleteAccount" ||
     matchPath("/resetPassword/:token", location.pathname) ||
     matchPath("/verify/:id", location.pathname);
+
+  const isFixedViewportPage =
+    location.pathname === "/multiple" ||
+    location.pathname.startsWith("/camera/") ||
+    location.pathname === "/ai-alerts";
 
   // Use Chakra UI's `useBreakpointValue` to determine if the screen is small (tab/mobile)
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -201,6 +213,7 @@ function MainApp() {
   }, []);
 
   return (
+    <AlertProvider enabled={!isLoginPage}>
     <Container maxW="100vw" p="0" bg={useColorModeValue("#E8EFF7", "#1E2837")}>
       <Scrollbars
         autoHide
@@ -209,18 +222,18 @@ function MainApp() {
         style={{
           width: "100vw",
           height: "100vh",
-          overflow: location.pathname === "/multiple" ? "hidden" : "auto",
+          overflow: location.pathname === "/multiple" || isLoginPage ? "hidden" : "auto",
         }}
         renderView={({ style, ...props }) => (
           <div
             {...props}
             style={{
               ...style,
-              overflow: location.pathname === "/multiple" ? "hidden" : "auto",
+              overflow: location.pathname === "/multiple" || isLoginPage ? "hidden" : "auto",
               overflowX: "hidden",
-              overflowY: location.pathname === "/multiple" ? "hidden" : "auto",
-              marginBottom: location.pathname === "/multiple" ? 0 : style.marginBottom,
-              marginRight: location.pathname === "/multiple" ? 0 : style.marginRight,
+              overflowY: location.pathname === "/multiple" || isLoginPage ? "hidden" : "auto",
+              marginBottom: location.pathname === "/multiple" || isLoginPage ? 0 : style.marginBottom,
+              marginRight: location.pathname === "/multiple" || isLoginPage ? 0 : style.marginRight,
             }}
           />
         )}
@@ -229,7 +242,12 @@ function MainApp() {
             {...props}
             style={{
               ...style,
-              display: location.pathname === "/multiple" ? "none" : "block",
+              display:
+                location.pathname === "/multiple" ||
+                location.pathname === "/ai-alerts" ||
+                isLoginPage
+                  ? "none"
+                  : "block",
             }}
           />
         )}
@@ -243,7 +261,12 @@ function MainApp() {
               borderRadius: "6px",
               width: "7px",
               zIndex: "9999",
-              display: location.pathname === "/multiple" ? "none" : "block",
+              display:
+                location.pathname === "/multiple" ||
+                location.pathname === "/ai-alerts" ||
+                isLoginPage
+                  ? "none"
+                  : "block",
             }}
           />
         )}
@@ -251,7 +274,8 @@ function MainApp() {
         <Box>
           <Flex
             direction="column"
-            height={isLoginPage ? "100vh" : "0"}
+            height={isLoginPage ? "0" : "0"}
+            display={isLoginPage ? "none" : "flex"}
             bg="transparent"
             backgroundSize="cover"
             backgroundPosition="center"
@@ -307,12 +331,12 @@ function MainApp() {
                 height={
                   isLoginPage
                     ? "100vh"
-                    : location.pathname === "/multiple"
+                    : isFixedViewportPage
                     ? "calc(100vh - 56px)"
                     : "auto"
                 }
-                maxHeight={location.pathname === "/multiple" ? "calc(100vh - 56px)" : undefined}
-                overflowY={location.pathname === "/multiple" ? "hidden" : "auto"}
+                maxHeight={isLoginPage ? "100vh" : isFixedViewportPage ? "calc(100vh - 56px)" : undefined}
+                overflowY={isFixedViewportPage || isLoginPage ? "hidden" : "auto"}
                 overflowX="hidden"
                 transition="left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
                 flexWrap="wrap"
@@ -329,6 +353,12 @@ function MainApp() {
                   />
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/events" element={<Events />} />
+                  <Route path="/ai-alerts" element={<AiAlerts />} />
+                  <Route path="/forensic-report" element={<ForensicReport />} />
+                  <Route path="/crime-intelligence" element={<CrimeIntelligence />} />
+                  <Route path="/corridor-analytics" element={<CorridorAnalytics />} />
+                  <Route path="/movement-map" element={<MovementMap />} />
+                  <Route path="/image-search" element={<ImageSearch />} />
                   <Route path="/verify/:id" element={<Verify />} />
                   <Route path="/otp" element={<Otp />} />
                   <Route path="/dashboard" element={<Dashboard />} />
@@ -336,6 +366,7 @@ function MainApp() {
                   <Route path="/Listview" element={<Listview />} />
                   <Route path="/camera/:deviceId" element={<CameraView />} />
                   <Route path="/multiple" element={<MultipleView />} />
+                  
                   <Route path="/faq" element={<Faq />} />
                   {/* <Route path="/subscription" element={<Subscription />} /> */}
                   {isMobile && <Route path="/others" element={<Others />} />}
@@ -376,6 +407,7 @@ function MainApp() {
         </Box>
       </Scrollbars>
     </Container>
+    </AlertProvider>
   );
 }
 

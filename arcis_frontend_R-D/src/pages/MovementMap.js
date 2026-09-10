@@ -1,0 +1,570 @@
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import axios from "axios";
+import moment from "moment";
+import { FaMapMarkedAlt, FaSearch, FaExpand, FaChevronLeft, FaChevronRight, FaMagic } from "react-icons/fa";
+import {
+  Box,
+  Flex,
+  Text,
+  Input,
+  Button,
+  ButtonGroup,
+  Badge,
+  Image,
+  Spinner,
+  IconButton,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalBody,
+  ModalCloseButton,
+} from "@chakra-ui/react";
+import { Panel, StatTile, SectionLabel, useIntelTheme, MONO_FONT } from "../components/intel/IntelKit";
+import GujaratMap from "../components/intel/GujaratMap";
+
+const fmt = (value) => (value ? moment.utc(value).format("DD-MM-YYYY HH:mm:ss") : "—");
+const fmtShort = (value) => (value ? moment.utc(value).format("DD MMM HH:mm") : "—");
+
+const MovementMap = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [mode, setMode] = useState("phrase"); // phrase | plate
+  const [term, setTerm] = useState("");
+  const [active, setActive] = useState(null); // highlighted sighting id
+  const [lightbox, setLightbox] = useState(null);
+  // AI read of the traced sightings, run alongside Trace
+  const [refine, setRefine] = useState(null);
+  const [refining, setRefining] = useState(false);
+
+  const t = useIntelTheme();
+  const baseUrl = process.env.REACT_APP_BASE_URL || process.env.REACT_APP_URL;
+
+  const load = useCallback(
+    async (searchTerm, searchMode) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams({ limit: 120 });
+        const q = (searchTerm ?? "").trim();
+        if (q) params.set(searchMode === "plate" ? "plate" : "q", q);
+
+        const { data: body } = await axios.get(`${baseUrl}/api/ai-alerts/intel/trace?${params.toString()}`);
+        if (!body?.success) throw new Error(body?.message || "Request failed");
+        setData(body);
+        setActive(null);
+      } catch (err) {
+        setError(err.response?.data?.message || err.message || "Could not load the map.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [baseUrl]
+  );
+
+  useEffect(() => {
+    load("", "phrase");
+  }, [load]);
+
+  const sites = data?.sites || [];
+  const sightings = data?.sightings || [];
+
+  const activeSighting = sightings.find((s) => s.id === active) || null;
+
+  /* Reuses /intel/refine: the model reads the excerpt around each hit and
+     says whether it actually evidences the search, rather than merely
+     mentioning it. Runs alongside the trace when Trace is pressed. */
+  const runRefine = useCallback(
+    async (searchTerm) => {
+      const q = (searchTerm ?? "").trim();
+      if (!q) { setRefine(null); return; }
+      setRefining(true);
+      try {
+        const params = new URLSearchParams({ q, limit: 40, order: "asc" });
+        const { data: body } = await axios.get(`${baseUrl}/api/ai-alerts/intel/refine?${params.toString()}`);
+        if (body?.success) setRefine(body);
+        else setRefine(null);
+      } catch (err) {
+        // a failed AI pass must not lose the trace itself
+        setRefine({ failed: true, message: err.response?.data?.message || err.message });
+      } finally {
+        setRefining(false);
+      }
+    },
+    [baseUrl]
+  );
+
+  const verdictById = useMemo(() => {
+    const map = {};
+    (refine?.verdicts || []).forEach((v) => { map[v.id] = v; });
+    return map;
+  }, [refine]);
+
+  const runSearch = () => {
+    setRefine(null);
+    load(term, mode);
+    runRefine(term);
+  };
+
+  return (
+    <Box
+      maxW="1440px"
+      w="100%"
+      mx="auto"
+      px={{ base: "12px", sm: "16px", md: "20px", lg: "24px" }}
+      py={{ base: "12px", md: "16px" }}
+      fontFamily="'Manrope', sans-serif"
+      mb={{ base: "20", md: "6" }}
+    >
+      {/* Header */}
+      <Flex
+        justify="space-between"
+        align={{ base: "flex-start", sm: "center" }}
+        mb={4}
+        direction={{ base: "column", sm: "row" }}
+        gap={3}
+      >
+        <Box>
+          <Text
+            fontFamily="'Manrope', sans-serif"
+            fontWeight={800}
+            fontSize={{ base: "20px", md: "22px" }}
+            lineHeight="1.2"
+            color={t.heading}
+          >
+            Movement Map
+          </Text>
+          <Text
+            fontFamily="'Manrope', sans-serif"
+            fontSize="13px"
+            color={t.body}
+            mt="2px"
+          >
+            Where a subject was seen and when &mdash; across {sites.length} camera sites in Gujarat
+          </Text>
+        </Box>
+      </Flex>
+
+      {/* search */}
+      <Box
+        bg={t.panel}
+        border="1px solid"
+        borderColor={t.border}
+        borderRadius="12px"
+        boxShadow={t.shadow}
+        p={4}
+        mb={5}
+      >
+        <Flex gap={2} wrap="wrap" align="center">
+          <ButtonGroup size="sm" isAttached variant="outline">
+            {[
+              ["phrase", "Description"],
+              ["plate", "Plate"],
+            ].map(([k, label]) => (
+              <Button
+                key={k}
+                borderColor={t.border}
+                fontFamily="'Manrope', sans-serif"
+                fontWeight="700"
+                fontSize="12px"
+                lineHeight="18px"
+                letterSpacing="0px"
+                textAlign="center"
+                bg={mode === k ? t.panelAlt : "transparent"}
+                color={mode === k ? t.heading : t.muted}
+                _hover={{ borderColor: "#3F77A5", color: "#3F77A5" }}
+                onClick={() => setMode(k)}
+              >
+                {label}
+              </Button>
+            ))}
+          </ButtonGroup>
+          <Input
+            size="sm"
+            h="38px"
+            maxW="340px"
+            borderRadius="8px"
+            borderColor={t.border}
+            bg={t.panelAlt}
+            color={t.heading}
+            _placeholder={{ color: t.muted }}
+            _hover={{ borderColor: t.borderStrong }}
+            _focusVisible={{ borderColor: t.s1, boxShadow: `0 0 0 1px ${t.s1}` }}
+            fontFamily="'Manrope', sans-serif"
+            fontSize="13px"
+            placeholder={mode === "plate" ? "e.g. GJ01RX7016" : "e.g. white bus, GSRTC, ambulance"}
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") runSearch();
+            }}
+          />
+          <Button
+            size="sm"
+            h="38px"
+            bg="#3F77A5"
+            color="white"
+            borderRadius="8px"
+            fontFamily="'Manrope', sans-serif"
+            fontWeight="700"
+            fontSize="12px"
+            lineHeight="18px"
+            letterSpacing="0px"
+            textAlign="center"
+            leftIcon={<FaSearch />}
+            onClick={runSearch}
+            isLoading={loading}
+            _hover={{ opacity: 0.9 }}
+          >
+            Trace
+          </Button>
+          {data?.term && (
+            <Button
+              size="sm"
+              h="38px"
+              variant="outline"
+              borderColor={t.border}
+              color={t.body}
+              borderRadius="8px"
+              fontFamily="'Manrope', sans-serif"
+              fontWeight="700"
+              fontSize="12px"
+              lineHeight="18px"
+              letterSpacing="0px"
+              textAlign="center"
+              _hover={{ borderColor: "#3F77A5", color: "#3F77A5" }}
+              onClick={() => { setTerm(""); setRefine(null); load("", mode); }}
+            >
+              Clear
+            </Button>
+          )}
+        </Flex>
+      </Box>
+
+      {error && (
+        <Panel mb={4}>
+          <Text fontSize="13px" color={t.critical}>{error}</Text>
+        </Panel>
+      )}
+
+      {(refining || refine) && (
+        <Flex
+          align="center"
+          gap={3}
+          wrap="wrap"
+          bg={t.panel}
+          border="1px solid"
+          borderColor={t.border}
+          borderLeft="3px solid"
+          borderLeftColor={refine?.failed ? t.critical : t.s1}
+          borderRadius="10px"
+          boxShadow={t.shadow}
+          px={4}
+          py={3}
+          mb={4}
+        >
+          <Box color={refine?.failed ? t.critical : t.s1} fontSize="13px">
+            {refining ? <Spinner size="sm" /> : <FaMagic />}
+          </Box>
+          <Box minW={0} flex="1">
+            {refining ? (
+              <Text fontSize="13px" color={t.body}>Reading the matched segments&hellip;</Text>
+            ) : refine?.failed ? (
+              <Text fontSize="13px" color={t.critical}>{refine.message}</Text>
+            ) : (
+              <>
+                <Text fontSize="13px" fontWeight="600" color={t.heading}>
+                  {refine.relevant} of {refine.reviewed} matches evidence &ldquo;{refine.query}&rdquo;
+                  {refine.truncated ? " (first 40 read)" : ""}
+                </Text>
+                {refine.summary && (
+                  <Text fontSize="12px" color={t.muted} mt={0.5}>{refine.summary}</Text>
+                )}
+              </>
+            )}
+          </Box>
+          {refine && !refine.failed && refine.model && (
+            <Text fontFamily={MONO_FONT} fontSize="10px" color={t.muted} display={{ base: "none", md: "block" }}>
+              {refine.model}
+            </Text>
+          )}
+        </Flex>
+      )}
+
+      {data?.term && (
+        <Flex gap={3.5} mb={5} wrap="wrap" sx={{ "& > *": { flex: "1 1 180px" } }}>
+          <StatTile label="Sightings" value={sightings.length} note={data.truncated ? "capped at 120" : "in time order"} />
+          <StatTile label="Sites visited" value={data.visited?.length || 0} note={`of ${sites.length} cameras`} color={t.s1} />
+          <StatTile label="Hops" value={data.legs?.length || 0} note="site-to-site moves" color={t.s2} />
+          <StatTile
+            label="First seen"
+            value={sightings.length ? fmtShort(sightings[0].start_time || sightings[0].timestamp) : "—"}
+            note={sightings.length ? sightings[0].label : ""}
+          />
+        </Flex>
+      )}
+
+      {/* map + timeline */}
+      <Flex gap={4} direction={{ base: "column", xl: "row" }} align="stretch">
+        <Panel
+          title="Gujarat"
+          sub={data?.term ? `${data.mode === "plate" ? "plate" : "phrase"} · ${data.term}` : "all camera sites"}
+          accent={t.s1}
+          flex={{ base: "1", xl: "1 1 62%" }}
+          minW={0}
+        >
+          <Box h={data?.term ? { base: "300px", md: "460px", xl: "560px" } : { base: "340px", md: "500px", xl: "620px" }}>
+            <GujaratMap
+              sites={sites}
+              sightings={sightings}
+              onSelect={setActive}
+              height="100%"
+            />
+          </Box>
+
+          <Flex gap={4} mt={3} wrap="wrap" align="center">
+            <Flex align="center" gap={1.5}>
+              <Box boxSize="9px" borderRadius="full" bg="white" border="2px solid" borderColor={t.s1} />
+              <Text fontSize="11px" color={t.body}>camera site (size = volume)</Text>
+            </Flex>
+            <Flex align="center" gap={1.5}>
+              <Box boxSize="9px" borderRadius="full" bg={t.s2} />
+              <Text fontSize="11px" color={t.body}>seen here</Text>
+            </Flex>
+            <Text fontSize="11px" color={t.muted}>
+              five sites share one city-centre coordinate and are nudged apart
+            </Text>
+          </Flex>
+        </Panel>
+
+        {/* timeline */}
+        <Panel
+          title="Sightings"
+          sub={sightings.length ? `${sightings.length} in time order` : "search to trace"}
+          accent={t.s2}
+          flex={{ base: "1", xl: "1 1 38%" }}
+          minW={0}
+        >
+          {loading ? (
+            <Flex justify="center" py={10}><Spinner color={t.s1} /></Flex>
+          ) : !data?.term ? (
+            <Text fontSize="12.5px" color={t.muted}>
+              Search a description phrase (&ldquo;white bus&rdquo;, &ldquo;GSRTC&rdquo;) or a plate to draw its route
+              across the estate.
+            </Text>
+          ) : sightings.length === 0 ? (
+            <Text fontSize="12.5px" color={t.muted}>Nothing matched that search.</Text>
+          ) : (
+            <Flex direction="column" maxH={{ base: "320px", md: "480px", xl: "640px" }} overflowY="auto" pr={1}>
+              {sightings.map((s, i) => {
+                const isActive = s.id === active;
+                return (
+                  <Flex
+                    key={s.id}
+                    gap={3}
+                    py={2.5}
+                    borderTop={i ? "1px solid" : "none"}
+                    borderColor={t.border}
+                    align="flex-start"
+                    bg={isActive ? t.panelAlt : "transparent"}
+                    borderRadius="6px"
+                    px={1}
+                    cursor="pointer"
+                    onClick={() => setActive(isActive ? null : s.id)}
+                    role="group"
+                  >
+                    <Text
+                      fontFamily={MONO_FONT}
+                      fontSize="10px"
+                      fontWeight="700"
+                      color={t.muted}
+                      minW="18px"
+                      pt="3px"
+                    >
+                      {i + 1}
+                    </Text>
+
+                    {s.frame && (
+                      <Box position="relative" flexShrink={0}>
+                        <Image
+                          src={s.frame}
+                          alt={s.label}
+                          w="86px"
+                          h="50px"
+                          objectFit="cover"
+                          borderRadius="5px"
+                          bg="black"
+                          fallbackSrc="https://via.placeholder.com/86x50?text=—"
+                        />
+                        <IconButton
+                          icon={<FaExpand />}
+                          aria-label={`Open ${s.label} frames full screen`}
+                          size="xs"
+                          position="absolute"
+                          top="3px"
+                          right="3px"
+                          minW="18px"
+                          h="18px"
+                          bg="blackAlpha.700"
+                          color="white"
+                          borderRadius="4px"
+                          opacity={0}
+                          _groupHover={{ opacity: 1 }}
+                          _focusVisible={{ opacity: 1 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLightbox({ frames: s.frames?.length ? s.frames : [s.frame], index: 0 });
+                          }}
+                        />
+                      </Box>
+                    )}
+
+                    <Box minW={0} flex="1">
+                      <Flex gap={2} align="center" wrap="wrap">
+                        <Text fontSize="12px" fontWeight="600" color={t.heading}>{s.label}</Text>
+                        {verdictById[s.id] && (
+                          <Badge
+                            colorScheme={verdictById[s.id].relevant ? "green" : "gray"}
+                            fontSize="9px"
+                            borderRadius="full"
+                            px={2}
+                            textTransform="none"
+                            title={verdictById[s.id].reason}
+                          >
+                            {verdictById[s.id].relevant ? "evidence" : "ruled out"}
+                          </Badge>
+                        )}
+                        {s.ocr_raw && (
+                          <Badge colorScheme="blue" fontSize="9px" borderRadius="full" px={2} textTransform="none">
+                            {s.ocr_raw}
+                          </Badge>
+                        )}
+                      </Flex>
+                      <Text fontFamily={MONO_FONT} fontSize="10.5px" color={t.muted}>
+                        {fmt(s.start_time || s.timestamp)}
+                      </Text>
+                      <Text fontSize="11.5px" color={t.body} mt={1} noOfLines={isActive ? undefined : 2}>
+                        {s.excerpt}
+                      </Text>
+                      {isActive && s.source_video && (
+                        <Text fontFamily={MONO_FONT} fontSize="10px" color={t.muted} mt={1}>
+                          {s.source_video} @ {s.video_offset_seconds ?? "—"}s
+                        </Text>
+                      )}
+                    </Box>
+                  </Flex>
+                );
+              })}
+            </Flex>
+          )}
+        </Panel>
+      </Flex>
+
+      {/* hops */}
+      {data?.legs?.length > 0 && (
+        <>
+          <SectionLabel note="consecutive moves between sites">Route</SectionLabel>
+          <Panel accent={t.s3}>
+            <Flex gap={2} wrap="wrap">
+              {data.legs.slice(0, 24).map((leg, i) => (
+                <Flex
+                  key={i}
+                  align="center"
+                  gap={2}
+                  bg={t.panelAlt}
+                  border="1px solid"
+                  borderColor={t.border}
+                  borderRadius="7px"
+                  px={2.5}
+                  py={1.5}
+                >
+                  <Text fontSize="11px" color={t.body}>{leg.from}</Text>
+                  <Box color={t.s2} fontSize="9px"><FaChevronRight /></Box>
+                  <Text fontSize="11px" color={t.heading} fontWeight="600">{leg.to}</Text>
+                  {leg.minutes != null && (
+                    <Text fontFamily={MONO_FONT} fontSize="10px" color={t.muted}>
+                      {leg.minutes >= 1440
+                        ? `${Math.round(leg.minutes / 1440)}d`
+                        : leg.minutes >= 60
+                        ? `${Math.round(leg.minutes / 60)}h`
+                        : `${leg.minutes}m`}
+                    </Text>
+                  )}
+                </Flex>
+              ))}
+            </Flex>
+            {activeSighting && (
+              <Text fontSize="11.5px" color={t.muted} mt={3}>
+                Selected: {activeSighting.label} &middot; {fmt(activeSighting.start_time || activeSighting.timestamp)}
+              </Text>
+            )}
+          </Panel>
+        </>
+      )}
+
+      {/* full-screen frame viewer */}
+      <Modal isOpen={Boolean(lightbox)} onClose={() => setLightbox(null)} isCentered size="full">
+        <ModalOverlay bg="blackAlpha.900" />
+        <ModalContent bg="transparent" boxShadow="none" m={0}>
+          <ModalCloseButton color="white" size="lg" zIndex={3} />
+          <ModalBody p={0} display="flex" alignItems="center" justifyContent="center" position="relative">
+            <Image
+              src={lightbox?.frames?.[lightbox?.index]}
+              alt={`Frame ${(lightbox?.index ?? 0) + 1}`}
+              maxH="92vh"
+              maxW="94vw"
+              objectFit="contain"
+            />
+            {lightbox?.frames?.length > 1 && (
+              <>
+                <IconButton
+                  icon={<FaChevronLeft />}
+                  aria-label="Previous frame"
+                  position="absolute"
+                  left="24px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  isRound
+                  bg="blackAlpha.700"
+                  color="white"
+                  isDisabled={lightbox.index === 0}
+                  onClick={() => setLightbox((l) => ({ ...l, index: Math.max(0, l.index - 1) }))}
+                />
+                <IconButton
+                  icon={<FaChevronRight />}
+                  aria-label="Next frame"
+                  position="absolute"
+                  right="24px"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  isRound
+                  bg="blackAlpha.700"
+                  color="white"
+                  isDisabled={lightbox.index === lightbox.frames.length - 1}
+                  onClick={() => setLightbox((l) => ({ ...l, index: Math.min(l.frames.length - 1, l.index + 1) }))}
+                />
+                <Text
+                  position="absolute"
+                  bottom="20px"
+                  left="50%"
+                  transform="translateX(-50%)"
+                  fontSize="12px"
+                  color="whiteAlpha.800"
+                  bg="blackAlpha.700"
+                  px={3}
+                  py={1}
+                  borderRadius="full"
+                >
+                  {lightbox.index + 1} / {lightbox.frames.length}
+                </Text>
+              </>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    </Box>
+  );
+};
+
+export default MovementMap;

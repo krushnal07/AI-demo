@@ -53,9 +53,11 @@ const CameraView = () => {
   const subtextColor = useColorModeValue("#64748B", "#94A3B8");
 
   const getResponsivePlayerStyle = () => ({
-    width,
-    height: "auto",
-    aspectRatio: "16 / 9",
+    width: "100%",
+    height: "100%",
+    maxWidth: "100%",
+    maxHeight: "100%",
+    objectFit: "contain",
     borderRadius: "10px",
   });
 
@@ -192,24 +194,27 @@ const CameraView = () => {
       <MobileHeader title="Camera View" />
 
       <Box
-        maxW="1440px"
-        mx="auto"
+        w="100%"
+        h="calc(100vh - 56px)"
+        maxH="calc(100vh - 56px)"
         px={{ base: "12px", sm: "16px", md: "20px", lg: "24px" }}
-        py={{ base: "12px", md: "16px" }}
-        mt={{ base: "12", md: "0" }}
-        mb={{ base: "20", md: "6" }}
+        py={{ base: "8px", md: "12px" }}
         fontFamily="'Manrope', sans-serif"
+        display="flex"
+        flexDirection="column"
+        overflow="hidden"
+        boxSizing="border-box"
       >
         {/* Top Header Bar */}
         <Flex
           justifyContent="space-between"
           alignItems="center"
-          flexDirection={{ base: "column", sm: "row" }}
           gap="12px"
-          mb="16px"
+          mb="10px"
+          flexShrink={0}
         >
           {/* Camera Details & Badges */}
-          <HStack spacing="12px" align="center" flexWrap="wrap">
+          <HStack spacing="12px" align="center" minW={0}>
             <Flex
               w="38px"
               h="38px"
@@ -222,76 +227,60 @@ const CameraView = () => {
             >
               <TbCamera size="20px" />
             </Flex>
-            <Flex direction="column">
-              <HStack spacing="8px" align="center" flexWrap="wrap">
-                <Text
-                  fontFamily="'Manrope', sans-serif"
-                  fontWeight="700"
-                  fontSize={{ base: "15px", md: "18px" }}
-                  lineHeight="1.2"
-                  color={titleColor}
-                >
-                  {device.cameraName || "Unnamed Camera"}
-                </Text>
-                {device.deviceId && (
+            <HStack spacing="10px" align="center" minW={0} flexWrap="wrap">
+              <Text
+                fontFamily="'Manrope', sans-serif"
+                fontWeight="700"
+                fontSize={{ base: "15px", md: "18px" }}
+                lineHeight="1.2"
+                color={titleColor}
+                noOfLines={1}
+              >
+                {device.name || device.cameraName || device.deviceId || "Camera"}
+              </Text>
+              {(() => {
+                const isOnline = Boolean(
+                  status
+                    ? ["online", "live", "connected", "1", "true"].includes(
+                        String(status).trim().toLowerCase()
+                      )
+                    : device &&
+                      (device.isLive === true ||
+                        device.isLive === "true" ||
+                        String(device.status || "").toLowerCase() === "online")
+                );
+                const displayStatus = status
+                  ? String(status).toUpperCase()
+                  : isOnline
+                  ? "ONLINE"
+                  : "OFFLINE";
+
+                return (
                   <Badge
                     borderRadius="999px"
                     px="8px"
                     py="2px"
-                    bg="#3F77A51A"
-                    color="#3F77A5"
+                    bg={isOnline ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)"}
+                    color={isOnline ? "#10B981" : "#EF4444"}
                     fontFamily="'Manrope', sans-serif"
                     fontWeight="700"
                     fontSize="11px"
-                    textTransform="none"
+                    display="inline-flex"
+                    alignItems="center"
+                    gap="4px"
+                    textTransform="uppercase"
                   >
-                    {device.deviceId}
+                    <Box
+                      w="5px"
+                      h="5px"
+                      borderRadius="full"
+                      bg={isOnline ? "#10B981" : "#EF4444"}
+                    />
+                    {displayStatus}
                   </Badge>
-                )}
-                {(() => {
-                  const isOnline = Boolean(
-                    status
-                      ? ["online", "live", "connected", "1", "true"].includes(
-                          String(status).trim().toLowerCase()
-                        )
-                      : device &&
-                        (device.isLive === true ||
-                          device.isLive === "true" ||
-                          String(device.status || "").toLowerCase() === "online")
-                  );
-                  const displayStatus = status
-                    ? String(status).toUpperCase()
-                    : isOnline
-                    ? "ONLINE"
-                    : "OFFLINE";
-
-                  return (
-                    <Badge
-                      borderRadius="999px"
-                      px="8px"
-                      py="2px"
-                      bg={isOnline ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)"}
-                      color={isOnline ? "#10B981" : "#EF4444"}
-                      fontFamily="'Manrope', sans-serif"
-                      fontWeight="700"
-                      fontSize="11px"
-                      display="inline-flex"
-                      alignItems="center"
-                      gap="4px"
-                      textTransform="uppercase"
-                    >
-                      <Box
-                        w="5px"
-                        h="5px"
-                        borderRadius="full"
-                        bg={isOnline ? "#10B981" : "#EF4444"}
-                      />
-                      {displayStatus}
-                    </Badge>
-                  );
-                })()}
-              </HStack>
-            </Flex>
+                );
+              })()}
+            </HStack>
           </HStack>
 
           {/* Back Button */}
@@ -310,6 +299,7 @@ const CameraView = () => {
             fontSize="13px"
             _hover={{ bg: "#3F77A512", borderColor: "#3F77A5", color: "#3F77A5" }}
             transition="all 0.15s ease"
+            flexShrink={0}
           >
             Back to Cameras
           </Button>
@@ -317,12 +307,19 @@ const CameraView = () => {
 
         {/* Main Card Container Wrapper */}
         <Box
+          flex="1"
+          minH="0"
+          w="100%"
           bg={cardBg}
           borderWidth="1px"
           borderColor={cardBorder}
           borderRadius="14px"
-          p={{ base: "12px", md: "16px" }}
+          p={{ base: "8px", md: "12px" }}
           boxShadow="0px 1px 6px 0px rgba(26, 46, 61, 0.07)"
+          display="flex"
+          flexDirection="column"
+          overflow="hidden"
+          position="relative"
         >
           {device.deviceId && device.deviceId.startsWith("SSAN") ? (
             <Box
@@ -331,6 +328,12 @@ const CameraView = () => {
               overflow="hidden"
               bg="black"
               w="100%"
+              h="100%"
+              flex="1"
+              minH="0"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
             >
               <SimpleFLVPlayer
                 url={url}
@@ -338,16 +341,34 @@ const CameraView = () => {
               />
             </Box>
           ) : (
-            <Player
-              device={device}
-              initialPlayUrl={url}
-              style={getResponsivePlayerStyle()}
-              width="100%"
-              height="100%"
-              status={status}
-              showControls={true}
-              className=""
-            />
+            <Box
+              w="100%"
+              h="100%"
+              flex="1"
+              minH="0"
+              display="flex"
+              flexDirection="column"
+              overflow="hidden"
+            >
+              <Player
+                device={device}
+                initialPlayUrl={url}
+                style={getResponsivePlayerStyle()}
+                width="100%"
+                height="100%"
+                status={status}
+                showControls={true}
+                className=""
+                onDeviceUpdate={(newName) => {
+                  if (newName) {
+                    setDevice((prev) => (prev ? { ...prev, name: newName, cameraName: newName } : prev));
+                  }
+                  if (deviceId) {
+                    fetchStreamDetails(deviceId);
+                  }
+                }}
+              />
+            </Box>
           )}
         </Box>
       </Box>

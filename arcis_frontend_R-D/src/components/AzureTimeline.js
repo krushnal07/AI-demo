@@ -209,19 +209,19 @@ const AzureTimeline = ({
       w="100%"
       borderTop="1px solid"
       borderColor={borderColor}
-      pt="12px"
-      mt="10px"
+      pt="6px"
+      mt="6px"
       fontFamily="'Manrope', sans-serif"
       userSelect="none"
     >
       {/* Timeline Header bar */}
-      <Flex justify="space-between" align="center" mb="8px" flexWrap="wrap" gap="8px">
-        <HStack spacing="8px" align="center">
-          <Box w="7px" h="7px" borderRadius="full" bg="#3F77A5" />
+      <Flex justify="space-between" align="center" mb="4px" flexWrap="wrap" gap="6px">
+        <HStack spacing="6px" align="center">
+          <Box w="6px" h="6px" borderRadius="full" bg="#3F77A5" />
           <Text
             fontFamily="'Manrope', sans-serif"
             fontWeight="700"
-            fontSize="12px"
+            fontSize="11px"
             color={titleColor}
           >
             Cloud Playback Timeline
@@ -229,10 +229,10 @@ const AzureTimeline = ({
           <Badge
             bg={badgeBg}
             color="#3F77A5"
-            borderRadius="6px"
-            px="6px"
-            py="1px"
-            fontSize="10px"
+            borderRadius="5px"
+            px="5px"
+            py="0.5px"
+            fontSize="9.5px"
             fontWeight="700"
             textTransform="none"
           >
@@ -240,14 +240,17 @@ const AzureTimeline = ({
           </Badge>
         </HStack>
 
-        <HStack spacing="6px">
-          <Text fontSize="11px" fontWeight="600" color={subtextColor}>
+        <HStack spacing="4px">
+          <Text fontSize="10px" fontWeight="600" color={subtextColor}>
             Zoom: {Math.round(zoomLevel)}%
           </Text>
           <IconButton
-            icon={<FiZoomOut size="12px" />}
+            icon={<FiZoomOut size="10px" />}
             aria-label="Zoom Out"
             size="xs"
+            h="18px"
+            w="18px"
+            minW="18px"
             variant="outline"
             borderColor={borderColor}
             color={subtextColor}
@@ -255,9 +258,12 @@ const AzureTimeline = ({
             onClick={() => updateZoom(zoomLevel - 30)}
           />
           <IconButton
-            icon={<FiZoomIn size="12px" />}
+            icon={<FiZoomIn size="10px" />}
             aria-label="Zoom In"
             size="xs"
+            h="18px"
+            w="18px"
+            minW="18px"
             variant="outline"
             borderColor={borderColor}
             color={subtextColor}
@@ -273,28 +279,28 @@ const AzureTimeline = ({
         overflowX="auto"
         overflowY="hidden"
         w="100%"
-        pb="4px"
+        pb="2px"
         onWheel={handleWheel}
         css={{
-          "&::-webkit-scrollbar": { height: "5px" },
+          "&::-webkit-scrollbar": { height: "3px" },
           "&::-webkit-scrollbar-track": {
             background: scrollTrackBg,
-            borderRadius: "4px",
+            borderRadius: "3px",
           },
           "&::-webkit-scrollbar-thumb": {
             background: scrollThumbBg,
-            borderRadius: "4px",
+            borderRadius: "3px",
           },
         }}
       >
         <Box
           position="relative"
-          h="72px"
+          h="36px"
           minW={`${zoomLevel}%`}
           bg={trackBg}
           borderWidth="1px"
           borderColor={trackBorder}
-          borderRadius="8px"
+          borderRadius="6px"
           cursor="pointer"
           onClick={handleTimelineClick}
           onMouseMove={handleMouseMove}
@@ -316,17 +322,17 @@ const AzureTimeline = ({
                 position="absolute"
                 top="0"
                 left="-0.5px"
-                w="2px"
-                h="6px"
+                w="1.5px"
+                h="4px"
                 bg={hourTickColor}
               />
               <Text
                 position="absolute"
-                bottom="3px"
+                bottom="1px"
                 left="50%"
                 transform="translateX(-50%)"
                 fontFamily="'Manrope', sans-serif"
-                fontSize="10px"
+                fontSize="9px"
                 fontWeight="600"
                 color={subtextColor}
                 whiteSpace="nowrap"
@@ -346,8 +352,8 @@ const AzureTimeline = ({
                 position="absolute"
                 left={`${startPercentage}%`}
                 width={`${Math.max(width, 0.4)}%`}
-                top="10px"
-                height="38px"
+                top="5px"
+                height="20px"
                 bg={
                   isHighlighted
                     ? "linear-gradient(180deg, #60A5FA 0%, #3F77A5 100%)"

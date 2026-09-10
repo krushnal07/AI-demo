@@ -26,7 +26,6 @@ import { BsCurrencyDollar } from "react-icons/bs";
 import BarChartComponent from "../components/BarChartComponent";
 import PieChartComponent from "../components/PieChartComponent";
 import CameraStatusChart from "../components/CameraStatusChart";
-import { SiOpenai } from "react-icons/si";
 import { dashboardData } from "../actions/cameraActions";
 import { getUserCameraStats } from "../actions/cameraActions";
 import MobileHeader from "../components/MobileHeader";

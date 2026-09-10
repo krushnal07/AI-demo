@@ -1,11 +1,16 @@
+const mongoose = require("mongoose");
 const AnalyticsImage = require("../models/analyticsimage");
 const Camera = require("../models/cameraModel");
 const District = require("../models/district");
-const { sendMailattachment } = require("../utils/sendEmail");
 const StreamDetails = require("../models/streamModel");
+const { sendMailattachment } = require("../utils/sendEmail");
 const semaphore = require("../utils/semaphore");
 const User = require("../models/userModel");
 // const Settings = require("../models/Settings"); // Assuming Settings model is not used in the provided code
+// Roles allowed to receive live AI-event alerts. Mirrors the frontend's
+// rolePermissions[role]["AI Events"] table in src/components/Sidebar.js.
+const ALERT_ROLES = ["MasterAdmin", "CEO", "DistrictLevel", "AssemblyLevel"];
+
 const messageMapping = {
   1: "Facial recognition",
   2: "Human Detection",
@@ -48,12 +53,22 @@ const messageMapping = {
   40: "Max Person",
   41: "Box Detection",
   42:"Idle WorkStation",
+  43:"Intruder",
+  100:"Heatmap",
   104:"vacant booth",
   103:"evm proximity violation",
   101:"crowd detection (outdoor)",
   102:"crowd detection (indoor)",
-  43:"Intruder",
-  100:"Heatmap"
+  201:"Max Person Detected In Question Paper Room",
+  202:"Movement at entry / exit Gate",
+  203:"Camera Tampering Detected",
+  204:"Camera Offline Detected",
+  205:"Movement Detected In Classroom Before/After Exam Hours",
+  206:"Suspecious Movement",
+  207:"Crowd / Unusual Gathering Detected",
+  208:"Unauthorized item(s) detected",
+  209:"Invigilator Inactivity Detected",
+  210:"Loitering At Passage"
 };
 
 function renderSendTime(currentsendtime){
@@ -142,10 +157,20 @@ const saveAnalyticsImage = async (req, res) => {
   try {
     await semaphore.acquire(); // Ensure only one request processes at a time
 
-    const { cameradid, sendtime, imgurl, an_id, ImgCount, numberplateid, person_name, male_count, female_count } = req.body;
+    const { cameradid, sendtime, imgurl, vidurl, an_id, ImgCount, numberplateid, person_name, male_count, female_count } = req.body;
 
     if (!cameradid || !sendtime || !imgurl || !an_id || !ImgCount) {
       return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    // Optional short clip for the event. Like imgurl we only store the URL --
+    // the device hosts the file.
+    if (vidurl && !vidurl.startsWith("http://") && !vidurl.startsWith("https://")) {
+      return res.status(400).json({
+        success: false,
+        message: "vidurl must be an http(s) URL",
+        recievedVidurl: `${vidurl}`
+      });
     }
 
     let newCorrectTime = renderSendTime(sendtime);
@@ -169,6 +194,7 @@ const saveAnalyticsImage = async (req, res) => {
       sendtime: newCorrectTime,
       msg: messageMapping[an_id] || "No Event Occurred",
       imgurl,
+      vidurl,
       an_id,
       ImgCount,
       numberplateid: numberplateid,
@@ -273,9 +299,13 @@ const getAnalyticsImages = async (req, res) => {
 
     // Step 5: Manually attach the camera details to each analytics image
     // This replicates what the $lookup was supposed to do.
+    // `msg` is only stored on records saved after that field was introduced, so
+    // resolve it here for the rest. The UI shows the event name and falls back to
+    // the id only when the mapping has no entry at all.
     const responseData = analyticsImages.map(image => {
         return {
             ...image,
+            msg: image.msg || messageMapping[image.an_id] || null,
             cameraDetails: cameraDetailsMap.get(image.cameradid) || null // Get details from map
         };
     });
@@ -373,6 +403,7 @@ const getAiDashboard = async (req, res) => {
       analyticsLabels: [],
       timeline: [],
       topCameras: [],
+      topLocations: [],
       matrix: [],
       liveFeed: [],
       insights: [],
@@ -436,6 +467,7 @@ const getAiDashboard = async (req, res) => {
     const byAnalytics = {};
     const matrix = {};
     const camAgg = {};
+    const locAgg = {};
     const timelineMap = {};
     const uniqueCams = new Set();
 
@@ -460,8 +492,23 @@ const getAiDashboard = async (req, res) => {
       c.total++;
       c.byAnalytics[label] = (c.byAnalytics[label] || 0) + 1;
 
+      // The same location name can exist in more than one district, so key on both.
+      const locKey = `${cam.district}||${cam.location}`;
+      const l = (locAgg[locKey] = locAgg[locKey] || {
+        location: cam.location,
+        district: cam.district,
+        cameras: new Set(),
+        total: 0,
+        byAnalytics: {},
+      });
+      l.cameras.add(a.cameradid);
+      l.total++;
+      l.byAnalytics[label] = (l.byAnalytics[label] || 0) + 1;
+
       const istHour = new Date(new Date(a.sendtime).getTime() + IST).getUTCHours();
-      timelineMap[istHour] = (timelineMap[istHour] || 0) + 1;
+      const slot = (timelineMap[istHour] = timelineMap[istHour] || { count: 0, byAnalytics: {} });
+      slot.count++;
+      slot.byAnalytics[label] = (slot.byAnalytics[label] || 0) + 1;
     }
 
     const total = alerts.length;
@@ -475,9 +522,22 @@ const getAiDashboard = async (req, res) => {
 
     const topCameras = Object.values(camAgg).sort((a, b) => b.total - a.total).slice(0, 10);
 
+    const topLocations = Object.values(locAgg)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10)
+      .map((l) => ({ ...l, cameras: l.cameras.size }));
+
     const timeline = [];
     for (let h = 0; h < 24; h++) {
-      timeline.push({ hour: h, label: `${String(h).padStart(2, "0")}:00`, count: timelineMap[h] || 0 });
+      const slot = timelineMap[h] || { count: 0, byAnalytics: {} };
+      const byAnalyticsHour = {};
+      analyticsLabels.forEach((l) => (byAnalyticsHour[l] = slot.byAnalytics[l] || 0));
+      timeline.push({
+        hour: h,
+        label: `${String(h).padStart(2, "0")}:00`,
+        count: slot.count,
+        byAnalytics: byAnalyticsHour,
+      });
     }
 
     const matrixRows = Object.keys(matrix)
@@ -512,8 +572,8 @@ const getAiDashboard = async (req, res) => {
       insights.push(`${byDistrictArr[0].district} leads all districts with ${byDistrictArr[0].count.toLocaleString()} alerts — ${byDistrictArr[0].pct}% of total traffic.`);
     if (peak.count > 0)
       insights.push(`Peak activity at ${peak.label} hrs IST with ${peak.count.toLocaleString()} alerts — align control-room staffing to this window.`);
-    if (topCameras[0])
-      insights.push(`Camera ${topCameras[0].deviceId} (${topCameras[0].district}) is the single busiest unit: ${topCameras[0].total.toLocaleString()} alerts.`);
+    if (topLocations[0])
+      insights.push(`${topLocations[0].location} (${topLocations[0].district}) is the single busiest location: ${topLocations[0].total.toLocaleString()} alerts across ${topLocations[0].cameras} camera(s).`);
     if (byAnalyticsArr[0] && total)
       insights.push(`"${byAnalyticsArr[0].label}" dominates the AI analytics mix with ${byAnalyticsArr[0].count.toLocaleString()} detections (${((byAnalyticsArr[0].count / total) * 100).toFixed(1)}%).`);
     if (uniqueCams.size)
@@ -537,6 +597,7 @@ const getAiDashboard = async (req, res) => {
       analyticsLabels,
       timeline,
       topCameras,
+      topLocations,
       matrix: matrixRows,
       liveFeed,
       insights,
@@ -547,4 +608,81 @@ const getAiDashboard = async (req, res) => {
   }
 };
 
-module.exports = { saveAnalyticsImage, getAnalyticsImages, getZoneWiseCounts, getAiDashboard };
+// ---------------------------------------------------------------------------
+// Polling endpoint for live alert notifications.
+// GET /api/Analytics/latest-alerts?email=<email>&afterId=<mongo ObjectId>
+// First call (no afterId) only hands back a cursor, so the caller doesn't get
+// the whole history dumped as "new". Every call after that returns whatever
+// landed in the DB since that cursor, oldest first, plus the next cursor.
+// ---------------------------------------------------------------------------
+const getLatestAlerts = async (req, res) => {
+  try {
+    const { email, afterId } = req.query;
+    if (!email) return res.status(400).json({ success: false, message: "Email is required" });
+
+    const user = await User.findOne({ email }, { UserAccessibleRegions: 1, role: 1 }).lean();
+    if (!user) {
+      return res.status(200).json({ success: true, data: [], cursor: afterId || null });
+    }
+
+    // role is stored as an array on the user document
+    const roles = Array.isArray(user.role) ? user.role : [user.role];
+    if (!roles.some((r) => ALERT_ROLES.includes(r))) {
+      return res.status(403).json({ success: false, message: "Not permitted to receive AI event alerts" });
+    }
+
+    // Every role, MasterAdmin included, only sees its accessible regions.
+    if (!user.UserAccessibleRegions?.length) {
+      return res.status(200).json({ success: true, data: [], cursor: afterId || null });
+    }
+
+    const cameras = await Camera.find(
+      { districtAssemblyCode: { $in: user.UserAccessibleRegions } },
+      { deviceId: 1, name: 1, locations: 1, _id: 0 }
+    ).lean();
+    if (!cameras.length) return res.status(200).json({ success: true, data: [], cursor: afterId || null });
+
+    const deviceIds = cameras.map((c) => c.deviceId);
+    const camMap = new Map(
+      cameras.map((c) => {
+        const loc = c.locations?.[0];
+        return [c.deviceId, (typeof loc === "string" ? loc : loc?.loc_name) || c.name || c.deviceId];
+      })
+    );
+
+    // Establish a baseline cursor only — nothing here is "new" yet.
+    if (!afterId || !mongoose.Types.ObjectId.isValid(afterId)) {
+      const latest = await AnalyticsImage.findOne({ cameradid: { $in: deviceIds } })
+        .sort({ _id: -1 })
+        .select("_id")
+        .lean();
+      return res.status(200).json({ success: true, data: [], cursor: latest?._id || null });
+    }
+
+    const alerts = await AnalyticsImage.find({
+      cameradid: { $in: deviceIds },
+      _id: { $gt: new mongoose.Types.ObjectId(afterId) },
+    })
+      .sort({ _id: 1 })
+      .limit(50)
+      .lean();
+
+    const data = alerts.map((a) => ({
+      id: a._id,
+      cameradid: a.cameradid,
+      location: camMap.get(a.cameradid) || a.cameradid,
+      eventType: messageMapping[a.an_id] || a.msg || "No Event Occurred",
+      sendtime: a.sendtime,
+      imgurl: a.imgurl,
+      vidurl: a.vidurl,
+    }));
+
+    const cursor = alerts.length ? alerts[alerts.length - 1]._id : afterId;
+
+    return res.status(200).json({ success: true, data, cursor });
+  } catch (error) {
+    console.error("Error fetching latest alerts:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+module.exports = { saveAnalyticsImage, getAnalyticsImages, getZoneWiseCounts, getAiDashboard, getLatestAlerts };

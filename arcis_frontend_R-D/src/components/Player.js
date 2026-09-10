@@ -72,6 +72,7 @@ const Player = React.forwardRef(({
   showOverlay,
   overlayData,
   muted, // Prop passed from MultipleView to handle pagination resets
+  onDeviceUpdate,
 }, ref) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -546,17 +547,40 @@ const Player = React.forwardRef(({
   const footerTextShadow = useColorModeValue("none", "1px 1px 2px rgba(0,0,0,0.8)");
 
   return (
-    <Box position="relative" width={width || "100%"} height={height || "100%"} w="100%" h="100%" overflow="visible">
+    <Box
+      position="relative"
+      width={width || "100%"}
+      height={height || "100%"}
+      w="100%"
+      h="100%"
+      display="flex"
+      flexDirection="column"
+      overflow="hidden"
+    >
       {showCameraPTZ && <CameraPTZ deviceId={device.deviceId} />}
 
-      <Box position="relative" borderRadius="10px" overflow="hidden" bg="#000000" w="100%" h="100%">
+      <Box
+        position="relative"
+        borderRadius="10px"
+        overflow="hidden"
+        bg="#000000"
+        w="100%"
+        flex={showControls ? "1" : undefined}
+        h={showControls ? "auto" : "100%"}
+        minH="0"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
         {isVideoFile ? (
-          <Box position="relative" width={width || "100%"} height={height || "100%"}>
+          <Box position="relative" width="100%" height="100%" display="flex" alignItems="center" justifyContent="center">
             <video
               ref={videoRef}
               style={{
                 width: "100%",
                 height: "100%",
+                maxHeight: "100%",
+                maxWidth: "100%",
                 ...style,
                 objectFit: "contain",
                 transform: `scale(${videoScale})`,
@@ -583,28 +607,31 @@ const Player = React.forwardRef(({
       </Box>
 
       {showControls && (
-        <PlayerControls
-          device={device}
-          onFullscreen={handleFullscreen}
-          onScreenshot={handleScreenshot}
-          onRecording={handleRecording}
-          isRecording={isRecording}
-          onSegment={handleSegmentation}
-          handlePlayPause={handlePlayPause}
-          isPlaying={isPlaying}
-          handleSegmentation={handleSegmentation}
-          onUrlChange={handleUrlChange}
-          status={status}
-          toggleCameraPTZ={toggleCameraPTZ}
-          zoomIn={zoomIn}
-          zoomOut={zoomOut}
-          handleVolumeChange={handleVolumeChange}
-          toggleMute={toggleMute}
-          volume={volume}
-          isMuted={isMuted}
-          currentVideoTime={videoCurrentTime}
-          playUrl={playUrl}
-        />
+        <Box flexShrink={0} w="100%">
+          <PlayerControls
+            device={device}
+            onFullscreen={handleFullscreen}
+            onScreenshot={handleScreenshot}
+            onRecording={handleRecording}
+            isRecording={isRecording}
+            onSegment={handleSegmentation}
+            handlePlayPause={handlePlayPause}
+            isPlaying={isPlaying}
+            handleSegmentation={handleSegmentation}
+            onUrlChange={handleUrlChange}
+            status={status}
+            toggleCameraPTZ={toggleCameraPTZ}
+            zoomIn={zoomIn}
+            zoomOut={zoomOut}
+            handleVolumeChange={handleVolumeChange}
+            toggleMute={toggleMute}
+            volume={volume}
+            isMuted={isMuted}
+            currentVideoTime={videoCurrentTime}
+            playUrl={playUrl}
+            onDeviceUpdate={onDeviceUpdate}
+          />
+        </Box>
       )}
 
       {/* ── Auto-reconnect spinner overlay ─────────────────────────────────── */}

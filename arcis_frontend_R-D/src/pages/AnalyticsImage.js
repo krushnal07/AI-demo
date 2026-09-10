@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import axios from "axios";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -31,6 +31,20 @@ import {
 } from "@chakra-ui/react";
 import moment from "moment";
 import MobileHeader from "../components/MobileHeader";
+
+// Names for the few event ids the API's own mapping does not cover. Everything
+// else arrives as `msg` on the record, so this stays deliberately short.
+const DEFAULT_EVENT_MAP = {
+  40: "Max Person",
+  1: "facial recognition",
+  43: "Intruder",
+  42: "Idle WorkStation",
+  17: "line crossing",
+  100: "Heatmap",
+};
+// These accounts see counting events only, with no name overrides.
+const COUNT_EMAIL_EVENT_MAP = {};
+const COUNT_EMAILS = ["count@vmukti.com", "maheshwara@gmail.com", "Lakshmi@gmail.com", "roopa@gmail.com"];
 
 const AnalyticsImage = () => {
   const [data, setData] = useState([]);
@@ -227,22 +241,49 @@ const AnalyticsImage = () => {
     }
   }, [data, selectedDate, selectedEvent, selectedCamera, selectedZone, filterData, selectedSubEvent, selectedPersonName]);
 
-  const defaultEventMap = {
-    40: "Max Person",
-    
-    1:"facial recognition",
-    
-    43:"Intruder",
-    42:"Idle WorkStation",
-    17:"line crossing",
-    100:"Heatmap"
-  };
-  const countEmailEventMap = {};
-  const countEmails = ["count@vmukti.com", "maheshwara@gmail.com", "Lakshmi@gmail.com", "roopa@gmail.com"];
-  const fullZoneEventMap = {
-    default: countEmails.includes(email) ? countEmailEventMap : defaultEventMap,
-  };
-  const currentEventMap = selectedZone ? zoneEventMap[selectedZone] : fullZoneEventMap.default;
+  // Memoised so it is a stable reference - `availableEvents` depends on it.
+  const currentEventMap = useMemo(
+    () =>
+      selectedZone
+        ? zoneEventMap[selectedZone]
+        : COUNT_EMAILS.includes(email)
+        ? COUNT_EMAIL_EVENT_MAP
+        : DEFAULT_EVENT_MAP,
+    [selectedZone, zoneEventMap, email]
+  );
+
+  // Event types actually present in the data for the selected date (+ camera, if chosen).
+  // Labels come from the API (`msg`, resolved server-side from messageMapping) so the UI
+  // never has to keep its own copy of the full event list.
+  const availableEvents = useMemo(() => {
+    const found = new Map();
+    data.forEach((item) => {
+      if (item?.an_id === undefined || item?.an_id === null) return;
+      if (selectedCamera && item.cameradid !== selectedCamera) return;
+      const key = item.an_id.toString();
+      // same fallback chain as labelFor, so the filter and the rows agree
+      if (!found.has(key)) found.set(key, item.msg || currentEventMap[item.an_id] || `Event ${key}`);
+    });
+    return found;
+  }, [data, selectedCamera, currentEventMap]);
+
+  // In zone mode the zone map decides which events belong to the zone; otherwise the
+  // dropdown is driven purely by what the DB returned for this date.
+  const eventOptions = selectedZone
+    ? Object.entries(zoneEventMap[selectedZone]).filter(([key]) => availableEvents.has(key))
+    : [...availableEvents.entries()];
+
+  // Label for a record: prefer the API-provided name, fall back to the local maps
+  const labelFor = (item) => item?.msg || currentEventMap[item?.an_id] || `Event ${item?.an_id}`;
+
+  // Clear the selection if the chosen event has no records for the new date/camera
+  useEffect(() => {
+    if (selectedEvent && !availableEvents.has(selectedEvent)) {
+      setSelectedEvent("");
+      setSelectedSubEvent("");
+      setSelectedPersonName("");
+    }
+  }, [availableEvents, selectedEvent]);
 
   const handleDateChange = (event) => {
     setSelectedDate(event.target.value);
@@ -311,7 +352,7 @@ const AnalyticsImage = () => {
           item.cameradid?.toString() || "N/A",
           item.sendtime ? moment.utc(item.sendtime).format("DD-MM-YYYY HH:mm:ss") : "N/A",
           "",
-          currentEventMap[item.an_id] || "No Event Occurred",
+          labelFor(item),
         ];
         if (isCountUser) rowData.push(item.ImgCount?.toString() || "0");
         body.push(rowData);
@@ -517,7 +558,12 @@ const AnalyticsImage = () => {
           _hover={{ opacity: 0.9 }}
           size="sm"
           borderRadius="10px"
-          fontWeight="600"
+          fontFamily="'Manrope', sans-serif"
+          fontWeight="700"
+          fontSize="12px"
+          lineHeight="18px"
+          letterSpacing="0px"
+          textAlign="center"
         >
           Export PDF
         </Button>
@@ -984,7 +1030,21 @@ const AnalyticsImage = () => {
         {/* Pagination */}
         {shouldShowPagination && filteredData.length > 0 && (
           <Flex justify="center" align="center" mt={6} gap={1} wrap="wrap">
-            <Button size="sm" variant="outline" borderColor={cardBorder} onClick={() => goToPage(currentPage - 1)} isDisabled={currentPage === 1} mr={1}>
+            <Button
+              size="sm"
+              variant="outline"
+              borderColor={cardBorder}
+              onClick={() => goToPage(currentPage - 1)}
+              isDisabled={currentPage === 1}
+              mr={1}
+              fontFamily="'Manrope', sans-serif"
+              fontWeight="700"
+              fontSize="12px"
+              lineHeight="18px"
+              letterSpacing="0px"
+              textAlign="center"
+              _hover={{ bg: tableRowHoverBg }}
+            >
               Prev
             </Button>
             {visiblePages.map((page, index) =>
@@ -999,16 +1059,36 @@ const AnalyticsImage = () => {
                   borderColor={cardBorder}
                   _hover={currentPage === page ? { bg: accent } : { bg: tableRowHoverBg }}
                   onClick={() => goToPage(page)}
+                  fontFamily="'Manrope', sans-serif"
+                  fontWeight="700"
+                  fontSize="12px"
+                  lineHeight="18px"
+                  letterSpacing="0px"
+                  textAlign="center"
                 >
                   {page}
                 </Button>
               ) : (
-                <Text key={index} px={1} color={subText}>
+                <Text key={index} px={1} color={subText} fontFamily="'Manrope', sans-serif">
                   …
                 </Text>
               )
             )}
-            <Button size="sm" variant="outline" borderColor={cardBorder} onClick={() => goToPage(currentPage + 1)} isDisabled={currentPage === totalPages} ml={1}>
+            <Button
+              size="sm"
+              variant="outline"
+              borderColor={cardBorder}
+              onClick={() => goToPage(currentPage + 1)}
+              isDisabled={currentPage === totalPages}
+              ml={1}
+              fontFamily="'Manrope', sans-serif"
+              fontWeight="700"
+              fontSize="12px"
+              lineHeight="18px"
+              letterSpacing="0px"
+              textAlign="center"
+              _hover={{ bg: tableRowHoverBg }}
+            >
               Next
             </Button>
           </Flex>
