@@ -129,10 +129,14 @@ const Dash = () => {
   return (
     <Box
       w="100%"
+      h={{ base: "auto", lg: "100%" }}
+      display="flex"
+      flexDirection="column"
       maxW={{ base: "100%", "2xl": "1920px" }}
       mx="auto"
       px={{ base: 3, sm: 4, md: 5, lg: 6, xl: 8, "2xl": 10 }}
-      py={{ base: 3, md: 3, lg: 4, "2xl": 5 }}
+      pt={{ base: 3, md: 3, lg: 4, "2xl": 5 }}
+      pb={{ base: 6, md: 8, lg: 10, xl: 12, "2xl": 14 }}
       fontFamily="'Manrope', sans-serif"
     >
       <MobileHeader title="Dashboard" />
@@ -143,7 +147,7 @@ const Dash = () => {
         align="center"
         wrap="wrap"
         gap="8px"
-        mb={{ base: "10px", md: "12px", lg: "14px", xl: "16px" }}
+        mb={{ base: "10px", md: "12px", lg: "clamp(8px, 1.5vh, 14px)", xl: "clamp(10px, 1.8vh, 16px)" }}
       >
         {/* Titles */}
         <Box>
@@ -204,8 +208,8 @@ const Dash = () => {
       {/* 2. KPI CONTAINER (4 Cards Grid) */}
       <SimpleGrid
         columns={{ base: 1, sm: 2, lg: 4 }}
-        spacing={{ base: "10px", sm: "12px", md: "14px", lg: "16px", "2xl": "20px" }}
-        mb={{ base: "12px", md: "14px", lg: "16px", "2xl": "20px" }}
+        spacing={{ base: "10px", sm: "12px", md: "14px", lg: "clamp(12px, 1.8vh, 16px)", "2xl": "clamp(14px, 2vh, 20px)" }}
+        mb={{ base: "12px", md: "14px", lg: "clamp(12px, 1.8vh, 16px)", "2xl": "clamp(14px, 2vh, 20px)" }}
       >
         <CustomCard
           title="TOTAL CAMERAS"
@@ -247,14 +251,16 @@ const Dash = () => {
 
       {/* 3. ANALYTICS CONTAINER (2 Column Grid) */}
       <Grid
+        flex="1"
+        minHeight="0"
         templateColumns={{ base: "1fr", lg: "1fr 1fr" }}
-        gap={{ base: "12px", md: "14px", lg: "16px", "2xl": "20px" }}
+        gap={{ base: "12px", md: "14px", lg: "clamp(12px, 2vh, 16px)", "2xl": "clamp(16px, 2.5vh, 20px)" }}
         alignItems="stretch"
       >
         {/* CARD 1: CAMERA STATUS (Horizontal Bar Chart) */}
         <Box
           bg={cardBg}
-          p={{ base: "14px", md: "16px", "2xl": "20px" }}
+          p={{ base: "14px", md: "16px", "2xl": "clamp(16px, 2vh, 20px)" }}
           borderRadius="14px"
           borderWidth="1px"
           borderStyle="solid"
@@ -262,6 +268,7 @@ const Dash = () => {
           boxShadow="0px 1px 6px 0px rgba(26, 46, 61, 0.07)"
           display="flex"
           flexDirection="column"
+          height="100%"
         >
           <Box mb="6px">
             <Text
@@ -287,7 +294,7 @@ const Dash = () => {
             </Text>
           </Box>
 
-          <Box width="100%" height={{ base: "180px", sm: "190px", md: "200px", lg: "215px", "2xl": "260px" }}>
+          <Box flex="1" minHeight="0" width="100%">
             <ReactApexChart
               type="bar"
               height="100%"
@@ -401,7 +408,7 @@ const Dash = () => {
         {/* CARD 2: OFFLINE / ONLINE CAMERAS LIST */}
         <Box
           bg={cardBg}
-          p={{ base: "14px", md: "16px", "2xl": "20px" }}
+          p={{ base: "14px", md: "16px", "2xl": "clamp(16px, 2vh, 20px)" }}
           borderRadius="14px"
           borderWidth="1px"
           borderStyle="solid"
@@ -409,6 +416,7 @@ const Dash = () => {
           boxShadow="0px 1px 6px 0px rgba(26, 46, 61, 0.07)"
           display="flex"
           flexDirection="column"
+          height="100%"
         >
           {/* Header Row with Toggle Badges */}
           <Flex justify="space-between" align="center" mb={{ base: "8px", md: "10px", "2xl": "12px" }} wrap="wrap" gap="8px">
@@ -475,7 +483,8 @@ const Dash = () => {
 
           {/* Locations List (Scrollable if more than 5 cameras) */}
           <Box
-            maxH={{ base: "220px", sm: "240px", md: "250px", lg: "215px", xl: "225px", "2xl": "280px" }}
+            flex="1"
+            minHeight="0"
             overflowY="auto"
             display="flex"
             flexDirection="column"

@@ -22,9 +22,9 @@ const CustomCard = ({
   return (
     <Box
       w="100%"
-      minH={minH || { base: "auto", md: "120px", lg: "125px", "2xl": "145px" }}
+      minH={minH || { base: "auto", md: "clamp(100px, 15vh, 120px)", lg: "clamp(110px, 16vh, 125px)", "2xl": "clamp(120px, 18vh, 145px)" }}
       bg={cardBg}
-      p={{ base: "12px", sm: "14px", md: "14px", lg: "16px", "2xl": "18px" }}
+      p={{ base: "12px", sm: "14px", md: "clamp(12px, 1.8vh, 14px)", lg: "clamp(12px, 2vh, 16px)", "2xl": "clamp(14px, 2.2vh, 18px)" }}
       borderRadius="14px"
       borderWidth="3px 1px 1px 1px"
       borderStyle="solid"
